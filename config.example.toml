@@ -1,0 +1,15 @@
+# Select this file with CHAT_CONFIG in the server command.
+# The listener is always 127.0.0.1; host/bind settings are not supported.
+port = 8080
+
+# Optional: defaults to the first model's alias, not its upstream ID.
+default_model = "gpt-5"
+
+# Order is preserved in GET /api/cli/models.
+# This is a placeholder, NOT a live-proven OAuth/model compatibility claim.
+# Verify access and stateless Responses API compatibility before using it.
+[[models]]
+alias = "gpt-5"
+name = "GPT-5"
+description = "Placeholder; verify model access and compatibility before use"
+model = "gpt-5" # Private upstream ID; never included in the public model list.
