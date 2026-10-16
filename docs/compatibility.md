@@ -36,5 +36,8 @@ not merely its directory. Normalize volatile UUIDs, usage, JSON ordering and
 text segmentation only when those are not the behavior under test.
 
 Before importing, follow the [third-party process](provenance/README.md).
-Before claiming model support, complete the [live SIWC proof](authentication.md).
+Before claiming model support, complete the selected-backend
+[live validation](authentication.md). The isolated Codex proof covers only the
+model/transcript documented in [its report](proofs/codex-phase0.md), not real
+Atuin CLI compatibility or independent SIWC.
 No live data or credential artifacts may become compatibility fixtures.

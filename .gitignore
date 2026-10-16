@@ -17,6 +17,10 @@ config.local.toml
 credentials.json
 auth.json
 *.token
+.atuin-ai-codex-proof/
+.atuin-ai-siwc-proof/
+.record-*
+*.log
 
 # Editor and OS files
 .DS_Store

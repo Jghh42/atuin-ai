@@ -4,22 +4,28 @@ A planned lightweight, self-hosted implementation of the Atuin AI server
 protocol, written in Go.
 
 The project is intended to work with an unmodified [Atuin](https://atuin.sh/)
-CLI while using OpenAI's public Responses API. Its initial target is a
-personal, single-user process that binds only to `127.0.0.1`, with eligible
-ChatGPT Business plan access through OpenAI's documented Sign in with ChatGPT
-OAuth flow.
+CLI. Its initial target is a personal, single-user process on a developer
+machine—including a remote machine used over SSH—that binds only to that
+machine's `127.0.0.1`. The selected initial backend is native Pi-style Codex
+device login and Responses-format inference through the ChatGPT Codex backend,
+targeting the user's ChatGPT Business seat. Independently registered Sign in
+with ChatGPT (SIWC) and public Responses inference are deferred for later.
 
-> **Status:** phase 1 HTTP shell implemented; chat returns HTTP 501. Phase 0
-> records are present, but live SIWC text/tool/refresh proof and project-license
-> confirmation remain review gates. No inference or OAuth login implementation
-> is shipped yet.
+> **Status:** phases 0 and 1 complete for review: the selected Codex backend
+> passed isolated login, text/tool continuation and refresh/restart proof.
+> The production server is still an HTTP shell; chat returns HTTP 501 and
+> production login/inference are not integrated. SIWC is deferred after an
+> organization policy denial. See [checkpoint](docs/plans/phase0-1-status.md).
 
 ## Goals
 
 - Preserve compatibility with the normal Atuin CLI.
 - Implement `GET /api/cli/models` and streaming `POST /api/cli/chat`.
-- Use the public OpenAI `/v1/responses` API rather than Chat Completions.
-- Support secure local OAuth credential persistence and refresh.
+- Use a native Codex Responses-compatible adapter, not Chat Completions.
+- Support secure, isolated OAuth credentials and refresh through Pi-style Codex
+  device login; no Pi/Codex subprocess or credential-file import.
+- Support headless/SSH development with browser device approval and no callback
+  tunnel. Add independently registered SIWC/public Responses as a later feature.
 - Listen only on IPv4 loopback in the first version, with no client-facing
   authentication or remote-host deployment surface.
 - Preserve Atuin's local tool and permission boundary.
@@ -34,7 +40,8 @@ OAuth flow.
   Kubernetes deployment.
 - Arbitrary server-side tools, MCP, or web tools.
 - Atuin Hub billing and usage endpoints.
-- Chat Completions or undocumented ChatGPT backend APIs.
+- Chat Completions, browser cookies, credential scraping, or private endpoints
+  outside the explicitly selected Codex compatibility adapter.
 
 ## Documentation
 
@@ -63,11 +70,11 @@ Atuin CLI
 Go compatibility server
     ├── Atuin protocol decoder and SSE writer
     ├── prompt and capability-gated local-tool policy
-    ├── OpenAI Responses adapter
+    ├── native Codex Responses-compatible adapter
     └── OAuth credential manager
              │
              ▼
-    https://api.openai.com/v1/responses
+    https://chatgpt.com/backend-api/codex/responses
 ```
 
 The Atuin CLI remains responsible for its TUI, conversation persistence,
@@ -92,7 +99,7 @@ be committed to this repository.
 
 ## License
 
-Apache-2.0 is [proposed, pending explicit user confirmation](docs/decisions/0003-project-license-proposal.md);
-no project license has been granted. `LICENSES/` contains third-party reference
-texts only. Upstream material has its own licenses; copied or transformed
-material must retain required attribution and notices. See [NOTICE](NOTICE).
+Project-owned code and documentation are licensed under the
+[Apache License 2.0](LICENSE), as recorded in [ADR 0003](docs/decisions/0003-project-license-proposal.md).
+Third-party material retains its original licenses and notices; see
+[NOTICE](NOTICE) and `LICENSES/`.

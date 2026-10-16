@@ -2,7 +2,7 @@
   "schema_version": 1,
   "recorded_on": "2026-10-16",
   "baseline_document": "docs/specs/atuin-ai-server-api.md",
-  "project_license_status": "unconfirmed; Apache-2.0 proposed only",
+  "project_license_status": "Apache-2.0 adopted for project-owned material; user confirmed",
   "sources": [
     {
       "repository": "https://github.com/atuinsh/atuin-ai-server",

@@ -2,19 +2,20 @@
 
 ## 1. Goal
 
-Build a small, personal, localhost-only Go server that:
+Build a small, personal, localhost-only Go server for a developer machine,
+including a remote machine used over SSH, that:
 
-- works with an unmodified Atuin CLI using `endpoint_protocol = "oss"`;
-- binds only to the local loopback interface (`127.0.0.1`) in v1;
+- works with an unmodified Atuin CLI running on that same machine using
+  `endpoint_protocol = "oss"`;
+- binds only to that machine's loopback interface (`127.0.0.1`) in v1;
 - implements the two Atuin AI routes and SSE protocol documented in the
   [Atuin AI server API specification](../specs/atuin-ai-server-api.md);
-- uses the public OpenAI Responses API, never Chat Completions or an
-  undocumented ChatGPT backend;
-- supports eligible personal ChatGPT-plan usage, with ChatGPT Business as the
-  initial target, through OpenAI's documented Sign in with ChatGPT (SIWC)
-  OAuth flow;
-- eventually offers a device-code login when there is a supported integration
-  path for this application type;
+- uses native Go Responses-format inference against the Codex backend, never
+  Chat Completions;
+- targets ChatGPT Business subscription usage through a native Go device login
+  compatible with installed Pi 1.1.0's `openai-codex` provider;
+- supports local and SSH-based development without an OAuth callback listener
+  or SSH callback forwarding;
 - preserves the CLI/server local-tool boundary;
 - has bounded concurrency and memory; and
 - ships first as one small local Go executable.
@@ -31,22 +32,58 @@ test cases, fixtures, prompts, or tool descriptions where useful, provided the
 repository retains the appropriate copyright/license notices and records
 provenance.
 
-## 2. Confirmed upstream facts and remaining auth decision
+## 2. Authentication decision and remaining validation
 
-OpenAI currently documents an OSS/self-hosted flow in which an eligible user:
+V1 selects the Pi-style Codex compatibility adapter described in
+[ADR 0004](../decisions/0004-pi-style-codex-authentication.md), superseding
+ADR 0001's independent SIWC browser-only choice for v1. Implement login and
+inference directly in Go, not through a Codex app-server, Pi subprocess, agent,
+or harness. Codex is the direct model backend; Atuin still owns local tool
+execution and the server owns only one generation per request.
 
-1. dynamically registers an OAuth client;
-2. authorizes the scopes `offline_access`, `resource.invoke`, and
-   `chatgpt.tokens.use.direct` using Authorization Code + PKCE;
-3. receives access and rotating refresh tokens;
-4. calls `GET https://api.openai.com/v1/models`; and
-5. calls `POST https://api.openai.com/v1/responses` with the OAuth access
-   token.
+### Selected native device flow
 
-For this flow Responses requests use `store: false`, `stream: true`, and the
-full required input history. They do not use ChatGPT's private backend.
+Use installed Pi 1.1.0's `openai-codex` OAuth and Responses implementations as
+source references, pinning their package versions, source hashes, and provenance
+before implementation. The reviewed registration is Codex's fixed client ID
+`app_EMoamEEZ73f0CkXaXp7hrann`, not an independently registered SIWC client.
 
-Official references:
+1. Request a user code from
+   `https://auth.openai.com/api/accounts/deviceauth/usercode`.
+2. Show the code and `https://auth.openai.com/codex/device` activation URL.
+   The user can approve from another machine's browser; no SSH callback tunnel
+   or local callback listener is required.
+3. Poll `https://auth.openai.com/api/accounts/deviceauth/token` with bounded,
+   cancellable polling. Exchange the returned authorization code and PKCE
+   verifier at `https://auth.openai.com/oauth/token`, using the device redirect
+   URI `https://auth.openai.com/deviceauth/callback`.
+4. Persist this application's own token/account record and refresh through
+   `/oauth/token` with the fixed registration.
+5. Send Responses-format streaming requests by default to
+   `https://chatgpt.com/backend-api/codex/responses`, with Bearer access token
+   and `chatgpt-account-id` header from the corresponding account record.
+
+This explicitly supersedes the former prohibition on the Codex client ID and
+private backend **only for this reviewed compatibility adapter**. Do not read
+or modify the user's Pi/Codex credential files, reuse their existing login,
+collect browser cookies, or scrape credentials. Use an isolated application
+credential store and an explicit login for this application.
+
+This is not an endorsement of official independent-client SIWC support. The
+private backend and fixed registration are volatile integration dependencies;
+source pinning, safe failure behavior, and live validation remain required.
+Existing success through Pi is not proof that this Go adapter works.
+
+### Deferred independent SIWC/public API alternative
+
+Independently registered SIWC browser Authorization Code + PKCE remains the
+preferred documented public-API alternative for a later release, not a v1 gate.
+That distinct flow uses dynamic registration, scopes including `offline_access`,
+`resource.invoke`, and `chatgpt.tokens.use.direct`, rotating refresh tokens,
+and public `/v1/models` and `/v1/responses`. Its Responses preview requirements
+and tool namespace rules must not be silently applied to Codex requests.
+
+Official SIWC references (for that future integration, not Codex support):
 
 - <https://developers.openai.com/siwc/token-sharing-open-source>
 - <https://developers.openai.com/siwc/token-sharing-open-source/sign-in>
@@ -54,41 +91,18 @@ Official references:
 - <https://developers.openai.com/siwc/token-sharing-open-source/self-hosted-vms>
 - <https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations>
 
-### Device-code decision gate
+The current live independent SIWC attempt reached naming consent with “Use
+plan”, then failed under organization policy with
+`3p_delegated_access_policy_denied`. No tokens or streamed inference proof
+were achieved. This is not completion of Phase 0, nor proof that all SIWC
+accounts are unsupported.
 
-Codex itself implements device login, and current `codex app-server` source has
-an `account/login/start` request with `type: "chatgptDeviceCode"`. The SIWC
-integration documentation for an independent OSS app, however, currently
-documents dynamic registration and browser/loopback PKCE, not direct use of
-Codex's client registration or device endpoints.
-
-Before treating literal device login as a release requirement, run a short
-spike and choose one supported path:
-
-1. **Preferred:** OpenAI confirms device authorization for dynamically
-   registered SIWC OSS clients. Implement it natively in Go.
-2. **Local fallback:** use the documented SIWC browser flow. Because the
-   service and browser run on the same machine, the loopback PKCE callback is
-   the natural supported path and requires no public callback or credential
-   transfer.
-3. **Optional experiment:** use `codex app-server` as an auth/inference
-   subprocess. Proceed only if its tool loop can be disabled and Atuin's local
-   tools can be represented safely. This adds a second binary and is not the
-   preferred low-memory architecture.
-4. **Do not do:** copy Codex's OAuth client ID, parse its private credential
-   files, collect browser cookies, or call an undocumented
-   `chatgpt.com/backend-api` endpoint.
-
-The target ChatGPT Business premium seat is already known to work with normal
-Codex subscription login, including through Pi. Treat account eligibility as
-an expected supported case rather than a product-design blocker. Phase 0 still
-performs one live SIWC authorization and public Responses request because an
-independently registered SIWC client is a distinct integration boundary from
-an existing Codex/Pi login.
-
-The Go architecture must not depend on the result of this decision: OAuth is a
-credential source behind an interface; the Atuin and Responses layers remain
-the same.
+Keep OAuth behind a credential interface and backend-specific request
+projection separate from Atuin handling. Codex, future SIWC, and optional
+API-key public Responses requests are distinct wire contracts, not
+interchangeable credential substitutions. Native API-key public Responses is
+an optional, separately billed fallback and cannot satisfy subscription-login
+gates.
 
 ## 3. Initial scope
 
@@ -106,12 +120,16 @@ the same.
 - parallel local tool calls
 - multi-request tool continuation driven by the Atuin CLI
 - token usage in `done`
-- SIWC token storage and refresh
-- API-key Responses mode as a development/fallback credential mode
+- native Pi-style Codex device login, isolated token storage, and refresh
+- native Codex Responses-format inference (no agent/harness subprocess)
+- optional separately billed public API-key Responses development/fallback mode
 - deterministic fake-provider tests and real-CLI tests
 
 ### Explicitly excluded from v1
 
+- independently registered SIWC browser/OIDC/DCR login (deferred alternative)
+- Codex app-server or Pi subprocess integration
+- Pi/Codex credential-file import, cookie collection, or credential scraping
 - configurable/non-loopback listening and allowed-host policies
 - client-facing Bearer authentication, TLS, and reverse-proxy deployment
 - containers, Kubernetes, systemd, and multireplica coordination
@@ -271,24 +289,42 @@ Create:
 - Go module and standard project tooling;
 - an explicit Apache-2.0 project-license decision for user confirmation;
 - `NOTICE`/third-party license records;
-- ADR for SIWC/browser/device auth;
+- ADR 0004 for native Pi-style Codex authentication, explicitly superseding
+  the prior SIWC-only v1 choice and recording backend compatibility risk;
 - ADR for stateless Responses continuation;
 - pinned Atuin/client/server/core revision manifest; and
 - compatibility fixture manifest with provenance.
 
-Run two live, redacted proof-of-concept requests before building the full
-server:
+Selected-backend live gates (passed by the isolated Phase 0 probe below),
+before building the full server:
 
-1. SIWC OAuth access token → public `/v1/responses` → streamed text.
-2. Same flow with a function call and a following request containing
-   `function_call_output`.
+1. This application's native Go device login obtains an isolated credential
+   record for the intended ChatGPT Business account.
+2. That credential → Codex Responses endpoint → completed streamed text on at
+   least one intended model.
+3. The same model returns a function call and completes a subsequent full-history
+   request containing `function_call_output`, without `previous_response_id`.
+4. Refresh and durable replacement-token persistence work with that credential.
 
-Also capture the target ChatGPT Business workspace's model-list shape and
-prove refresh rotation through the independent SIWC client. Never commit
-tokens or raw authorization URLs.
+Pin the installed Pi 1.1.0 OAuth/provider source and capture redacted request,
+response, account-header, tool-shape, model-selection, and completion evidence.
+Do not assume public `/v1/models` is the Codex model-discovery contract. Verify
+which model IDs can be configured/advertised by our local catalog.
+Never commit tokens, device codes, or raw authorization URLs.
 
-**Exit:** direct Responses + tool continuation works for at least one intended
-model, and the device-login decision is recorded.
+Record the independent SIWC naming-consent/organization-policy denial as a
+blocked alternative, not a passed OAuth or inference gate. Existing Pi login
+is not evidence for these gates. Stateless replay and opaque reasoning-state
+compatibility remain design gates per ADR 0002; if required state cannot be
+preserved, mark the model unsupported or obtain a separately reviewed bounded
+encrypted-state design before enabling it.
+
+**Exit:** native device login, completed Codex text, multi-request tool
+continuation, and refresh are demonstrated on an intended model with this
+application's own credentials. These gates passed in the isolated native Go
+probe on `gpt-6.1-sol`; see [redacted live evidence](../proofs/codex-phase0.md).
+Production integration remains unimplemented. No success is inferred from
+installed Pi, and the independent SIWC denial is not counted as a pass.
 
 ### Phase 1 — bounded HTTP shell and configuration
 
@@ -385,11 +421,14 @@ Project normalized Atuin history to Responses input:
 - user tool result → `function_call_output`;
 - failed tool result → deterministic textual error representation;
 - full relevant transcript included on every request;
-- `store: false`, `stream: true` always set in SIWC mode.
+- `store: false`, `stream: true` in the Codex adapter, matching pinned source;
+- Codex endpoint, Bearer token, and matching account header.
 
-Do not send unsupported SIWC preview fields. Validate the current documented
-function/custom-tool representation in Phase 0 rather than assuming standard
-API-key behavior is identical.
+Validate Codex instructions, tool declarations, returned names, continuation
+items, and required reasoning state in Phase 0. Do not silently import SIWC
+namespace rules or assume Codex, independent SIWC preview, and public API-key
+wire shapes are interchangeable. Keep any optional public API-key projection
+separate; future SIWC projection must enforce its own documented restrictions.
 
 **Exit:** an `httptest.Server` verifies exact outbound requests for text,
 suggestions, single/parallel tools, failures, and multi-turn continuations.
@@ -427,7 +466,8 @@ cancellation.
 
 For each request:
 
-1. authenticate and decode before streaming;
+1. validate upstream credential availability and decode before streaming
+   (there is no client-facing authentication);
 2. choose/generate session UUID;
 3. set SSE headers and session header;
 4. emit `status(processing)`;
@@ -448,33 +488,30 @@ calls must never be emitted to the CLI.
 **Exit:** sequence goldens, real-TCP tests, slow-client tests, and cancellation
 tests pass. There is exactly one upstream generation per Atuin request.
 
-### Phase 7 — OAuth credential lifecycle
+### Phase 7 — native Codex OAuth credential lifecycle
 
-Implement the supported SIWC flow established in Phase 0:
+Implement the Pi-style device flow established in Phase 0 natively in Go:
 
-- dynamic client registration;
-- stable persisted `ext_agent_host_id`;
-- PKCE S256;
-- high-entropy state and nonce;
-- exact loopback callback validation;
-- ID-token signature, issuer, audience, expiry, and nonce validation;
-- granted-scope verification;
-- access-token expiry handling;
-- serialized rotating refresh;
-- revocation/logout where documented;
+- the reviewed fixed Codex registration and device endpoints from Section 2;
+- bounded user-code acquisition and polling with pending/`slow_down` handling,
+  expiry, denial, malformed responses, cancellation, and transport timeouts;
+- authorization-code/PKCE-verifier exchange with the device redirect URI;
+- account-ID extraction and validation for the Codex account header (claim
+  decoding alone must not be described as OIDC signature verification);
+- access-token expiry handling and serialized rotating refresh;
+- atomic persistence of replacement tokens before allowing further use;
+- local logout/deletion and remote revocation only where verified supported;
 - explicit reauthentication on `invalid_grant`.
 
 Credential record includes:
 
-- schema version;
-- issued client ID;
-- stable host ID;
-- verified account identity;
-- ID token when retained for reauthorization hints;
+- schema version and provider/registration identity;
+- account ID bound to the token set;
 - access and refresh tokens;
-- granted scopes;
 - issue/save/expiry times; and
 - monotonically increasing local generation.
+
+Do not copy Pi's credential store or expose raw token responses in errors.
 
 Store atomically in the user's local configuration/state directory with owner-
 only directory/file permissions (`0700`/`0600`). An OS keyring integration is
@@ -485,15 +522,29 @@ V1 supports one local process and one credential writer. Use a lifetime file
 lock and stop the server before a separate login/logout command modifies the
 record. Multireplica and remote-host coordination are out of scope.
 
-Open the local browser and receive the documented loopback callback on the
-same machine. If a supported native device flow is confirmed, add it behind
-the same credential manager.
+Use an application-specific state directory, never the user's Pi/Codex paths.
+Print the activation URL and user code only to the interactive login user;
+never log/persist device codes or pending authorization responses. Local and
+SSH users approve through a browser without a local callback or tunnel.
 
-**Exit:** fake-OIDC tests cover callback attacks, state replay, expiry/skew,
-concurrent refresh, rotation, missing replacement refresh token, restart,
-revocation, invalid grants, atomic-write failure, permissions, symlinks,
-corruption, and lock contention. A live opt-in test covers login → inference →
-refresh → restart → inference → logout.
+**Exit:** fake-device/token-server tests cover pending, `slow_down`, expiry,
+denial, cancellation, malformed responses, PKCE exchange, account/header
+binding, expiry/skew, concurrent refresh, rotation, missing replacement refresh
+token, restart, invalid grants, local logout, supported revocation, atomic-write
+failure, permissions, symlinks, corruption, and lock contention. A live opt-in
+test covers this application's login → text and tool continuation → refresh →
+restart → inference → logout.
+
+### Future alternative — independent SIWC lifecycle (not a v1 phase gate)
+
+If revisited after organization policy/access allows it, separately validate
+independent SIWC dynamic client registration, stable `ext_agent_host_id`,
+browser Authorization Code + PKCE S256, state/nonce and OIDC verification,
+granted scopes, public models/inference, and SIWC-specific tool namespace and
+continuation shapes. Direct loopback and SSH-forwarded browser callbacks,
+OIDC attack tests, and DCR/host-ID persistence tests belong to that future
+feature, not the native Codex device implementation. The current policy denial
+must not be recorded as successful SIWC authorization, inference, or refresh.
 
 ### Phase 8 — real CLI and differential compatibility
 
@@ -612,12 +663,14 @@ No upstream suite covers the intended architecture. Add original tests for:
 - Responses SSE event types and interleaving;
 - item ID versus call ID;
 - `response.failed`/`incomplete`/premature EOF;
-- SIWC field restrictions (`store: false`, full input history, unsupported
-  fields omitted);
-- dynamic OAuth registration;
-- PKCE/OIDC verification;
-- token rotation and persistence;
-- device-flow behavior if supported;
+- Codex endpoint, account-header binding, request fields, and full-history
+  text/tool continuation matching the pinned adapter;
+- backend-specific projection separation from optional API-key and future SIWC
+  contracts (no assumed SIWC namespace rules in Codex);
+- native device polling, pending/`slow_down`, expiry, denial, and cancellation;
+- device authorization-code/PKCE exchange;
+- isolated credential storage, locking, token rotation, and persistence;
+- stateless replay and rejection of models needing unavailable opaque state;
 - backpressure and slow Atuin clients;
 - client disconnect propagation;
 - body/event/argument/concurrency limits;
@@ -683,7 +736,11 @@ A release is blocked if:
 - cancellation leaves upstream work or goroutines behind;
 - refresh rotation is not durably persisted;
 - memory gates fail; or
-- API-key mode is being presented as completion of the ChatGPT OAuth feature.
+- native device login, Codex text/tool continuation, or refresh gates remain
+  unproven for the intended model; or
+- existing Pi login, blocked SIWC consent, or optional separately billed API-key
+  mode is being presented as completion of this application's ChatGPT OAuth
+  feature.
 
 ## 10. Suggested agent work breakdown
 
@@ -695,7 +752,8 @@ only packages with stable interfaces:
 3. **Agent C:** tool schemas, prompt policy, safety checks.
 4. **Agent D:** Responses projection and fake provider.
 5. **Agent E:** Responses SSE parser and fuzz fixtures.
-6. **Agent F:** OAuth/OIDC and credential store after Phase 0 is settled.
+6. **Agent F:** native Codex device OAuth, refresh, and isolated credential
+   store after Phase 0 is settled.
 7. **Agent G:** real CLI PTY harness, differential oracle, resource tests.
 8. **Integrator:** turn reducer, event ordering, cancellation, and final review.
 
@@ -709,12 +767,16 @@ The project is complete when:
 
 - an unmodified supported Atuin CLI can list models and complete text,
   suggestion, and all local-tool workflows;
-- the service uses only public `/v1/responses` upstream;
-- SIWC OAuth works locally with the target ChatGPT Business workspace,
-  including refresh and restart;
-- the documented device-login decision is implemented or explicitly recorded
-  as unavailable for independent clients, with the supported local browser
-  login path shipped;
+- native Go inference uses the validated Codex Responses adapter directly,
+  with no Codex app-server or Pi subprocess;
+- native device login works with the target ChatGPT Business account using
+  this application's own isolated credentials, including refresh and restart;
+- local and SSH-based login need no callback forwarding and do not access
+  the user's Pi/Codex credential stores;
+- Phase 0 text, tool-continuation, refresh, and stateless/opaque-state model
+  gates pass; optional separately billed API-key mode is not a substitute;
+- pinned compatibility sources and private-backend volatility are documented;
+  deferred independent SIWC is not represented as implemented or proven;
 - all ported compatibility, new Responses/OAuth, differential, and real-CLI
   tests pass;
 - cancellation/backpressure/resource limits are proven;

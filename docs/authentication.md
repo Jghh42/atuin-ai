@@ -1,113 +1,85 @@
-# Authentication research and Phase 0 live proof
+# Authentication: initial Codex path and deferred SIWC
 
-## Status
+## Current decision
 
-**Phase 0 exit: BLOCKED — user login and live SIWC proof required.** No SIWC
-registration, OAuth exchange, model listing, inference, tool continuation, or
-refresh rotation was run. No intended model is yet validated. Existing
-Codex/Pi subscription login is not independent-client evidence. Public official
-documentation was retrieved over HTTPS on 2026-10-16; see
-[ADR 0001](decisions/0001-upstream-authentication.md) for references and the
-browser/device decision, and [ADR 0002](decisions/0002-stateless-responses-continuation.md)
-for replay requirements.
+[ADR 0004](decisions/0004-pi-style-codex-authentication.md) selects native
+Pi-style Codex device login and direct Codex-backend inference for the initial
+implementation. Independent SIWC browser login and public Responses inference
+remain a future feature, not an initial release gate. This replaces the former
+public-Responses-only rule; it is not merely a new login UI for the same token.
 
-The phase 1 HTTP shell and Go tooling are present, but do not implement auth
-or inference. No auth helper is shipped: safely validating OIDC and rotating
-credentials belongs in a reviewed proof harness or Phase 7 implementation.
+**Implementation status:** the phase 1 Atuin HTTP shell exists, but production
+login and inference do not. The `cmd/siwc-proof` harness is an isolated SIWC
+experiment, not a Codex device-login implementation. A separate isolated
+[`cmd/codex-proof` probe](codex-proof.md) now implements the selected device flow;
+its live outcomes must be recorded separately, not inferred from the code.
 
-## Prerequisites (all must be satisfied before the opt-in proof)
+## Initial login design
 
-- [ ] User explicitly approves login, requested permissions, use of the target
-  Business workspace/seat, and any plan usage. Confirm workspace policy permits
-  this integration. Never infer eligibility from another application's login.
-- [ ] A local interactive system browser and same-machine callback listener
-  are available; outbound HTTPS to `auth.openai.com` and `api.openai.com` works.
-  Do not use a remote harness callback assuming it reaches the user's browser.
-- [ ] Re-read current official sign-in, models/inference, accounts/sessions,
-  token, errors, and preview docs linked in ADR 0001. Record any changes.
-- [ ] Use an independently registered app with its actual stable app name and
-  stable host ID. Do not reuse Codex/Pi client IDs or credentials.
-- [ ] Have a reviewed OAuth/OIDC client or controlled harness that validates
-  signature via published JWKS, issuer, issued-client audience, expiry, nonce,
-  state and PKCE S256. Discovery is at
-  `https://auth.openai.com/.well-known/openid-configuration`.
-- [ ] Use an isolated, owner-only local state directory outside the checkout
-  (`0700`, files `0600`), atomic credential writes, a single writer and a clean
-  sandbox. Disable shell tracing, HTTP debug logs, browser callback/access logs,
-  history capture, telemetry and automatic retry. Keep secrets out of arguments.
-- [ ] Agree on a harmless synthetic local function (no file/shell access) and
-  current documented SIWC tool declaration shape. The preview says namespace
-  groups or `additional_tools`, not assumed flat function declarations.
+The Go executable will request a device code using the reviewed Codex OAuth
+registration, show the OpenAI activation page and user code privately, and poll
+until approval, denial, expiry or cancellation. The user can complete approval
+in a browser on another machine. No SSH callback tunnel is required. Exact
+commands are to be finalized during implementation; do not assume the SIWC
+harness or the phase 1 server already exposes them.
 
-## Opt-in execution checklist
+The server will own its credentials in a separate protected directory: owner-
+only directories/files (`0700`/`0600`), atomic saves and one lifetime writer
+lock. Never read/import existing Pi/Codex auth files, use browser cookies, or
+share their refresh-token session. Disable credential/device-code logging and
+never put tokens in process arguments or repository fixtures.
 
-1. **Register/sign in.** Start `http://127.0.0.1:<available-port>/auth/callback`
-   before opening the browser. Use fresh state, nonce and PKCE verifier;
-   initial client ID `dynamic_agent_client`, actual `agent_name_hint`, stable
-   `ext_agent_host_id`, resource `https://api.openai.com/v1`, and scopes
-   `openid profile email offline_access resource.invoke chatgpt.tokens.use.direct`.
-   Use the sign-in endpoint documented in ADR 0001. Never record the generated
-   authorization URL. Validate state even for denial. Require the callback's
-   issued client ID on registration; exchange the code using that ID, exact
-   callback URI, verifier and resource. No secret. Validate the ID token and
-   token-response granted scopes before inference. Refuse missing direct-use
-   permission; a valid identity alone is insufficient. Keep credentials local.
-2. **Capture catalog shape.** With this OAuth access token, request
-   `GET https://api.openai.com/v1/models`. Record only field names/types,
-   count/order semantics and selected non-sensitive model slug. Current docs
-   show a `models` array with `slug`, `display_name`, `visibility`, filtering
-   `visibility == "list"` while preserving order; do not assume API-key
-   `data[]` shape. Select a model actually returned for this workspace.
-3. **Proof A: text.** Send `POST https://api.openai.com/v1/responses` with the
-   OAuth Bearer token, selected model, an input array containing a harmless
-   synthetic greeting, `store: false`, `stream: true`. Consume text delta events
-   through explicit `response.completed`. Failed/incomplete/error/premature EOF
-   fails the proof, even if text appeared. No private backend or Chat Completions.
-4. **Proof B: tool and continuation.** Declare one harmless synthetic function
-   using the currently documented supported namespace/`additional_tools` form.
-   Request a call, buffer it to completion, and validate its name/JSON arguments.
-   Record separately the output-item ID and `call_id` (use synthetic aliases in
-   committed evidence). Supply a deterministic synthetic result without executing
-   model-selected commands. Open a **new** Responses request with full required
-   history, the assistant `function_call` and `function_call_output` using the
-   same `call_id`; set `store: false`, `stream: true`, omit `previous_response_id`.
-   Require a completed answer that uses that result. Record exact non-secret
-   declaration/projection shape and whether opaque reasoning items were needed.
-   A model requiring unrepresentable state does not pass the replay gate.
-5. **Refresh rotation.** Near token expiry per current docs, serialize a
-   form-encoded refresh to the documented token endpoint using
-   `grant_type=refresh_token`, issued client ID, saved refresh token and
-   `resource=https://api.openai.com/v1`; omit `scope` to retain the grant.
-   Honor any documented refresh timing constraint including `earliest_refresh_at`.
-   Require success and a replacement refresh token; compare in memory without
-   printing values/hashes. Atomically persist the new access token, replacement
-   refresh token, scopes, expiry and local generation together. Restart the
-   harness, load the replacement record and complete another inference. Never
-   deliberately replay an old refresh token. `invalid_grant` requires new login,
-   not a retry loop. Record timing and rotation/persistence booleans only.
-6. **Cleanup.** Revoke the renewable session via discovery's revocation endpoint
-   using the refresh token and issued client ID, then clear local tokens. Record
-   only whether remote revocation was confirmed; network failure is not proof
-   of revocation. Never commit the credential directory or raw capture files.
+The source-informed inference route is
+`https://chatgpt.com/backend-api/codex/responses`, with Bearer authentication
+and the Codex account header. This is **not** independent SIWC or the public
+`api.openai.com/v1/responses` route. Reference availability does not establish
+OpenAI support for our integration; policy and protocol changes remain risks.
+Atuin still owns all local-tool execution; no Codex/Pi subprocess is selected.
 
-## Safe evidence and exit review
+## Selected-backend Phase 0 validation
 
-Create a separately reviewed redacted proof report only after execution. Record:
-UTC execution date, harness revision, independent-registration boolean,
-user-confirmed workspace type (no name/ID), selected model, sanitized catalog
-schema, outbound non-secret body shapes, event names/order, completion flags,
-call-ID correlation/replay result, reasoning-state requirements, refresh
-rotation/atomic-save/restart outcomes, and cleanup status. Record failures
-honestly with sanitized status/error codes. Review manually before committing.
+- [x] Pin the reference package/version and inspected artifact hashes and review
+  registration, device/token endpoints, polling rules, headers and request/tool
+  shapes. See [source provenance](provenance/pi-codex.md); an exact upstream Git
+  commit is not asserted.
+- [x] Obtain explicit approval for a fresh, isolated device login and small
+  ChatGPT Business plan usage. Keep existing Pi/Codex sessions untouched.
+- [x] Complete fresh isolated device login and save credentials; a separate
+  process loaded the saved record. See [live evidence](proofs/codex-phase0.md).
+- [x] Complete streamed text through an explicit successful terminal event on
+  `gpt-6.1-sol`. Cancellation/error paths have fake-server/unit coverage; this
+  is not a live cancellation test.
+- [x] Complete a harmless synthetic function call and a second request with
+  `function_call_output` and complete required history, correlated by `call_id`.
+  Prove stateless replay; do not silently discard required reasoning state.
+- [x] Prove locked refresh rotation, atomic durable replacement save and
+  post-refresh inference in a new process (generation 2).
+- [ ] Cleanup follow-up, not a cleared operation: probe credentials are retained
+  privately. Remote revocation is not implemented/confirmed; never claim
+  revocation from local deletion alone.
+- [x] Retain only manually reviewed sanitized protocol shapes, outcomes and
+  selected model. No tokens, codes, raw URLs, account identifiers or screenshots.
 
-Never retain tokens (including ID tokens), codes, PKCE verifiers, state/nonce,
-raw authorization/callback URLs, account emails/subjects, host/client identifiers,
-private prompts, raw HTTP headers/bodies or browser screenshots in repository
-evidence. Diagnostic request IDs should stay in private support records.
-Public documentation URLs and a bare callback template are not login artifacts.
+The revised Phase 0 exit is cleared by this project's own isolated Codex
+probe, not by existing Pi usage. Production lifecycle/security hardening still
+belongs to later phases. Cleanup remains an explicit follow-up, not evidence of
+remote revocation. API-key inference is a separately billed fallback.
 
-Phase 0 exits only when text and tool replay pass on at least one intended
-model, the target workspace catalog shape and independent refresh rotation are
-captured, and the device decision is recorded. All live gates above are still
-unchecked. API-key tests, fake responses, and documentation research do not
-clear them. Project-license confirmation is a separate unresolved decision.
+## SIWC investigation and future work
+
+The independent browser/PKCE attempt reached agent naming and consent for basic
+profile information and ChatGPT-plan usage, then OpenAI returned an organization
+policy denial: `3p_delegated_access_policy_denied`. No successful token exchange,
+model listing, inference, tool continuation or refresh was demonstrated. The
+precise admin remedy and Business eligibility for this flow remain unresolved.
+This result does not establish that local tools are unsupported: OpenAI's
+[OSS guide](https://developers.openai.com/siwc/token-sharing-open-source) and
+[desktop-app cookbook](https://developers.openai.com/cookbook/articles/sign-in-with-chatgpt)
+explicitly describe locally hosted/personal projects and dynamic registration.
+
+Retain the [deferred SIWC design/checklist](authentication-siwc-deferred.md),
+[SIWC harness notes](siwc-proof.md), and
+[superseded ADR 0001](decisions/0001-upstream-authentication.md). Revisit when the
+target workspace's access is understood. SIWC must have its own credential and
+request contract; Codex tokens, endpoints and namespace assumptions are not
+interchangeable with SIWC. Do not silently switch existing users between them.

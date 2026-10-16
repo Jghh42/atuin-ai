@@ -5,12 +5,16 @@ materially affect compatibility, security, deployment, or provider behavior.
 
 Recorded Phase 0 decisions:
 
-1. [Independent SIWC browser auth; device login deferred](0001-upstream-authentication.md)
-   — accepted design, live validation blocked.
+1. [SIWC browser auth with loopback or SSH forwarding](0001-upstream-authentication.md)
+   — superseded for v1; SIWC deferred after organization policy denial.
 2. [Stateless Responses transcript replay](0002-stateless-responses-continuation.md)
-   — accepted design, intended-model/tool proof pending.
-3. [Apache-2.0 project-license proposal](0003-project-license-proposal.md)
-   — proposed only, explicit user confirmation required.
+   — accepted design; isolated Codex tool replay passed on `gpt-6.1-sol`,
+   production integration and other-model/SIWC validation remain separate.
+3. [Apache-2.0 project license](0003-project-license-proposal.md)
+   — accepted, explicitly confirmed by the user.
+4. [Native Pi-style Codex login initially; SIWC later](0004-pi-style-codex-authentication.md)
+   — accepted; isolated login, text/tool replay and refresh/restart proof passed;
+   production implementation remains pending.
 
 Future records may cover the localhost security boundary, supported released
 Atuin versions, and single-process credential persistence. Those are not

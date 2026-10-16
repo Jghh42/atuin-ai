@@ -10,13 +10,17 @@
 
 ## Phase 0 records
 
-- [Authentication research and live proof checklist](authentication.md) — exit blocked
+- [Current authentication decision and validation checklist](authentication.md) — native Codex isolated live proof passed
+- [Deferred SIWC checklist](authentication-siwc-deferred.md) and [probe notes](siwc-proof.md) — organization policy denial
 - [Compatibility baseline and empty fixture inventory](compatibility.md)
 - [Third-party provenance and pinned revisions](provenance/README.md)
-- [Project-license proposal](decisions/0003-project-license-proposal.md) — user confirmation pending
+- [Apache-2.0 project license](decisions/0003-project-license-proposal.md) — confirmed
 
-No server, Go module/tooling, or OAuth implementation is included in this
-records-only scope. Live SIWC proof remains required; documentation is not proof.
+The [phase 1 HTTP shell](operations.md) and Go tooling are implemented;
+production OAuth and inference are not. An isolated SIWC probe exists but did
+not complete authorization. The isolated Codex probe passed login, text/tool replay and refresh/restart;
+see [live evidence](proofs/codex-phase0.md) and
+[ADR 0004](decisions/0004-pi-style-codex-authentication.md).
 
 ## Architecture decisions
 

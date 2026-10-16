@@ -15,9 +15,10 @@ v0.4.0 baseline described in the specification.
 | Atuin client | Source-informed protocol/plan research; no code imported in Phase 0 | MIT; full license and Copyright (c) 2021 Ellie Huxtable retained in `LICENSES/Atuin-MIT.txt` |
 | OpenAI SIWC public documentation | Summarized/linked research in auth ADR/checklist, not vendored | No redistribution license inferred; not covered by the Apache/MIT source records |
 | Compatibility fixtures | None imported or derived yet | Empty [fixture manifest](../../testdata/compat/manifest.json) |
+| Installed `@earendil-works/pi-ai` 1.1.0 | Source-only research for native Codex auth/inference decision; no implementation copied by the decision | MIT; artifact paths/hashes and future import requirements in [ADR 0004](../decisions/0004-pi-style-codex-authentication.md) |
 
-This is a reference-source inventory, not a dependency SBOM. There is no Go
-module or runtime dependency graph yet. No root NOTICE was present in the
+This is a reference-source inventory, not a dependency SBOM. The Go module's
+runtime dependency is recorded in [dependency notices](dependencies.md). No root NOTICE was present in the
 three pinned upstream trees; this says nothing about notices in future import
 paths or transitive dependencies. Apache license boilerplate is not a basis
 for inventing an upstream copyright holder. Preserve any actual file headers
@@ -40,6 +41,6 @@ Before copying or adapting code, prompts, tool descriptions, tests or fixtures:
    treat the material as available test coverage. Chat Completions recordings
    are not Responses correctness evidence.
 
-See [project-license proposal](../decisions/0003-project-license-proposal.md).
-The files under `LICENSES/` are third-party reference texts, not a license grant
-for the repository's original work.
+See the [accepted project-license decision](../decisions/0003-project-license-proposal.md)
+and root [LICENSE](../../LICENSE) for project-owned material. The files under
+`LICENSES/` retain third-party license texts; their original terms still apply.

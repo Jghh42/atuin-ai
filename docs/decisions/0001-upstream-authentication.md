@@ -1,7 +1,16 @@
-# ADR 0001: Independent SIWC browser authentication; device login deferred
+# ADR 0001: SIWC browser authentication with loopback or SSH forwarding
 
-- Status: accepted design; live validation blocked
+- Status: superseded for initial implementation by [ADR 0004](0004-pi-style-codex-authentication.md); retained for deferred SIWC work
 - Date: 2026-10-16
+
+## Subsequent result and deferral
+
+A later live probe reached agent naming and ChatGPT-plan consent, then returned
+`3p_delegated_access_policy_denied` and an organization-access message. No
+successful token exchange or inference was demonstrated. The user selected
+native Pi-style Codex device login initially; independent SIWC remains desired
+for later. The decision below records the earlier design, not active v1 rules.
+See [the current authentication decision](0004-pi-style-codex-authentication.md).
 
 ## Context
 
@@ -29,9 +38,12 @@ tool examples work here; exact tool wire shape remains a live proof gate.
 
 ## Decision
 
-Use independently registered SIWC browser Authorization Code + PKCE S256 on
-the same machine as the service, with a `127.0.0.1` HTTP callback. Start the
-listener before opening the browser. Persist a stable `ext_agent_host_id`.
+Use independently registered SIWC browser Authorization Code + PKCE S256 with
+a `127.0.0.1` HTTP callback on the service machine. Start the listener before
+opening the browser. On a remote development machine, the browser runs on the
+user's workstation and reaches that callback through an explicit SSH local
+port forward; the callback never binds to a non-loopback address. Persist a
+stable `ext_agent_host_id`.
 For first registration use `dynamic_agent_client` plus our actual consistent
 `agent_name_hint`; exchange using the issued client ID returned by the
 callback, never the registration entrypoint ID. Reauthorization uses that
@@ -46,11 +58,11 @@ scopes, not callback hints, to authorize plan inference. No client secret or
 partner API key is required by the documented direct flow.
 
 The official independent-client flow reviewed documents browser/loopback, not
-native device authorization. **Device login is deferred/unavailable for this
-project unless OpenAI documents or confirms support for independent dynamic
-clients.** This is a supported-path decision, not proof that no such endpoint
-exists. Do not probe or borrow Codex client IDs, device endpoints, private
-credential stores, cookies, or private ChatGPT backend routes.
+native device authorization. **V1 supports only browser Authorization Code +
+PKCE.** Device login and credential-file import are deferred; they are not
+release gates. This is a supported-path decision, not proof that no device
+endpoint exists. Do not probe or borrow Codex client IDs, device endpoints,
+private credential stores, cookies, or private ChatGPT backend routes.
 
 Use only public `/v1/models` and `/v1/responses`. OAuth is a credential source
 behind a narrow interface, not a dependency of Atuin protocol handling.
@@ -58,18 +70,24 @@ API-key development mode is separate and cannot satisfy SIWC exit gates.
 
 ## Alternatives considered
 
-- Native device flow: preferred later if independently supported; not established.
-- Codex app-server subprocess: optional future experiment, not selected; adds a
-  binary and tool-orchestration boundary that must be reviewed separately.
-- Remote VM credential transfer: documented upstream but unnecessary for local
-  v1 and outside this decision's implementation scope.
+- Native device flow: not documented for independent SIWC clients and deferred.
+- Codex app-server subprocess: not selected; it adds a binary and a conflicting
+  tool-orchestration boundary.
+- Credential transfer/import: documented for self-hosted VMs but deferred
+  because SSH callback forwarding gives v1 one login mechanism.
+- Public callback listener: rejected; remote development must use loopback plus
+  SSH forwarding.
 
 ## Consequences
 
-Browser access and explicit user login/consent are prerequisites. A single
-credential writer must serialize rotating refresh and atomically persist the
-replacement token set with owner-only permissions. Full lifecycle engineering
-belongs to Phase 7, not this documentation change. See the
-[live proof checklist](../authentication.md). Phase 0 remains blocked until
-independent login, models, streamed text, tool continuation, and refresh are
-proven. No credentials or authorization URLs belong in evidence records.
+Browser access and explicit user login/consent are prerequisites. Remote
+development additionally requires an SSH local port forward kept open through
+the code exchange. A single credential writer must serialize rotating refresh
+and atomically persist the replacement token set with owner-only permissions.
+Full lifecycle engineering
+belongs to the future SIWC lifecycle integration, not this historical record.
+See the [deferred SIWC checklist](../authentication-siwc-deferred.md). The former
+SIWC Phase 0 gate required independent login, models, streamed text, tool
+continuation and refresh. It is now deferred by ADR 0004, not an active blocker
+or a successful SIWC result. The revised Codex gate passed separately. No
+credentials or authorization URLs belong in evidence records.
