@@ -4,14 +4,19 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"time"
 
+	"github.com/Jghh42/atuin-ai/internal/application"
 	"github.com/Jghh42/atuin-ai/internal/config"
+	"github.com/Jghh42/atuin-ai/internal/credentials"
 	"github.com/Jghh42/atuin-ai/internal/httpserver"
 )
 
@@ -26,9 +31,21 @@ func main() {
 	}
 }
 
+type commandDeps struct {
+	state     string
+	transport http.RoundTripper
+	display   func(credentials.DevicePrompt) error
+}
+
 func run(ctx context.Context, args []string, stderr io.Writer) error {
+	return runWith(ctx, args, stderr, commandDeps{})
+}
+func runWith(ctx context.Context, args []string, stderr io.Writer, deps commandDeps) error {
+	if len(args) > 0 && args[0] == "auth" {
+		return runAuth(ctx, args[1:], stderr, deps)
+	}
 	if len(args) == 0 || args[0] != "serve" {
-		return errors.New("usage: atuin-ai-server serve [--config PATH]")
+		return errors.New("usage: atuin-ai-server serve [--config PATH] | auth login|status|logout")
 	}
 	flags := flag.NewFlagSet("serve", flag.ContinueOnError)
 	// Do not echo arbitrary command line values into logs.
@@ -45,7 +62,12 @@ func run(ctx context.Context, args []string, stderr io.Writer) error {
 		return err
 	}
 	logger := slog.New(slog.NewJSONHandler(stderr, nil))
-	server, err := httpserver.New(cfg, logger)
+	runtime, err := openRuntime(cfg, deps)
+	if err != nil {
+		return err
+	}
+	defer runtime.Close()
+	server, err := httpserver.NewWithRuntime(cfg, logger, runtime.HTTP)
 	if err != nil {
 		return errors.New("invalid server configuration")
 	}
@@ -54,6 +76,86 @@ func run(ctx context.Context, args []string, stderr io.Writer) error {
 		return errors.New("cannot open IPv4 loopback listener; check whether the configured port is already in use")
 	}
 	return server.Serve(ctx, listener)
+}
+
+func openRuntime(cfg config.Config, deps commandDeps) (*application.Runtime, error) {
+	path := deps.state
+	if path == "" {
+		var err error
+		path, err = application.StateDirectory()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return application.New(path, cfg, deps.transport)
+}
+func runAuth(ctx context.Context, args []string, out io.Writer, deps commandDeps) error {
+	if len(args) != 1 || (args[0] != "login" && args[0] != "status" && args[0] != "logout") {
+		return errors.New("usage: atuin-ai-server auth login|status|logout; stop server before auth commands")
+	}
+	display := deps.display
+	if args[0] == "login" && display == nil {
+		// /dev/tty is the controlling terminal, not redirected stdout/stderr/logs.
+		tty, err := os.OpenFile("/dev/tty", os.O_WRONLY, 0)
+		if err != nil {
+			return errors.New("login requires an interactive controlling terminal")
+		}
+		defer tty.Close()
+		display = func(p credentials.DevicePrompt) error {
+			_, e := fmt.Fprintf(tty, "Open %s and enter code: %s\n", credentials.ActivationURL, p.UserCode)
+			return e
+		}
+	}
+	cfg := config.Default()
+	if args[0] == "login" {
+		var err error
+		cfg, err = loadConfiguration("")
+		if err != nil {
+			return err
+		}
+	}
+	runtime, err := openRuntime(cfg, deps)
+	if err != nil {
+		return err
+	}
+	defer runtime.Close()
+	switch args[0] {
+	case "status":
+		status := runtime.Manager.Status()
+		switch {
+		case status.ReauthenticationRequired:
+			_, err = fmt.Fprintln(out, "Reauthentication required (local session unusable)")
+		case status.LoggedIn:
+			_, err = fmt.Fprintf(out, "Logged in (local record; upstream acceptance not verified); generation=%d auth_epoch=%d expires_at=%s\n", status.Generation, status.AuthEpoch, status.ExpiresAt.Format(time.RFC3339))
+		default:
+			_, err = fmt.Fprintln(out, "Logged out")
+		}
+	case "logout":
+		err = runtime.Manager.Logout(ctx)
+		if err == nil {
+			_, err = fmt.Fprintln(out, "Local credentials deleted; remote revocation is not supported")
+		}
+	case "login":
+		err = runtime.Manager.Login(ctx, display)
+		if err == nil {
+			// Saving login is successful independently of discovery. Do not fabricate
+			// models or roll back a rotating session on an empty/ineligible catalog.
+			if _, e := runtime.Catalog.Get(ctx); e != nil {
+				_, err = fmt.Fprintln(out, "Login saved successfully; models unavailable (discovery or eligibility failed)")
+			} else {
+				_, err = fmt.Fprintln(out, "Login saved successfully; model discovery available")
+			}
+		}
+	}
+	if err != nil { // Writer/OS errors must not leak paths or caller text.
+		switch err {
+		case credentials.ErrStore, credentials.ErrOAuth, credentials.ErrDenied, credentials.ErrExpired, credentials.ErrReauth, credentials.ErrUnavailable:
+			return err
+		default:
+			return errors.New("authentication command failed")
+		}
+	}
+	return nil
 }
 
 func loadConfiguration(path string) (config.Config, error) {

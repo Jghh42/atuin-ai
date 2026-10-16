@@ -26,7 +26,14 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          check-latest: false
           cache: true
+      - name: Verify and pin exact Go toolchain
+        run: |
+          toolchain="$(awk '$1 == "go" { print "go" $2; exit }' go.mod)"
+          test "$(GOTOOLCHAIN=local go env GOVERSION)" = "$toolchain"
+          printf 'GOTOOLCHAIN=%s\n' "$toolchain" >> "$GITHUB_ENV"
+          go version
       - run: go test '${{ matrix.package }}' -run='^$' -fuzz='${{ matrix.target }}' -fuzztime=2m -parallel=2
       - uses: actions/upload-artifact@v4
         if: failure()

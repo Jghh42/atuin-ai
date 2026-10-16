@@ -16,6 +16,7 @@ import (
 	"github.com/Jghh42/atuin-ai/internal/atuin"
 	"github.com/Jghh42/atuin-ai/internal/catalog"
 	"github.com/Jghh42/atuin-ai/internal/config"
+	"github.com/Jghh42/atuin-ai/internal/credentials"
 )
 
 // Server owns admission control and downstream HTTP writes.
@@ -24,7 +25,8 @@ type Server struct {
 	log  *slog.Logger
 }
 
-// New starts safely unavailable until Phase 7 wires a credential lifecycle.
+// New remains safely unavailable without explicit runtime dependencies. The
+// executable composes the production lifecycle via NewWithRuntime.
 func New(cfg config.Config, logger *slog.Logger) (*Server, error) {
 	return NewWithCatalog(cfg, logger, catalog.New(nil, nil, cfg.DefaultModel, nil))
 }
@@ -98,6 +100,10 @@ func newWithRuntime(cfg config.Config, logger *slog.Logger, runtime Runtime, dec
 		if runtime.Provider == nil || runtime.Credentials == nil || preflight.Err() != nil {
 			writeError(w, http.StatusServiceUnavailable, "upstream_unavailable", "Upstream login required")
 			return
+		}
+		// Synthetic catalog sources may omit identity; production Cache never does.
+		if id := snapshot.Identity(); id.Provider != "" {
+			r = r.WithContext(credentials.BindIdentity(r.Context(), id))
 		}
 		streamChat(w, r, runtime, request)
 	}))

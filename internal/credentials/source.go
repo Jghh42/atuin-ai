@@ -1,5 +1,5 @@
-// Package credentials defines the provider-bound boundary; production login is
-// deliberately deferred to Phase 7. No probe or third-party store is imported.
+// Package credentials owns this application's native Codex credential lifecycle.
+// No probe or third-party store is imported.
 package credentials
 
 import "context"
@@ -9,6 +9,21 @@ import "context"
 type Identity struct {
 	Provider, Account string
 	Epoch             uint64
+}
+
+func (Identity) String() string   { return "[private credential identity]" }
+func (Identity) GoString() string { return "[private credential identity]" }
+
+type identityKey struct{}
+
+// BindIdentity pins discovery's identity through the later inference lookup.
+// A lifecycle change must reject the turn, never rebind it to another account.
+func BindIdentity(ctx context.Context, id Identity) context.Context {
+	return context.WithValue(ctx, identityKey{}, id)
+}
+func MatchesIdentity(ctx context.Context, id Identity) bool {
+	expected, ok := ctx.Value(identityKey{}).(Identity)
+	return !ok || expected == id
 }
 
 // Credential contains secrets and must not be logged.

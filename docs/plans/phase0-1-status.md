@@ -56,8 +56,11 @@ Validation on Linux amd64 with Go 1.26.9:
   requests, saturation/recovery, connection admission, graceful drain and forced
   cancellation/connection closure.
 
-Go 1.26.9 is the minimum because the initially installed 1.26.8 triggered
-standard-library vulnerability findings. No phase 2+ work has started.
+At this historical checkpoint Go 1.26.9 was the minimum because the initially
+installed 1.26.8 triggered standard-library vulnerability findings, and no
+phase 2+ work had started. The current minimum/pin is now Go 1.27.2; see the
+[later fuzz-toolchain diagnosis](fuzz-toolchain-diagnosis.md). The validation
+environment/results above remain the original Go 1.26.9 evidence.
 
 ## Owner review needed
 

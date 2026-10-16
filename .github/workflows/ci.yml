@@ -12,7 +12,14 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          check-latest: false
           cache: true
+      - name: Verify and pin exact Go toolchain
+        run: |
+          toolchain="$(awk '$1 == "go" { print "go" $2; exit }' go.mod)"
+          test "$(GOTOOLCHAIN=local go env GOVERSION)" = "$toolchain"
+          printf 'GOTOOLCHAIN=%s\n' "$toolchain" >> "$GITHUB_ENV"
+          go version
       - name: Formatting
         run: test -z "$(gofmt -l cmd internal)"
       - run: make check

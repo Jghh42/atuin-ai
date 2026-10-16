@@ -39,7 +39,11 @@ references; independently authored Go code/fixtures, no runtime dependency or
 upstream implementation text copied. Phase 5 native SSE parsing likewise uses
 this pinned shared adapter as a protocol reference; Go parser/tests and safe
 synthetic fixtures are independently written, without copied implementation
-text or upstream fixtures. Retain the same MIT attribution.
+text or upstream fixtures. Phase 7 production device OAuth uses the pinned
+Codex/device-code artifacts as protocol references with stricter polling/error
+precedence, private display and durable lifecycle hardening; no browser/SIWC
+flow, credential store or runtime is imported. Tests are original synthetic Go
+data. Retain the same MIT attribution.
 
 Phase 2 decoder behavior and independently recreated tests/fixtures are
 source-informed by atuinsh/atuin-ai-core v0.4.0, Apache-2.0, commit
@@ -68,6 +72,12 @@ was copied; Go code/tests and cache policies are independently authored.
 Source hashes and differences: docs/provenance/codex-discovery.md. Retained
 license and upstream NOTICE: LICENSES/OpenAI-Codex-Apache-2.0.txt and
 LICENSES/OpenAI-Codex-NOTICE.txt.
+
+Phase 7 links golang.org/x/sys v0.49.0 without source modification,
+BSD-style license, Copyright 2009 The Go Authors. Its unmodified LICENSE and
+PATENTS are retained as LICENSES/Go-x-sys-BSD.txt and Go-x-sys-PATENTS.txt;
+include them with redistributed binaries. Integrity/provenance:
+docs/provenance/dependencies.md.
 
 The user explicitly approved Apache-2.0 for project-owned material; see
 docs/decisions/0003-project-license-proposal.md.

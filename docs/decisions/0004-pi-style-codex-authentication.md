@@ -86,8 +86,11 @@ It is not subscription-login validation.
 - Device polling must handle server intervals, pending/slow-down responses,
   expiry, denial and cancellation. Refresh rotation must be serialized and
   durably saved. All tokens and device artifacts remain secret.
-- Current production server still has no login or inference. This ADR is a
-  documentation decision, not implementation or successful live proof.
+- At acceptance the production server had no login or inference. Phase 7 now
+  implements the lifecycle/composition as an independently reviewed code
+  checkpoint cleared for delivery; fresh production live login/lifecycle
+  remains NOT PASSED. This ADR alone is
+  neither implementation nor successful live proof.
 - Subsequent isolated probe validation passed fresh device login, streamed
   text, harmless tool continuation and refresh/restart on `gpt-6.1-sol`; see
   [live evidence](../proofs/codex-phase0.md). That clears the revised Phase 0

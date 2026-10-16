@@ -215,7 +215,7 @@ func (c RequestClient) Open(ctx context.Context, req provider.Request) (*http.Re
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
-	if err != nil || credential.Identity.Provider != "codex" || credential.Identity.Account == "" || credential.AccessToken == "" {
+	if err != nil || !credentials.MatchesIdentity(ctx, credential.Identity) || credential.Identity.Provider != "codex" || credential.Identity.Account == "" || credential.AccessToken == "" {
 		return nil, ErrCredentials
 	}
 	url := c.URL

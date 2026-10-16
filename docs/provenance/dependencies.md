@@ -32,8 +32,43 @@ Copyright (c) 2019 Oliver Kuederle.
 SHA-256: `a59885f5f0f3b3c07cf9444db5fe399b6f0791eac82055f7b85cc65500551039`.
 Module integrity is pinned in `go.sum`; include the license with binaries.
 
-Staticcheck and govulncheck are pinned development commands in `Makefile`,
-not linked runtime dependencies. Go itself and its standard library carry
+Phase 7 links [`golang.org/x/sys` v0.49.0](https://pkg.go.dev/golang.org/x/sys@v0.49.0)
+without modification for Linux/macOS descriptor-relative nofollow opens, metadata
+checks, atomic rename/unlink and lifetime Unix flock. It is a direct module
+pinned by `go.mod`/`go.sum`, not vendored. Unmodified upstream BSD license and
+patent grant are retained at `LICENSES/Go-x-sys-BSD.txt` (Copyright 2009 The Go
+Authors) and `LICENSES/Go-x-sys-PATENTS.txt`. SHA-256 respectively:
+`911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad` and
+`96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc`.
+Include both with redistributed binaries. No encryption/keyring/Windows or
+multireplica feature is added by this dependency.
+
+Development commands are pinned exactly in `Makefile`, never linked as
+application/runtime dependencies:
+
+- Staticcheck **v0.8.2**, upstream release **2026.2.2**, the latest stable release
+  verified on 2026-10-16. Its [maintained release notes](https://github.com/dominikh/go-tools/releases/tag/2026.2.2)
+  explicitly support Go 1.27.2 export data. Module checksum:
+  `h1:+jPbCzuYxYrcoOvCecYUFDj+XJQRmzIhJmlbpps21Zk=`; upstream tag commit
+  `54455593555daf6bfcf3c480faaada7de3145357`.
+- `golang.org/x/vuln/cmd/govulncheck` **v1.9.0**, current stable module verified
+  from official Go module metadata/tagged [Go source](https://go.googlesource.com/vuln/+/refs/tags/v1.9.0/).
+  Module checksum `h1:12VaqnI9kJfqwRoPptxoqsUhQtdfrSbdksT7X/KY/sc=`; upstream
+  tag commit `e672cbe8fbc8c76e28fcb6db0efd9ce354e0dac5`. Its x/tools v0.52.0
+  dependency supports Go 1.27 syntax/export v5, unlike the old scanner's v0.29.0.
+- The `golang.org/x/tools/go/analysis/passes/nilness/cmd/nilness` command is pinned
+  at **v0.52.0** (official [tag](https://go.googlesource.com/tools/+/refs/tags/v0.52.0/),
+  checksum `h1:ryxg4U63oaUYk7uOLTF37n43f4qgtGvqV4Ioit1BaEs=`). Staticcheck 2026.2
+  [retired SA5011 upstream](https://staticcheck.dev/changes/2026.2/#changed-checks)
+  and recommends nilness as a similar alternative. We run that maintained
+  analysis explicitly rather than quietly omitting nil-dereference checking;
+  this is not a claim that the analyzers have identical diagnostics.
+
+The old Staticcheck v0.7.0 export-data error and govulncheck v1.1.4 SSA panic
+were preserved before choosing compatible released tools. No runtime SDK module
+version, app dependency graph or go.sum is widened by these `go run ...@version`
+commands. Toolchain selection/first failure evidence and validation are in the
+[sourced diagnosis](../plans/fuzz-toolchain-diagnosis.md). Go itself and its standard library carry
 their upstream BSD-style license in the installed toolchain's `LICENSE`.
 Project-owned material is licensed under Apache-2.0 as recorded in ADR 0003;
 this does not change dependency license terms.

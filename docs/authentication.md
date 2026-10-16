@@ -8,26 +8,115 @@ implementation. Independent SIWC browser login and public Responses inference
 remain a future feature, not an initial release gate. This replaces the former
 public-Responses-only rule; it is not merely a new login UI for the same token.
 
-**Implementation status:** the phase 1 Atuin HTTP shell exists, but production
-login and inference do not. The `cmd/siwc-proof` harness is an isolated SIWC
-experiment, not a Codex device-login implementation. A separate isolated
-[`cmd/codex-proof` probe](codex-proof.md) now implements the selected device flow;
-its live outcomes must be recorded separately, not inferred from the code.
+**Implementation status:** Phase 7 implements production device login, storage,
+rotating refresh and logout, composing the Phase 6 SSE pipeline with one shared
+credential manager/catalog. Initial reviews required shutdown-join and Unicode-
+fold fixes plus formatter hardening. Both independent re-reviews cleared those
+fixes with no new blockers; independent post-fix verification also passed. Fresh
+production login/live lifecycle is **NOT PASSED**, and the live eligible catalog
+remains **NOT PASSED**. The isolated [`cmd/codex-proof`](codex-proof.md) outcomes,
+including a [fresh retained-session recheck](proofs/codex-retained-probe-2026-10-16.md),
+are PROBE evidence only; no proof-store or third-party credentials are imported. The SIWC harness is a separate deferred experiment.
 
 ## Initial login design
 
-The Go executable will request a device code using the reviewed Codex OAuth
-registration, show the OpenAI activation page and user code privately, and poll
-until approval, denial, expiry or cancellation. The user can complete approval
-in a browser on another machine. No SSH callback tunnel is required. Exact
-commands are to be finalized during implementation; do not assume the SIWC
-harness or the phase 1 server already exposes them.
+`atuin-ai-server auth login` explicitly requests a device code with the reviewed
+fixed registration `app_EMoamEEZ73f0CkXaXp7hrann`. It displays only the fixed
+`https://auth.openai.com/codex/device` URL and the user code on the controlling
+terminal (`/dev/tty`), not stdout/stderr logs. Noninteractive login is refused.
+Approval may occur in a browser on another machine; no callback listener/tunnel
+is used. `auth status` reports local state only, without refreshing; `auth logout`
+deletes local secrets durably. Stop `serve` before any separate auth command:
+they all share one nonblocking lifetime Unix file lock.
 
-The server will own its credentials in a separate protected directory: owner-
-only directories/files (`0700`/`0600`), atomic saves and one lifetime writer
-lock. Never read/import existing Pi/Codex auth files, use browser cookies, or
-share their refresh-token session. Disable credential/device-code logging and
-never put tokens in process arguments or repository fixtures.
+State is NEW application-owned `os.UserConfigDir()/atuin-ai/credentials` (Linux:
+`$XDG_CONFIG_HOME/atuin-ai/credentials`, or `~/.config/atuin-ai/credentials`;
+macOS: `~/Library/Application Support/atuin-ai/credentials`). Configuration
+remains optional, with only port/default_model. There is no token-import or
+upstream URL setting. Never read/import existing Pi/Codex/proof auth files,
+browser cookies, or their rotating session. No pending codes, authorization
+codes/verifiers or raw token responses are logged or persisted.
+
+The application directory is euid-owned 0700, regular records/lock 0600 with one
+hard link. Every ancestor is walked with descriptor-relative nofollow opens;
+foreign ownership, writable non-sticky ancestry and symlinks are rejected. Only
+root-owned sticky temporary ancestry is permitted for isolated roots. All later
+operations use the anchored directory descriptor. Same-UID processes/root are
+trusted; this is not protection against a compromised account. Linux and macOS
+are targeted; no Windows or network-filesystem/multireplica guarantee is made.
+Plaintext private files are not encryption, secure erasure or an OS keyring.
+
+### Rotation and restart safety
+
+`Current` returns an atomic provider/account/auth-epoch/access-token pair.
+Refresh starts at access expiry minus 60 seconds, is serialized/coalesced, and
+has a 30-second worker budget with 20-second HTTP requests. Native transport is
+HTTP/1-only, does not pool connections, and allows at most six per host; this
+avoids standard-library raw unsolicited-idle-response/HTTP2 diagnostic logs.
+Redirects are refused. Individual waiter
+cancellation does not cancel other waiters or an in-progress rotation. Manager
+shutdown cancels HTTP and joins workers while retaining the store lock. Every
+concurrent Close caller joins the SAME complete shutdown, including detached
+persistence and store/flock release, and receives the same store-close result;
+source unavailability during closing does not mean shutdown is already complete.
+
+Before ANY external refresh, a secret-free `intent.json` is atomically written,
+file-synced, renamed and directory-synced. It overrides the old token record on
+restart. There is exactly one refresh attempt: timeout/cancellation, ambiguous
+transport failures, invalid_grant, account change, missing/unchanged replacement
+refresh token or post-rotation persistence failure require explicit reauthentication.
+If intent persistence fails BEFORE HTTP, no refresh was sent; restart may safely
+retain the prior session in that case. Old refresh tokens are NEVER retried
+after an ambiguous rotation. The intent also
+covers explicit login and logout. Starting fresh login makes the previous local
+session unavailable even if approval is subsequently cancelled.
+
+A replacement record is completely written to an exclusive same-directory 0600
+temporary file, synced, renamed and directory-synced before the intent is
+removed and its removal directory-synced. It is published only after completion.
+If intent cleanup fails, the current manager remains unavailable; after restart
+either the intent blocks use or the ALREADY durable replacement is available,
+never the old refresh token. Once tokens arrive, persistence has a separate
+five-second budget independent of caller cancellation/shutdown. The budget is
+checked between filesystem syscalls; an OS-stalled synchronous fsync cannot be
+forcibly timed out safely. No background unjoined save or fallback use is allowed.
+
+Records validate bounded strict JSON, schema/provider/registration, token and
+account shape/binding, dates and counters. Access claim decoding is **NOT OIDC
+signature verification**; tokens come only from the fixed HTTPS token endpoint.
+Expiry uses the earlier of expires_in and the access-token exp claim. Refresh
+requires the same account and a new refresh token. Generation increases on every
+lifecycle transaction, including intents/tombstones; fresh login increases a
+separate auth_epoch even for the same account. Rotation preserves auth_epoch.
+JSON duplicate detection uses Unicode SimpleFold equivalence matching Go's
+struct-field aliases, including long s (ſ) and Kelvin sign (K); lowercasing alone
+is insufficient. Persisted field names remain exact, and numbers remain lossless.
+Secret structs implement fmt.Formatter plus String/GoString and slog.LogValuer:
+unsupported formatting verbs emit only a fixed redaction label. Intentional
+private-store JSON serialization is unchanged.
+
+Counter overflow fails rather than wrapping; failed in-memory reservations may
+leave counter gaps, not backward/reused values. Private orphan temporary records
+are safely removed while holding the lifetime lock; unsafe entries fail closed.
+
+Logout replaces the secret-bearing record with a secret-free tombstone retaining
+counters. This is durable local deletion, not forensic media erasure. No verified
+remote revocation endpoint exists here; none is guessed or invoked. Pending
+intents require explicit new login or logout, never manual replay of old tokens.
+A corrupt/unsafe store is unavailable and requires operator investigation; do
+not edit records, copy credentials or delete/replace the lock inode while any
+process is running.
+
+### Catalog / inference binding
+
+The source publishes unavailable/new state, then synchronously invalidates its
+single bound catalog outside state locks before finishing lifecycle operations.
+Successful ordinary rotation preserves catalog identity; refresh failures clear
+it. In-flight old catalog results cannot repopulate after logout/reauth. The
+catalog identity is also pinned through the later inference credential lookup:
+a request resolved for one account/epoch cannot silently use another's token.
+Successful saved login is NOT rolled back if discovery fails; the command reports
+`Login saved successfully; models unavailable`. No eligible models are invented.
 
 The source-informed inference route is
 `https://chatgpt.com/backend-api/codex/responses`, with Bearer authentication
@@ -61,9 +150,62 @@ Atuin still owns all local-tool execution; no Codex/Pi subprocess is selected.
   selected model. No tokens, codes, raw URLs, account identifiers or screenshots.
 
 The revised Phase 0 exit is cleared by this project's own isolated Codex
-probe, not by existing Pi usage. Production lifecycle/security hardening still
-belongs to later phases. Cleanup remains an explicit follow-up, not evidence of
-remote revocation. API-key inference is a separately billed fallback.
+probe, not by existing Pi usage. Phase 7 production lifecycle/security hardening
+is now implemented and independently reviewed, not live-validated. Cleanup
+remains an explicit follow-up, not evidence of remote revocation. API-key inference is a separately billed fallback.
+
+## Production live validation — opt-in, NOT PASSED
+
+No production login or live calls were attempted during Phase 7 implementation
+while the user was AFK. Phase 0 proof is NOT a production pass. The historical
+eligible-catalog probe returned no replay-proven model; one later candidate
+probe failed before text completion, and no retries/alternate probes are
+permitted by this checkpoint. Do not expand eligibility or fabricate a catalog.
+
+The user is now available and has authorized their own login, its automatic
+discovery and the initial serve/models workflow. Both security-fix re-reviews
+and independent post-fix verification are cleared; the coordinator will invite
+the user to run the flow in their own terminal. No outcome is inferred here.
+[Exact bounded attended login/catalog commands](plans/phase7-attended-login-handoff.md)
+are instructions, not executed-test evidence. The user must type login in their
+OWN controlling terminal without capture or sharing the device code. The handoff
+keeps unavailable discovery blocked and does not start Phase 8 real-CLI testing.
+
+With security-fix re-review cleared, the existing user authorization covers
+login and ordinary bounded metadata reads inherent in its initial serve/models
+workflow without repeated approvals. Later inference/probe work remains bounded
+separately. The broader lifecycle checklist is:
+
+1. Build (`make build`), stop any server, and use an isolated, private application
+   config directory (e.g. an operator-created 0700 `XDG_CONFIG_HOME` on Linux;
+   never reuse Pi/Codex/proof directories). Run `auth status`, then `auth login`
+   in an interactive terminal. Approve the fixed activation URL/code privately.
+   Never capture the terminal, code, raw responses or state files in evidence.
+2. Confirm the command distinguishes saved login from unavailable models.
+   Unavailable discovery remains a BLOCKED eligible-catalog gate, not a failed
+   save or permission to retry login, probe candidates or expand eligibility.
+3. Run `serve` without model configuration and make the authorized initial local
+   models GET, including if the login-time metadata read was unavailable. This
+   ordinary server-time catalog fetch is included in the existing authorization;
+   record both outcomes separately, without polling. If no eligible model is
+   available, the gate remains BLOCKED. Only with eligible discovery and separately
+   bounded inference approval, verify completed production streamed text, a
+   harmless synthetic tool call and full-history tool-result continuation.
+   Do not start Phase 8 real-CLI/differential testing from this checklist. Retain
+   only sanitized outcomes and model ID.
+4. Stop the server before `auth status`; record only generation/auth_epoch and
+   expiry. Restart and keep the session until expiry-minus-60s, then issue one
+   approved small inference to trigger rotation. Stop again and check generation
+   increased while auth_epoch stayed unchanged. Do not force refresh by editing
+   files or copying old tokens. Restart once more and verify one inference.
+5. Stop, run `auth logout`, then `auth status`. Restart: models/chat must be 503.
+   Record local deletion only, not remote revocation. Do not inspect private
+   file contents to demonstrate deletion. Clean any isolated test environment
+   only after all processes stop; preserve the application lock inode during use.
+
+This is a manual opt-in production validation path, not an automated live test
+or a claim that Phase 8 real-CLI compatibility/resource gates have passed.
+Deterministic fake transport tests cover the composed lifecycle separately.
 
 ## SIWC investigation and future work
 

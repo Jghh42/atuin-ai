@@ -16,8 +16,10 @@
 - [Third-party provenance and pinned revisions](provenance/README.md)
 - [Apache-2.0 project license](decisions/0003-project-license-proposal.md) — confirmed
 
-The [phase 1 HTTP shell](operations.md) and Go tooling are implemented;
-production OAuth and inference are not. An isolated SIWC probe exists but did
+The [production server](operations.md) now composes native OAuth, discovery and
+inference in the independently reviewed [Phase 7 code checkpoint](plans/phase7-status.md),
+cleared for authorized direct-main delivery. Fresh production login/live lifecycle and eligible discovery are
+**NOT PASSED**; phases 8–9 are unimplemented. An isolated SIWC probe exists but did
 not complete authorization. The isolated Codex probe passed login, text/tool replay and refresh/restart;
 see [live evidence](proofs/codex-phase0.md) and
 [ADR 0004](decisions/0004-pi-style-codex-authentication.md).

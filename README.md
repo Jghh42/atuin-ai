@@ -11,22 +11,17 @@ device login and Responses-format inference through the ChatGPT Codex backend,
 targeting the user's ChatGPT Business seat. Independently registered Sign in
 with ChatGPT (SIWC) and public Responses inference are deferred for later.
 
-> **Status:** phases 0–3 implemented: isolated Codex proof, bounded HTTP shell,
-> Atuin decoding, and unit-tested prompts/tools/safety. Phase 3a adds bounded
-> native model discovery/cache behind injected credentials and port 17391.
-> Live discovery returned no replay-proven model: its eligible-catalog gate is
-> **NOT PASSED**. Production login wiring remains Phase 7; standalone models/chat
-> return 503; injected runtime dependencies enable chat generation and SSE.
-> Phase 4 adds tested native Responses request projection/HTTP opening behind
-> injected credentials. Phase 5 adds the bounded native SSE provider with
-> explicit completion, buffered calls, token usage and cancellation. Independent
-> review cleared that checkpoint. Phase 6 now integrates the one-generation turn
-> coordinator, atomic CLI tool gate and bounded SSE writer behind injection;
-> independent final review cleared the checkpoint. Production login is not added.
-> See [Phase 6](docs/plans/phase6-status.md),
-> [Phase 3a](docs/plans/phase3a-status.md),
-> [Phase 4](docs/plans/phase4-status.md), and
-> [Phase 5](docs/plans/phase5-status.md) checkpoints.
+> **Status:** Phases 1–6 implement the bounded Atuin/Responses streaming
+> pipeline. Phase 7 adds explicit native device login, private application state,
+> fail-closed rotating refresh, logout and production composition. **Independent
+> security re-review and post-fix verification cleared the code checkpoint**
+> for authorized direct-main delivery; this is not a live phase-exit claim.
+> Fresh production login/live lifecycle and the live eligible-catalog gate are
+> **NOT PASSED**. Historical discovery omitted the only replay-proven model;
+> no model eligibility is expanded. Missing login or eligible discovery returns
+> safe 503, never a fabricated model. Phases 8–9 remain unimplemented.
+> See [Phase 7](docs/plans/phase7-status.md) and
+> [progress / remaining gates](docs/plans/autonomous-progress.md).
 
 ## Goals
 
@@ -94,15 +89,25 @@ tools.
 
 ## Development
 
+The project minimum and exact Make/CI toolchain pin is **Go 1.27.2**. Normal
+Go toolchain auto-download is supported. This current security-patched release
+also fixes the fuzz coordinator's budget-boundary race; all fuzz budgets and
+failure assertions remain unchanged. [Diagnosis and pin rationale](docs/plans/fuzz-toolchain-diagnosis.md).
+
 ```sh
 make check
 make build
+# Interactive, explicit opt-in login; do not run live unattended:
+./bin/atuin-ai-server auth login
+./bin/atuin-ai-server auth status # stop serve before separate auth commands
 ./bin/atuin-ai-server serve # optional --config config.example.toml
-curl http://127.0.0.1:17391/api/cli/models # 503 until production login is wired
+curl http://127.0.0.1:17391/api/cli/models # 503 if no eligible discovered model
 ```
 
 See [local operations](docs/operations.md) for configuration precedence,
-limits, shutdown, and the deliberately unwired standalone credential lifecycle. The
+limits, shutdown, private state and the single-process credential lifecycle.
+[Authentication](docs/authentication.md) records the security boundary and
+unpassed, opt-in live validation steps. The
 remaining phased work is in the [implementation plan](docs/plans/implementation.md).
 
 OAuth credentials, API keys, local configuration, and runtime state must never

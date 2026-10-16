@@ -15,8 +15,8 @@ import (
 	"github.com/Jghh42/atuin-ai/internal/turn"
 )
 
-// Runtime is the production composition seam. Phase 7 supplies its credential
-// lifecycle and account-bound catalog; no isolated proof store is imported.
+// Runtime is the production composition seam. Package application supplies one
+// credential lifecycle and account-bound catalog; no proof store is imported.
 type Runtime struct {
 	Credentials credentials.Source
 	Catalog     CatalogSource

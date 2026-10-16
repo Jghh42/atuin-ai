@@ -120,13 +120,16 @@ func TestStreamTCPClosingAndBounds(t *testing.T) {
 }
 
 type closeReader struct {
-	closed chan struct{}
-	once   sync.Once
-	reads  atomic.Int32
+	closed   chan struct{}
+	started  chan struct{}
+	once     sync.Once
+	readOnce sync.Once
+	reads    atomic.Int32
 }
 
 func (r *closeReader) Read([]byte) (int, error) {
 	r.reads.Add(1)
+	r.readOnce.Do(func() { close(r.started) })
 	<-r.closed
 	return 0, errors.New("private transport read detail")
 }
@@ -137,25 +140,62 @@ type streamTransportFunc func(*http.Request) (*http.Response, error)
 func (f streamTransportFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 func TestBlockedReadClosedOnTimeoutAndCancel(t *testing.T) {
 	req := decodedRequest(t, `[{"role":"user","content":"hello"}]`)
-	for i := 0; i < 20; i++ {
-		body := &closeReader{closed: make(chan struct{})}
-		c := RequestClient{Credentials: credentials.SourceFunc(func(context.Context) (credentials.Credential, error) { return credential(), nil }), Transport: streamTransportFunc(func(*http.Request) (*http.Response, error) {
-			return &http.Response{StatusCode: 200, Header: make(http.Header), Body: body}, nil
-		})}
-		ctx, cancel := context.WithCancel(context.Background())
-		if i%2 == 0 {
-			go func() { time.Sleep(time.Millisecond); cancel() }()
-		}
-		_, err := c.stream(ctx, req, func(provider.Event) error { return nil }, time.Second, 5*time.Millisecond)
-		cancel()
-		if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
-			t.Fatal(err)
-		}
-		select {
-		case <-body.closed:
-		default:
-			t.Fatal("reader left blocked")
-		}
+	// Handshake on an ACTUAL blocked Read, not a sleep racing projection/Open.
+	// Real inactivity/header/generation timers remain covered by the TCP test.
+	for _, cause := range []error{context.Canceled, context.DeadlineExceeded} {
+		t.Run(cause.Error(), func(t *testing.T) {
+			body := &closeReader{closed: make(chan struct{}), started: make(chan struct{})}
+			c := RequestClient{Credentials: credentials.SourceFunc(func(context.Context) (credentials.Credential, error) { return credential(), nil }), Transport: streamTransportFunc(func(*http.Request) (*http.Response, error) {
+				return &http.Response{StatusCode: 200, Header: make(http.Header), Body: body}, nil
+			})}
+			ctx, cancel := context.WithCancelCause(context.Background())
+			defer cancel(context.Canceled)
+			done := make(chan error, 1)
+			go func() {
+				_, e := c.stream(ctx, req, func(provider.Event) error { return nil }, time.Hour, time.Hour)
+				done <- e
+			}()
+			select {
+			case <-body.started:
+			case e := <-done:
+				t.Fatal("stream returned before blocked read", e)
+			case <-time.After(2 * time.Second):
+				t.Fatal("read did not start")
+			}
+			cancel(cause)
+			select {
+			case e := <-done:
+				if !errors.Is(e, cause) {
+					t.Fatal("wrong cancellation cause", e)
+				}
+			case <-time.After(2 * time.Second):
+				t.Fatal("blocked reader not joined")
+			}
+			select {
+			case <-body.closed:
+			default:
+				t.Fatal("acquired reader left blocked")
+			}
+		})
+	}
+}
+func TestCancellationBeforeOpenDoesNotOwnUnacquiredBody(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	body := &closeReader{closed: make(chan struct{}), started: make(chan struct{})}
+	var opened atomic.Bool
+	c := RequestClient{Now: func() time.Time { cancel(); return projectionTime }, Credentials: credentials.SourceFunc(func(context.Context) (credentials.Credential, error) { return credential(), nil }), Transport: streamTransportFunc(func(*http.Request) (*http.Response, error) {
+		opened.Store(true)
+		return &http.Response{StatusCode: 200, Header: make(http.Header), Body: body}, nil
+	})}
+	_, err := c.Stream(ctx, decodedRequest(t, `[{"role":"user","content":"hello"}]`), func(provider.Event) error { return nil })
+	if !errors.Is(err, context.Canceled) || opened.Load() || body.reads.Load() != 0 {
+		t.Fatal("pre-open cancellation did not stop transport", err)
+	}
+	select {
+	case <-body.closed:
+		t.Fatal("closed a body never acquired from transport")
+	default:
 	}
 }
 func TestStreamCredentialAndOpenCancellation(t *testing.T) {

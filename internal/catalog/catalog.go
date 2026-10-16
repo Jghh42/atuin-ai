@@ -47,7 +47,13 @@ type Entry struct {
 type Fetcher interface {
 	Fetch(context.Context, credentials.Credential) ([]Entry, error)
 }
-type Snapshot struct{ response Response }
+type Snapshot struct {
+	response Response
+	identity credentials.Identity
+}
+
+// Identity binds inference to the account/epoch that supplied discovery.
+func (s Snapshot) Identity() credentials.Identity { return s.identity }
 
 func (s Snapshot) Response() Response {
 	r := s.response
@@ -120,7 +126,7 @@ func selectSnapshot(entries []Entry, override string, eligible func(string) bool
 	for i, m := range list {
 		r.Models[i] = Model{m.ID, m.Name, m.Description}
 	}
-	return Snapshot{r}, nil
+	return Snapshot{response: r}, nil
 }
 func contains(es []Entry, id string) bool {
 	for _, e := range es {
@@ -276,6 +282,7 @@ func (c *Cache) refresh(ctx context.Context, cred credentials.Credential, f *fli
 	}
 	c.active = nil
 	if err == nil {
+		s.identity = cred.Identity
 		c.snapshot = s
 		c.validated = c.now()
 		f.snapshot = s

@@ -14,7 +14,9 @@ Recorded Phase 0 decisions:
    — accepted, explicitly confirmed by the user.
 4. [Native Pi-style Codex login initially; SIWC later](0004-pi-style-codex-authentication.md)
    — accepted; isolated login, text/tool replay and refresh/restart proof passed;
-   production implementation remains pending.
+   the production lifecycle/composition is now the independently reviewed
+   [Phase 7 code checkpoint](../plans/phase7-status.md); production live gates
+   remain NOT PASSED.
 
 Future records may cover the localhost security boundary, supported released
 Atuin versions, and single-process credential persistence. Those are not

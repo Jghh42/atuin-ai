@@ -112,3 +112,42 @@ Go test fixtures are original project design/text. Existing prompt/schema
 provenance is unchanged. No upstream fixture/code text was copied, and no Pi
 runtime, store, or subprocess is used. Retain the MIT attribution above with
 this source-informed request implementation as well as the initial proof.
+
+## Phase 7 production native device lifecycle (2026-10-16)
+
+`internal/credentials/oauth.go` is a new Go protocol adaptation, not an import of
+Pi or the isolated proof package. Before implementation, the installed package
+metadata was read (name/version **@earendil-works/pi-ai 1.1.0**, MIT), both full
+`dist/auth/oauth/openai-codex.js` and `dist/auth/oauth/device-code.js` artifacts
+were read, and their SHA-256 hashes reverified exactly against the table above:
+`0b94a219ddb5982f0ee543ef03138ed0254ce6ee0a57c9d89d39c242e2eaf6f6`
+and `8f197cc9af67be64b82939573d719d1b55388f96f2e53cb8c47f9618fc1297eb`.
+No exact Git commit is asserted. The isolated proof source and fake tests were
+read only as references, never used as runtime or credential input.
+
+Reviewed facts: fixed registration, usercode/poll/token endpoints, fixed device
+activation/redirect, returned code+PKCE verifier form exchange, access-token
+account claim, rotating refresh form and 15-minute flow timeout. No Pi browser
+OAuth/callback code, scopes, DCR, SIWC namespace/OIDC rules or credential store
+is imported. Claim decoding is explicitly NOT signature verification.
+
+Differences: terminal-only code display; fixed URLs with injected transport;
+20-second HTTP/body/header bounds and no redirects; HTTP/1-only native transport
+without connection pooling to avoid net/http raw unsolicited-idle-response logs;
+duplicate-name equivalence follows Go Unicode SimpleFold (including non-ASCII
+aliases) rather than lowercasing, while persisted names remain exact; strict Unicode/
+depth JSON rejection; default five-second/minimum one-second interval, 5-second
+slow_down increments and bounded expiry; explicit OAuth errors take precedence
+over 403/404 and even success (unlike Pi's status-first pending branch); malformed
+nonempty pending bodies fail closed; strict PKCE verifier and account-header
+shape; earlier claim/response expiry. Tests are independently authored synthetic
+Go data, not upstream fixtures or captured traffic.
+
+`manager.go`, `store_unix.go`, application composition and redaction/binding
+helpers are original project code. The durable secret-free pre-refresh intent,
+fail-closed ambiguous rotation/restart strategy, independent auth_epoch versus
+generation, descriptor-relative store and cancellation-independent replacement
+save are deliberate hardening beyond the isolated proof/Pi reference. No runtime
+Pi/Codex subprocess, app-server, harness, automatic import, browser interaction
+or live call was used. Existing MIT attribution/license applies to the protocol
+adaptation; the new Unix dependency is recorded in [dependencies](dependencies.md).

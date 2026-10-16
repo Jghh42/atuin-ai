@@ -606,6 +606,13 @@ tests pass. There is exactly one upstream generation per Atuin request.
 
 ### Phase 7 — native Codex OAuth credential lifecycle
 
+Independently reviewed implementation checkpoint: production lifecycle/
+composition and deterministic fake tests are implemented; both security
+re-reviews and independent post-fix verification cleared authorized delivery.
+Fresh production login/live lifecycle and live eligible discovery remain
+**NOT PASSED**; Phase 0 is not a production pass. See [Phase 7 status](phase7-status.md).
+The checklist below remains the target, not a claim of live phase exit.
+
 Implement the Pi-style device flow established in Phase 0 natively in Go:
 
 - the reviewed fixed Codex registration and device endpoints from Section 2;

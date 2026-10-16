@@ -12,10 +12,59 @@ and delivery before moving on. This file distinguishes code from live gates.
 | 4 | Independently reviewed native Responses request projection/HTTP opening checkpoint, cleared for authorized direct-main delivery. Deterministic injected tests; no parser/Stream implementation or live attempts. [Checkpoint](phase4-status.md). |
 | 5 | Native bounded Responses SSE provider implemented behind injection; six initial findings/shared helper and lifecycle-output follow-up independently reviewed and cleared for authorized direct-main delivery. No live calls. [Checkpoint](phase5-status.md). |
 | 6 | Implemented behind injectable credentials/catalog/provider; one-generation runner, atomic CLI gate, bounded SSE writes and real TCP tests. Independent final review cleared runtime and all three focused test-strengthening follow-ups; authorized direct-main delivery checkpoint. Standalone remains safe 503. [Checkpoint](phase6-status.md). |
-| 7 | Not implemented. Must complete isolated production lifecycle, durable refresh, logout/account cache invalidation and no-config login-to-serve experience. |
+| 7 | Production native OAuth/isolated descriptor-rooted store, durable pre-refresh intent, serialized rotation, explicit auth CLI and shared catalog/SSE composition implemented. Deterministic fake lifecycle tests; two initial reviews found no criticals but required concurrent-Close and Unicode-fold fixes plus formatter strengthening. Both independent fix re-reviews CLEARED with no new blockers; independent post-fix verification passed. Reviewed code checkpoint cleared for authorized direct-main delivery, not a live phase exit. Fresh production login/live lifecycle and live eligible catalog **NOT PASSED**. [Checkpoint](phase7-status.md). |
 | 8–9 | Not implemented; real CLI, resource hardening and release gates remain. |
 
-## Phase 5 decoder-fuzz validation anomaly — cause unknown
+## Fuzz toolchain and cancellation-harness follow-ups — CLEARED
+
+Delivery preflight under Go 1.26.9 again failed the unchanged five-second
+FuzzDecode command with a naked context deadline error; no commit/push or blind
+rerun followed. The preserved new log is `/tmp/phase7-delivery-check.log`.
+Read-only diagnosis identified the exact vulnerable coordinator guard and
+[upstream issue/fix](fuzz-toolchain-diagnosis.md), with a native-context model
+reproducing 11 leaked deadline errors in 20000 trials. Individual historical
+scheduling was not captured and remains retrospectively unproven.
+
+Official current download metadata and release history verified Go **1.27.2**
+(released 2026-10-08, security fixes). Its normally downloaded, unmodified actual
+source contains the parent-plus-child guard at internal/fuzz/fuzz.go:129–137.
+The project minimum and exact Make/CI pin now use that release. All 5s smoke/2m
+nightly budgets, assertions, seeds and failure behavior remain unchanged; no
+count replacement, error filter, retry wrapper or SDK dependency upgrade.
+Production auth logic is unchanged. Staticcheck v0.7.0 then failed on Go 1.27
+export v5; the old govulncheck v1.1.4 also failed in its obsolete SSA builder.
+Both first failures are preserved. Verified maintained DEVELOPMENT-only pins
+are Staticcheck v0.8.2 and govulncheck v1.9.0; an explicit x/tools v0.52.0
+nilness pass preserves nil-dereference analysis retired upstream from Staticcheck.
+No app/runtime SDK dependency or go.sum is widened.
+
+Fresh `make check`/build with Go 1.27.2 and compatible tools PASS, including all
+four unchanged fuzz targets; five additional independent decoder 5s campaigns
+PASS. Darwin cross-builds and credentials/application/catalog/native-provider/
+CLI race x20 PASS. An additional httpserver race check FAILED native cancellation
+for a nonreading downstream (cycle 4); that original combined command FAILED and
+remains preserved. Subsequent [controlled TCP diagnosis](../provenance/native-cancellation-diagnosis.md)
+proved the old harness could assert cancellation failure before any write timeout
+had occurred; the exact historical interleaving remains unproven. A test-only
+bounded socket/handshake/partial-timeout witness fix preserved cancellation,
+admission, one-second event-to-cleanup assertions and no retries. Focused
+independent review CLEARED it; worker race x50 exercised 300 timeouts and 300
+disconnects, and all-six-package race x20 completed successfully.
+
+Focused Go/toolchain/devtool review also CLEARED, including the explicit nilness
+coverage substitution. FINAL independent verification PASSed exact Go 1.27.2
+`make check`/build/diff and credentials/application/catalog/httpserver/native-
+provider/CLI race x20. No functional auth/runtime code changed in these follow-ups.
+The code checkpoint is cleared for authorized delivery; [sources and preserved
+failures](fuzz-toolchain-diagnosis.md) remain distinct from final verification.
+No fresh production live/catalog pass, root ownership-mutation pass, macOS
+execution or Phase 8 execution is inferred.
+
+## Phase 5 decoder-fuzz validation anomaly — historical trace unproven
+
+The original record below preserves what was known at that checkpoint. The
+later source/model diagnosis above supplies concrete evidence of a known Go
+coordinator race, not retrospective instrumentation of this individual run.
 
 The first post-lifecycle-fix `make check` stopped at the unchanged command:
 
@@ -49,12 +98,89 @@ runs, full `make check`/build, focused race x10 and targeted lifecycle/regressio
 tests. The nonreproduced initial failure remains recorded with unknown cause;
 these passes do not establish an infrastructure/budget diagnosis.
 
+## Phase 7 independent-security-review follow-up
+
+Both read-only initial reviews completed with no criticals and two must-fix
+warnings: concurrent Close could return before shutdown/store release, and
+ToLower-based duplicate detection missed Go Unicode-fold aliases. The sole
+writer implemented a shared closing/completed barrier and close result, exact
+SimpleFold-orbit duplicate keys, and fmt.Formatter redaction for unsupported
+verbs without changing private-store JSON. Added finite persistence/store-close
+handshake regressions, Unicode/root/nested/numeric cases and expanded fmt/slog
+coverage. Details and post-fix checks: [Phase 7 status](phase7-status.md).
+
+Original independent full check/race x20/Darwin cross-build results were green.
+Post-fix writer `make check`/build/diff checks, Darwin cross-builds and all six
+runtime/CLI race packages x20 now also PASS; targeted new regression race x20
+passed. Logs are in Phase 7 status. Both independent security fix re-reviews
+then CLEARED all fixes with no new blockers. Independent post-fix full
+check/build/diff and credentials/application/catalog race x20 also PASS. No root
+ownership-mutation test pass or macOS execution is claimed. This reviewed code
+checkpoint is cleared for authorized direct-main delivery; production live
+outcomes remain separate. The user already authorized own login, automatic
+discovery and initial serve/models metadata checks: no redundant approval per
+ordinary bounded catalog read. Blind retries, candidate inference, eligibility
+expansion and Phase 8 remain outside the attended login handoff. Delivery is
+separately authorized; its exact SHA/CI result belongs in the delivery report or
+next ledger entry.
+
+## Fresh retained-probe recheck — separate from production gates
+
+The user returned and offered attended validation. While two read-only security
+reviews and independent verification were still running, a separately authorized
+bounded EXISTING-PROBE check passed: initially unexpired generation 2; completed
+text, synthetic call and full-history replay; exactly one durable refresh to
+generation 3; a NEW process passed post-refresh text/tool/replay/call correlation.
+Exactly six inference generations total, no retries, no login/logout/discovery
+and no repository/runtime changes from that probe check. This is coordinator-
+supplied sanitized evidence, not a repeat run by the documentation writer.
+[Evidence](../proofs/codex-retained-probe-2026-10-16.md).
+
+It is NOT fresh production login, production refresh/store validation or an
+eligible-catalog pass. Both production live lifecycle and live eligible catalog
+remain **NOT PASSED**. No credentials may be imported from the retained probe.
+[Attended production-login handoff](phase7-attended-login-handoff.md) is prepared
+for the user's own terminal; security-fix re-review is now cleared. The user has
+already authorized the ordinary bounded login/discovery/initial serve/models
+workflow. Any later production outcomes are recorded separately. This PROBE
+evidence alone does not authorize extra inference, eligibility expansion or
+Phase 8 execution; code delivery is separately authorized.
+
+## Phase 7 validation follow-up — stream test ownership assumption
+
+One late Phase 7 race x20 sweep failed the pre-existing
+`TestBlockedReadClosedOnTimeoutAndCancel` with `reader left blocked`; original
+output `/tmp/phase7-final-race20-failed.log`. The original test lacked per-state
+diagnostics, so its precise failing interleaving remains **unproven**. Its
+sleep-based cancellation could occur before transport/body acquisition, yet the
+assertion unconditionally required that unacquired body to be closed. A new
+deterministic pre-open regression establishes that this assumption is unsound,
+not that this was definitively the observed failure's cause. A diagnostic-only
+x300 rerun passed (not a diagnosis). The test now handshakes on actual blocked
+Read entry and injects cancellation/deadline causes with finite close/join guards;
+real TCP inactivity/generation tests remain unchanged. No stream runtime change.
+Focused race x50 passed. Final full `make check`/build/diff checks, Darwin
+arm64/amd64 cross-builds and credential/application/catalog/httpserver/native
+provider/CLI race x20 all PASS. macOS execution is not tested; owner-mismatch
+mutation test is explicitly skipped on this non-root runner. No security-review,
+production-live, commit/push or exact-HEAD CI pass is inferred.
+See [Phase 7 final results](phase7-status.md).
+This is separate from, and does not explain, the earlier FuzzDecode anomaly.
+
 ## Phase 3a delivery checkpoint
 
 Delivered on main as `2431b10fe9fb8287de008f0ad0ceacca6f5f096b`.
 Exact-HEAD GitHub Actions run `38950960197`: completed **success** (verified
 read-only before Phase 4 implementation). Live eligible catalog remains
 **NOT PASSED**; the green deterministic CI does not clear that gate.
+
+## Phase 6 delivery checkpoint
+
+Phase 7 started from clean main `14648ff9ab610dc4a5bae915f5b2a2e469ba2e18`.
+Exact-HEAD Go checks run `38959509541`: **success** (coordinator-verified
+handoff). This is previous-SHA evidence, not Phase 7 CI. Phase 7's reviewed code
+checkpoint is now cleared for delivery; its exact SHA/CI result belongs in the
+delivery report or a later ledger entry, not an own-hash assertion here.
 
 ## Phase 5 delivery checkpoint
 
@@ -131,9 +257,12 @@ Follow-up `make check`, `make build`, and `git diff --check`: PASS.
 2. No verified model release metadata/version convention exists in inspected
    source; numeric upstream priority fallback is intentional. ETag revalidation
    is not live verified or implemented.
-3. Production startup is port 17391 with safe models/chat 503 until Phase 7
-   credentials are wired; no automatic proof-store import. This is not yet a
-   user-facing login-only initialization experience or release-ready server.
+3. Phase 7 now wires explicit fresh application login and native discovery/chat
+   at port 17391 with no automatic proof-store import. Missing credentials or an
+   eligible catalog still yields safe 503. Both independent security re-reviews
+   cleared the code; fresh production login/live lifecycle and eligible discovery
+   remain NOT PASSED at this checkpoint.
+   This is not a release-ready or live-validated startup claim.
 4. Independent final review cleared all five fixes and the bounded
    `prove-discovered` extension. Independent verification passed `make check`,
    `make build`, `git diff --check`, and `go test -race ./internal/catalog -count=20`.

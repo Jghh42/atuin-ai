@@ -55,3 +55,12 @@ verified. Production auth/provider integration remains for later phases; this
 proof is not a completed server. SIWC remains separately deferred and unproven.
 No logout or remote-revocation success is claimed; retained probe credentials
 remain private and must not be imported into Pi/Codex or committed.
+
+## Later retained-session recheck (separate evidence)
+
+A separately authorized bounded retained-probe recheck on the same date passed
+text, synthetic tools/full-history replay, exactly one durable refresh from
+generation 2 to 3 and inference in a new process. It did not perform fresh login,
+logout or discovery and is NOT production validation. See the
+[sanitized recheck record](codex-retained-probe-2026-10-16.md); the historical
+results above are not retroactively changed.
