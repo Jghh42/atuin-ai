@@ -2,20 +2,28 @@
 
 ## 1. Goal
 
-Build a small, single-user/self-hosted Go server that:
+Build a small, personal, localhost-only Go server that:
 
 - works with an unmodified Atuin CLI using `endpoint_protocol = "oss"`;
-- implements the two Atuin AI routes and SSE protocol documented in
+- binds only to the local loopback interface (`127.0.0.1`) in v1;
+- implements the two Atuin AI routes and SSE protocol documented in the
   [Atuin AI server API specification](../specs/atuin-ai-server-api.md);
 - uses the public OpenAI Responses API, never Chat Completions or an
   undocumented ChatGPT backend;
-- supports eligible ChatGPT-plan usage through OpenAI's documented Sign in
-  with ChatGPT (SIWC) OAuth flow;
+- supports eligible personal ChatGPT-plan usage, with ChatGPT Business as the
+  initial target, through OpenAI's documented Sign in with ChatGPT (SIWC)
+  OAuth flow;
 - eventually offers a device-code login when there is a supported integration
   path for this application type;
 - preserves the CLI/server local-tool boundary;
 - has bounded concurrency and memory; and
-- ships as one small non-root container image.
+- ships first as one small local Go executable.
+
+There is no client-facing authentication in v1. The loopback-only listener is
+the security boundary. Configurable bind addresses, allowed-host policies,
+TLS/proxy deployment, containers, Kubernetes, and client Bearer authentication
+may be added later as one reviewed feature rather than partially implemented
+up front.
 
 This is a source-informed rewrite, not a formal clean-room implementation. The
 reference server and core are Apache-2.0; the Atuin client is MIT. We may port
@@ -59,9 +67,10 @@ spike and choose one supported path:
 
 1. **Preferred:** OpenAI confirms device authorization for dynamically
    registered SIWC OSS clients. Implement it natively in Go.
-2. **Acceptable fallback:** use the documented SIWC browser flow. For a remote
-   pod, authenticate locally with the same app/account, transfer the protected
-   credential record, and let the pod own refreshes, as OpenAI documents.
+2. **Local fallback:** use the documented SIWC browser flow. Because the
+   service and browser run on the same machine, the loopback PKCE callback is
+   the natural supported path and requires no public callback or credential
+   transfer.
 3. **Optional experiment:** use `codex app-server` as an auth/inference
    subprocess. Proceed only if its tool loop can be disabled and Atuin's local
    tools can be represented safely. This adds a second binary and is not the
@@ -69,6 +78,13 @@ spike and choose one supported path:
 4. **Do not do:** copy Codex's OAuth client ID, parse its private credential
    files, collect browser cookies, or call an undocumented
    `chatgpt.com/backend-api` endpoint.
+
+The target ChatGPT Business premium seat is already known to work with normal
+Codex subscription login, including through Pi. Treat account eligibility as
+an expected supported case rather than a product-design blocker. Phase 0 still
+performs one live SIWC authorization and public Responses request because an
+independently registered SIWC client is a distinct integration boundary from
+an existing Codex/Pi login.
 
 The Go architecture must not depend on the result of this decision: OAuth is a
 credential source behind an interface; the Atuin and Responses layers remain
@@ -80,7 +96,7 @@ the same.
 
 - `GET /api/cli/models`
 - `POST /api/cli/chat`
-- optional client-facing static Bearer authentication (`AUTH_TOKEN`)
+- a fixed loopback-only listener with no client-facing authentication
 - model aliases and default-model selection
 - Atuin request decoding and normalization
 - OpenAI Responses projection and SSE parsing
@@ -96,6 +112,9 @@ the same.
 
 ### Explicitly excluded from v1
 
+- configurable/non-loopback listening and allowed-host policies
+- client-facing Bearer authentication, TLS, and reverse-proxy deployment
+- containers, Kubernetes, systemd, and multireplica coordination
 - arbitrary server-side tools
 - `web_search` and `web_scrape`
 - MCP execution
@@ -133,6 +152,9 @@ therefore a correctness decision, not merely schedule reduction.
 10. Initially support only models proven to work with stateless history replay.
     If opaque reasoning items are required, design bounded encrypted provider
     state separately rather than silently dropping required state.
+11. V1 listens on `127.0.0.1` only and has no Atuin-client authentication.
+    Any non-loopback listener is a later security feature, not a config toggle
+    exposed by the initial implementation.
 
 ## 5. Proposed repository layout
 
@@ -182,7 +204,6 @@ internal/credentials/
     refresh.go
 internal/httpserver/
     server.go
-    auth.go
     models.go
     chat.go
 
@@ -198,7 +219,6 @@ docs/authentication.md
 docs/compatibility.md
 docs/operations.md
 config.example.toml
-Dockerfile
 LICENSES/
 NOTICE
 ```
@@ -237,7 +257,7 @@ Rules:
 - The HTTP handler is the only owner of downstream SSE writes.
 - The turn runner is the only owner of lifecycle transitions and terminal
   emission.
-- Credentials used against OpenAI are entirely separate from `AUTH_TOKEN`.
+- OpenAI credentials are never exposed through the localhost Atuin API.
 
 Use injected clocks, randomness, HTTP transports, and credential stores for
 deterministic tests.
@@ -249,6 +269,7 @@ deterministic tests.
 Create:
 
 - Go module and standard project tooling;
+- an explicit Apache-2.0 project-license decision for user confirmation;
 - `NOTICE`/third-party license records;
 - ADR for SIWC/browser/device auth;
 - ADR for stateless Responses continuation;
@@ -262,8 +283,9 @@ server:
 2. Same flow with a function call and a following request containing
    `function_call_output`.
 
-Also prove model-list shape and refresh rotation. Never commit tokens or raw
-authorization URLs.
+Also capture the target ChatGPT Business workspace's model-list shape and
+prove refresh rotation through the independent SIWC client. Never commit
+tokens or raw authorization URLs.
 
 **Exit:** direct Responses + tool continuation works for at least one intended
 model, and the device-login decision is recorded.
@@ -272,12 +294,12 @@ model, and the device-login decision is recorded.
 
 Implement:
 
-- `serve`, `auth login`, `auth status`, and `auth logout` commands;
+- a `serve` command;
 - familiar TOML configuration and `CHAT_CONFIG`;
-- `AUTH_TOKEN` support;
+- a fixed `127.0.0.1:<port>` listener (port configurable, host not
+  configurable in v1);
+- no client-facing authentication middleware;
 - ordered model aliases and a default alias;
-- secure loopback default binding;
-- auth-before-routing behavior;
 - model endpoint;
 - chat endpoint placeholder;
 - graceful shutdown and structured safe logging.
@@ -293,11 +315,12 @@ Initial resource limits:
 - 60-second upstream inactivity timeout;
 - 300-second generation timeout.
 
-Reject an unauthenticated non-loopback listener unless the operator explicitly
-acknowledges that authentication is supplied externally.
+Do not expose a host/bind-address option in this phase. Tests must assert that
+the listener is on IPv4 loopback and is unreachable through non-loopback
+interfaces.
 
-**Exit:** black-box tests cover routes, model order/default, all auth cases,
-body limits, saturation, unknown routes, and shutdown.
+**Exit:** black-box tests cover routes, model order/default, body limits,
+saturation, loopback-only binding, unknown routes, and shutdown.
 
 ### Phase 2 — Atuin protocol decoder
 
@@ -453,18 +476,17 @@ Credential record includes:
 - issue/save/expiry times; and
 - monotonically increasing local generation.
 
-Store atomically in an owner-only directory/file (`0700`/`0600`) on a writable
-persistent volume. Do not place a rotating credential file in a read-only
-Kubernetes Secret. An optional encryption/keyring layer is useful, but
-"encrypted" storage with the key beside the ciphertext is not a security
-improvement.
+Store atomically in the user's local configuration/state directory with owner-
+only directory/file permissions (`0700`/`0600`). An OS keyring integration is
+useful when available, but "encrypted" storage with the key beside the
+ciphertext is not a security improvement.
 
-V1 supports one process/replica and one credential writer. Use a lifetime file
-lock and stop the service before an external login/logout command modifies the
-record. Multireplica refresh coordination is out of scope.
+V1 supports one local process and one credential writer. Use a lifetime file
+lock and stop the server before a separate login/logout command modifies the
+record. Multireplica and remote-host coordination are out of scope.
 
-For a remote pod, document local authentication and protected credential
-transfer/import. If a supported native device flow is confirmed, add it behind
+Open the local browser and receive the documented loopback callback on the
+same machine. If a supported native device flow is confirmed, add it behind
 the same credential manager.
 
 **Exit:** fake-OIDC tests cover callback attacks, state replay, expiry/skew,
@@ -493,7 +515,7 @@ Cover:
 - permission denial and execution failure;
 - parallel tools;
 - session continuation;
-- invalid and expired authentication;
+- expired/revoked upstream OAuth and reauthentication behavior;
 - provider error after streaming begins;
 - disconnect/cancellation;
 - history search and output when daemon support is available.
@@ -509,17 +531,20 @@ or 400—must be replaced with an explicit project decision, not copied.
 
 **Exit:** pinned real CLI suite and differential contract suite pass.
 
-### Phase 9 — packaging and resource hardening
+### Phase 9 — local binary and resource hardening
 
 Ship:
 
-- CGO-free Linux amd64/arm64 binary where practical;
-- distroless or scratch-derived non-root image with CA certificates;
-- read-only root filesystem;
-- separate read-only config and writable credential volume;
-- optional separate loopback management listener for health/profiling;
-- no public profiling endpoint;
-- graceful SIGTERM draining with bounded final cancellation.
+- a local Go executable for the developer's current OS/architecture;
+- reproducible binaries for the primary Linux and macOS targets where
+  practical;
+- owner-only local configuration and credential files;
+- optional loopback-only profiling in explicitly enabled development builds;
+- no non-loopback management or profiling endpoint; and
+- graceful signal handling with bounded final cancellation.
+
+Container, Kubernetes, systemd, TLS proxy, and remote-host packaging are
+explicitly deferred until there is a concrete need.
 
 Initial measurable targets on a documented Linux amd64 environment:
 
@@ -528,14 +553,12 @@ Initial measurable targets on a documented Linux amd64 environment:
 - four near-limit admitted requests: hard gate ≤256 MiB;
 - no monotonic goroutine, connection, transcript, or heap growth after 100
   completed/cancelled cycles;
-- cancellation closes upstream work promptly;
-- container memory limit starts at 256 MiB and is revised only from measured
-  workloads.
+- cancellation closes upstream work promptly.
 
 Use `GOMEMLIMIT` as a GC target, not as an RSS guarantee.
 
-**Exit:** non-root/read-only container smoke tests, load tests, leak tests, and
-memory reports pass.
+**Exit:** local-binary smoke tests, load tests, leak tests, and memory reports
+pass.
 
 ## 8. Reusing upstream tests
 
@@ -547,7 +570,8 @@ against a Go implementation. They are nevertheless highly reusable as:
 1. behavioral specifications to port into Go table tests;
 2. language-neutral JSON/SSE fixture sources;
 3. scenarios for differential black-box tests; and
-4. an oracle exercised by running the reference container.
+4. an oracle exercised by running the upstream reference container in the
+   test environment (this does not make containers a deployment requirement).
 
 Do not mechanically translate every test. Port the compatibility-relevant
 cases, strengthen weak assertions, and write new Responses/OAuth tests.
@@ -644,7 +668,8 @@ govulncheck ./...
 
 Run bounded fuzz smoke tests in normal CI and longer fuzzing nightly. Run the
 reference-container differential suite and pinned real-CLI suite in CI where
-Docker/PTY support is available. Live OpenAI tests are opt-in and must never
+Docker/PTY support is available. Containers are used only as a test oracle.
+Live OpenAI tests are opt-in and must never
 run for untrusted pull requests.
 
 A release is blocked if:
@@ -665,7 +690,7 @@ A release is blocked if:
 Keep one owner for the turn state machine and protocol decisions. Parallelize
 only packages with stable interfaces:
 
-1. **Agent A:** repository scaffold, config, HTTP shell, client auth.
+1. **Agent A:** repository scaffold, config, and loopback-only HTTP shell.
 2. **Agent B:** Atuin decoder/normalizer and imported compatibility corpus.
 3. **Agent C:** tool schemas, prompt policy, safety checks.
 4. **Agent D:** Responses projection and fake provider.
@@ -685,14 +710,14 @@ The project is complete when:
 - an unmodified supported Atuin CLI can list models and complete text,
   suggestion, and all local-tool workflows;
 - the service uses only public `/v1/responses` upstream;
-- SIWC OAuth works for a private self-hosted deployment, including refresh and
-  restart;
+- SIWC OAuth works locally with the target ChatGPT Business workspace,
+  including refresh and restart;
 - the documented device-login decision is implemented or explicitly recorded
-  as unavailable for independent clients, with the supported headless login
-  path shipped;
+  as unavailable for independent clients, with the supported local browser
+  login path shipped;
 - all ported compatibility, new Responses/OAuth, differential, and real-CLI
   tests pass;
 - cancellation/backpressure/resource limits are proven;
-- the container meets the memory gates; and
+- the local executable meets the memory gates; and
 - operations, security boundaries, supported client/model versions, and known
   differences are documented.
