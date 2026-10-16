@@ -16,12 +16,15 @@ with ChatGPT (SIWC) and public Responses inference are deferred for later.
 > native model discovery/cache behind injected credentials and port 17391.
 > Live discovery returned no replay-proven model: its eligible-catalog gate is
 > **NOT PASSED**. Production login wiring remains Phase 7; standalone models/chat
-> return 503, while injected valid chat still returns 501 (no generation/SSE).
+> return 503; injected runtime dependencies enable chat generation and SSE.
 > Phase 4 adds tested native Responses request projection/HTTP opening behind
 > injected credentials. Phase 5 adds the bounded native SSE provider with
 > explicit completion, buffered calls, token usage and cancellation. Independent
-> review cleared the checkpoint. No chat integration or production login is added.
-> See the [Phase 3a](docs/plans/phase3a-status.md),
+> review cleared that checkpoint. Phase 6 now integrates the one-generation turn
+> coordinator, atomic CLI tool gate and bounded SSE writer behind injection;
+> independent final review cleared the checkpoint. Production login is not added.
+> See [Phase 6](docs/plans/phase6-status.md),
+> [Phase 3a](docs/plans/phase3a-status.md),
 > [Phase 4](docs/plans/phase4-status.md), and
 > [Phase 5](docs/plans/phase5-status.md) checkpoints.
 
@@ -99,7 +102,7 @@ curl http://127.0.0.1:17391/api/cli/models # 503 until production login is wired
 ```
 
 See [local operations](docs/operations.md) for configuration precedence,
-limits, shutdown, and the intentionally unimplemented chat endpoint. The
+limits, shutdown, and the deliberately unwired standalone credential lifecycle. The
 remaining phased work is in the [implementation plan](docs/plans/implementation.md).
 
 OAuth credentials, API keys, local configuration, and runtime state must never

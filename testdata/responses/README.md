@@ -1,4 +1,4 @@
-# Phase 5 Responses fixtures
+# Responses fixtures (Phases 5–6)
 
 `phase5-text.sse` and the generated frames in
 `internal/provider/codex/{parser,parser_review,stream}_test.go` are independently authored,
@@ -27,3 +27,13 @@ Lifecycle-output regressions use matching synthetic IDs: nonempty output fails
 closed, absent/empty output remains valid, and null/non-array output is rejected. Unknown additive metadata is
 ignored, but unknown execution/state channels fail closed. See the
 [Phase 5 policy](../../docs/plans/phase5-status.md).
+
+Phase 6 sequence goldens in `internal/turn/runner_test.go`, exact SSE frame golden
+in `internal/httpserver/stream_test.go`, and generated fake Responses snapshots
+there, plus coupled TCP cancellation frames in
+`internal/httpserver/native_cancel_test.go`, are independently authored
+Apache-2.0 synthetic data. They exercise the
+pinned Atuin protocol specification, not copied upstream test code or live
+traffic. Terminal mixed batches intentionally fail atomically rather than
+reproducing reference precedence; unknown usage is null, not fabricated zero.
+No new third-party material or NOTICE change is required.

@@ -1,4 +1,4 @@
-# Local development server (through Phase 3a)
+# Local development server (through Phase 6)
 
 Requires Go 1.26.9 or newer (security fixes; Go's automatic toolchain selection
 can download it when the installed compiler is older). Build with `make build`, then run:
@@ -22,10 +22,11 @@ standalone executable does **not** load the isolated proof store or third-party
 credentials: production login/refresh/logout wiring remains Phase 7. Until then
 models/chat return safe JSON 503. With injected credentials, `GET /api/cli/models`
 returns the visible replay-proven catalog; chat resolves unknown IDs to that same
-snapshot's default, decodes the protocol, and returns HTTP 501 for valid requests,
-**not** SSE. Invalid decoded requests return 400 (`invalid_request` or
-`conversation_too_large`); oversized bodies return 413 before discovery. No
-inference provider is called yet. Other paths return JSON 404; unsupported methods
+snapshot's default. `httpserver.NewWithRuntime` accepts credentials, that catalog,
+and a provider; a complete injected runtime serves SSE after credential and
+bounded decoder validation. Catalog-only injection safely returns 503, never a
+fabricated provider. Invalid decoded requests return 400 (`invalid_request` or
+`conversation_too_large`); oversized bodies return 413 before discovery. Other paths return JSON 404; unsupported methods
 on known routes return 405. See [decoder policies](compatibility.md).
 
 Discovery limits: 2 MiB body, 256 models, 128-byte IDs, 256-byte display names,
@@ -53,14 +54,22 @@ body reads, with no waiting queue. Excess requests return 503 with `Retry-After:
 limited to 4 MiB (including chunked bodies); larger bodies return 413. Headers
 have a 16 KiB configured limit and a five-second read deadline; full request
 reads have a 15-second deadline. Idle HTTP connections expire after 60 seconds.
-The HTTP write deadline is 310 seconds, and admitted chat processing has a
-300-second context deadline after the bounded body read. Future provider work
-must honor cancellation and enforce the separate 60-second inactivity timeout,
-1 MiB SSE events, 256 KiB tool arguments, and 32 calls per response while reading
-upstream. The Phase 3 batch validator enforces argument/call-count limits on
-completed calls before any future emission; this does not replace bounded
-provider parsing. Provider timeouts/event bounds remain constants until that
-layer exists.
+The initial HTTP write deadline is 310 seconds. SSE overrides it per frame and
+flush with a five-second deadline (`Runtime.WriteTimeout` is test-injectable).
+Unsupported deadline controllers fail closed; failed writes/flushes cancel
+upstream immediately without retries. The runner bounds generation to 300 seconds
+separately from downstream cancellation, permitting a generic terminal error on
+upstream timeout. The native provider also enforces 60-second inactivity, 1 MiB
+SSE events, 256 KiB arguments and 32 calls per response. Each chat makes exactly
+one upstream generation, never executes tools, and never automatically continues.
+Calls remain buffered until Stream succeeds and the whole batch passes schema,
+capability, mixed-terminal, ID-collision and danger checks. Local calls end with
+waiting_for_tools then done; suggestions end with done without waiting. Failures
+use one fixed generic error, never raw upstream/write details. Each frame is
+single-line JSON and flushed; session header and done agree. Usage includes all
+spec fields: unknown counts (including cache creation) and all costs are null;
+known counts, including explicit zero/cache reads, are preserved. No credits or
+prices are invented. See [Phase 6 policies/tests](plans/phase6-status.md).
 
 SIGINT/SIGTERM closes admission, allows active handlers up to five seconds to
 drain, then cancels handler contexts and forcibly closes connections. Startup
@@ -70,7 +79,7 @@ are intentionally generic to avoid parser diagnostics exposing secret values.
 
 Run `make check` for tests, race detector, vet, pinned staticcheck and
 vulnerability scanning plus five-second bounded fuzz smoke tests for the
-decoder, tool-batch validator and safety backstop. `make build` creates the
+decoder, tool-batch validator, safety backstop and Responses SSE parser. `make build` creates the
 binary. Run longer fuzzing by selecting `FuzzDecode` in `./internal/atuin`,
 `FuzzValidateBatch` in `./internal/tools`, or `FuzzEscalate` in
 `./internal/safety`, for example:

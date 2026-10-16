@@ -11,7 +11,7 @@ and delivery before moving on. This file distinguishes code from live gates.
 | 3a | Independently reviewed implementation checkpoint, cleared for authorized direct-main delivery. Native HTTP discovery/required-field decoding demonstrated, but eligible live catalog **NOT PASSED**: returned catalog omits replay-proven `gpt-6.1-sol`. Injected tests and independent verification pass. Production credential wiring deferred to 7; full phase exit is not claimed. [Checkpoint](phase3a-status.md). |
 | 4 | Independently reviewed native Responses request projection/HTTP opening checkpoint, cleared for authorized direct-main delivery. Deterministic injected tests; no parser/Stream implementation or live attempts. [Checkpoint](phase4-status.md). |
 | 5 | Native bounded Responses SSE provider implemented behind injection; six initial findings/shared helper and lifecycle-output follow-up independently reviewed and cleared for authorized direct-main delivery. No live calls. [Checkpoint](phase5-status.md). |
-| 6 | Not implemented. Chat generation stays 501 when a valid injected catalog exists; production remains safe 503. |
+| 6 | Implemented behind injectable credentials/catalog/provider; one-generation runner, atomic CLI gate, bounded SSE writes and real TCP tests. Independent final review cleared runtime and all three focused test-strengthening follow-ups; authorized direct-main delivery checkpoint. Standalone remains safe 503. [Checkpoint](phase6-status.md). |
 | 7 | Not implemented. Must complete isolated production lifecycle, durable refresh, logout/account cache invalidation and no-config login-to-serve experience. |
 | 8–9 | Not implemented; real CLI, resource hardening and release gates remain. |
 
@@ -55,6 +55,19 @@ Delivered on main as `2431b10fe9fb8287de008f0ad0ceacca6f5f096b`.
 Exact-HEAD GitHub Actions run `38950960197`: completed **success** (verified
 read-only before Phase 4 implementation). Live eligible catalog remains
 **NOT PASSED**; the green deterministic CI does not clear that gate.
+
+## Phase 5 delivery checkpoint
+
+Phase 6 started from clean main `8aa312ede2fcc3078683620c7efaade9fb00ec7e`.
+Exact-HEAD Go checks run `38956867298`: **success** (coordinator-verified
+handoff). This is previous-SHA evidence, not Phase 6 CI. Independent final
+review cleared the Phase 6 runtime and all three focused follow-ups: coupled
+native TCP cancellation/admission tests, runner late callbacks/final sink
+failures, and exact tool/continuation payload assertions. Follow-ups changed no
+runtime code. Independent verification passed full check/build/diff and runtime
+race x20; focused follow-up full checks and race x20 also passed. This checkpoint
+is cleared for authorized direct-main delivery; its exact SHA and CI result
+belong in the delivery report. No new live calls were made.
 
 ## Phase 4 delivery checkpoint
 
@@ -164,4 +177,6 @@ Follow-up `make check`, `make build`, and `git diff --check`: PASS.
 - Approximately 12 GiB is free on the repository filesystem. Rust builds,
   Docker layers/images and caches need explicit disk budgeting/cleanup; avoid
   unbounded concurrent provisioning or retaining multiple large build trees.
-  No toolchain/image provisioning or Phase 8 implementation was done here.
+  `/tmp` is a separate approximately 6.4 GiB tmpfs; budget source/build staging
+  accordingly. Pinned source requires Rust 1.98.0 and default features include
+  AI. No Rust toolchain/image provisioning or Phase 8 implementation was done here.

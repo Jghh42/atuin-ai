@@ -18,9 +18,7 @@ import (
 	"github.com/Jghh42/atuin-ai/internal/config"
 )
 
-// Server owns admission control and downstream HTTP writes. Chat is deliberately
-// a generation placeholder after protocol validation until the turn coordinator
-// and provider phases are implemented.
+// Server owns admission control and downstream HTTP writes.
 type Server struct {
 	http *http.Server
 	log  *slog.Logger
@@ -40,15 +38,32 @@ func NewWithCatalog(cfg config.Config, logger *slog.Logger, source CatalogSource
 	return newWithCatalog(cfg, logger, source, nil)
 }
 
-// newWithCatalog's private observer verifies decoder resolution without adding
-// test-only public APIs or implementing generation before its planned phase.
+// newWithCatalog retains the private decoder observer for boundary tests.
 func newWithCatalog(cfg config.Config, logger *slog.Logger, source CatalogSource, decoded func(atuin.Request)) (*Server, error) {
+	return newWithRuntime(cfg, logger, Runtime{Catalog: source}, decoded)
+}
+
+func newWithRuntime(cfg config.Config, logger *slog.Logger, runtime Runtime, decoded func(atuin.Request)) (*Server, error) {
+	source := runtime.Catalog
 	if source == nil {
 		return nil, errors.New("catalog source required")
 	}
 	return buildServer(cfg, logger, source, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		snapshot, err := source.Get(r.Context())
-		if err != nil {
+		timeout := runtime.PreflightTimeout
+		if timeout <= 0 {
+			timeout = 8 * time.Second
+		}
+		preflight, stop := context.WithTimeout(r.Context(), timeout)
+		defer stop()
+		if runtime.Credentials != nil {
+			cred, err := runtime.Credentials.Current(preflight)
+			if err != nil || cred.AccessToken == "" || cred.Identity.Account == "" || cred.Identity.Provider == "" || preflight.Err() != nil {
+				writeError(w, 503, "upstream_unavailable", "Upstream login required")
+				return
+			}
+		}
+		snapshot, err := source.Get(preflight)
+		if err != nil || preflight.Err() != nil {
 			writeError(w, 503, "models_unavailable", "Login and successful model discovery required; check default_model override")
 			return
 		}
@@ -80,7 +95,11 @@ func newWithCatalog(cfg config.Config, logger *slog.Logger, source CatalogSource
 		if decoded != nil {
 			decoded(request)
 		}
-		writeError(w, http.StatusNotImplemented, "not_implemented", "Chat generation is not implemented yet")
+		if runtime.Provider == nil || runtime.Credentials == nil || preflight.Err() != nil {
+			writeError(w, http.StatusServiceUnavailable, "upstream_unavailable", "Upstream login required")
+			return
+		}
+		streamChat(w, r, runtime, request)
 	}))
 }
 
@@ -140,10 +159,8 @@ func buildServer(cfg config.Config, logger *slog.Logger, source CatalogSource, c
 				}
 				return
 			}
-			// Bound body buffering and the admitted request's generation lifetime.
-			ctx, cancel := context.WithTimeout(r.Context(), config.GenerationTimeout)
-			defer cancel()
-			r = r.WithContext(ctx)
+			// The runner bounds generation separately from the downstream context,
+			// so an upstream timeout can still produce a terminal error.
 			r.Body = io.NopCloser(bytes.NewReader(body))
 			chat.ServeHTTP(w, r)
 		default:

@@ -68,7 +68,7 @@ func TestOneCatalogReadPerRequestAndObservedDecoderResolution(t *testing.T) {
 	}
 	w = httptest.NewRecorder()
 	s.http.Handler.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/cli/chat", strings.NewReader(`{"messages":[{"role":"user","content":"hi"}],"config":{"model":"unknown"}}`)))
-	if w.Code != 501 || source.calls != 2 || observed != 1 {
+	if w.Code != 503 || source.calls != 2 || observed != 1 {
 		t.Fatal(w.Code, source.calls, observed, w.Body.String())
 	}
 	w = httptest.NewRecorder()
@@ -97,7 +97,7 @@ func TestSnapshotResolutionAndSanitizedProjection(t *testing.T) {
 	}
 	w = httptest.NewRecorder()
 	s.http.Handler.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/cli/chat", strings.NewReader(`{"messages":[{"role":"user","content":"hi"}],"config":{"model":"missing"}}`)))
-	if w.Code != 501 {
+	if w.Code != 503 {
 		t.Fatal(w.Code, w.Body.String())
 	}
 }

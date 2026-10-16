@@ -114,7 +114,7 @@ func TestRoutesAndModels(t *testing.T) {
 		t.Fatal("upstream IDs leaked")
 	}
 	request(t, "POST", base+"/api/cli/chat", strings.NewReader(`{}`), 400)
-	request(t, "POST", base+"/api/cli/chat", strings.NewReader(`{"messages":[{"role":"user","content":"hi"}]}`), 501)
+	request(t, "POST", base+"/api/cli/chat", strings.NewReader(`{"messages":[{"role":"user","content":"hi"}]}`), 503)
 	request(t, "GET", base+"/api/cli/chat", nil, 405)
 	request(t, "POST", base+"/api/cli/models", nil, 405)
 	request(t, "HEAD", base+"/api/cli/models", nil, 405)
