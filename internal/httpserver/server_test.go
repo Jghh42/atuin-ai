@@ -235,8 +235,97 @@ func TestGracefulShutdownDrainsActiveRequest(t *testing.T) {
 	}))
 	finished := make(chan struct{})
 	go func() { defer close(finished); request(t, "POST", base+"/api/cli/chat", strings.NewReader(`{}`), 501) }()
-	<-entered
+	select {
+	case <-entered:
+	case <-time.After(time.Second):
+		t.Fatal("handler not entered")
+	}
 	cancel()
+	waitForListenerClose(t, strings.TrimPrefix(base, "http://"))
 	close(release)
-	<-finished
+	select {
+	case <-finished:
+	case <-time.After(time.Second):
+		t.Fatal("handler did not drain")
+	}
+}
+
+func waitForListenerClose(t *testing.T, address string) {
+	t.Helper()
+	deadline := time.Now().Add(time.Second)
+	for {
+		c, err := net.DialTimeout("tcp4", address, 50*time.Millisecond)
+		if err != nil {
+			return
+		}
+		c.Close()
+		if time.Now().After(deadline) {
+			t.Fatal("listener did not close")
+		}
+		time.Sleep(time.Millisecond)
+	}
+}
+
+func TestForcedShutdownCancelsActiveRequest(t *testing.T) {
+	entered, cancelled := make(chan struct{}), make(chan struct{})
+	release := make(chan struct{})
+	defer close(release)
+	s, err := newServer(config.Default(), nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		close(entered)
+		<-r.Context().Done()
+		close(cancelled)
+		<-release
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.http.Addr = "127.0.0.1:0"
+	l, err := s.Listen()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- s.Serve(ctx, l) }()
+	clientDone := make(chan error, 1)
+	go func() {
+		client := &http.Client{Timeout: 7 * time.Second}
+		res, err := client.Post("http://"+l.Addr().String()+"/api/cli/chat", "application/json", strings.NewReader(`{}`))
+		if res != nil {
+			res.Body.Close()
+		}
+		clientDone <- err
+	}()
+	select {
+	case <-entered:
+	case <-time.After(time.Second):
+		t.Fatal("handler not entered")
+	}
+	started := time.Now()
+	cancel()
+	select {
+	case <-cancelled:
+	case <-time.After(6 * time.Second):
+		t.Fatal("handler context not cancelled")
+	}
+	if time.Since(started) < 4*time.Second {
+		t.Fatal("did not allow graceful drain")
+	}
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Serve did not return")
+	}
+	select {
+	case err := <-clientDone:
+		if err == nil {
+			t.Fatal("active connection not forcibly closed")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("client still connected")
+	}
 }

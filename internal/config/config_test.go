@@ -75,6 +75,9 @@ func TestRejectInvalidTOMLAndUnknownKeys(t *testing.T) {
 		"[[models]]\nalias='x'\nname='X'\nmodel='upstream'\nbind='localhost'",
 		"[[models]]\nalias='x'\nname='X'\nmodel='upstream'\n[models.security]\nauth=false",
 		"port=0", "port=65536", "models=[]", "default_model='missing'",
+		"Models=[]", "PORT=8080", "port=8080\nPORT=8081", "Default_Model='gpt-5'",
+		"[[models]]\nAlias='x'\nname='X'\nmodel='upstream'",
+		"[[Models]]\nalias='x'\nname='X'\nmodel='upstream'",
 	} {
 		t.Run(text, func(t *testing.T) {
 			if _, err := loadText(t, text); err == nil {

@@ -17,6 +17,10 @@ text, tests, or compatibility cases; it retains upstream license texts only.
 Future copied or transformed material must preserve required attribution,
 license/copyright notices and modification notices, with file-level provenance.
 
+The phase 1 Go executable links github.com/BurntSushi/toml v1.5.0,
+MIT License, Copyright (c) 2013 TOML authors. Its COPYING text is retained
+in LICENSES/BurntSushi-TOML-MIT.txt; see docs/provenance/dependencies.md.
+
 Project-owned material has no confirmed project license. Apache-2.0 is a
 proposal pending explicit user authorization, not an adopted license; see
 docs/decisions/0003-project-license-proposal.md.

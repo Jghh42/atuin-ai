@@ -11,10 +11,9 @@ documentation was retrieved over HTTPS on 2026-10-16; see
 browser/device decision, and [ADR 0002](decisions/0002-stateless-responses-continuation.md)
 for replay requirements.
 
-This change is documentation/provenance only. Go module/tooling are deferred
-by task scope. No auth helper is shipped: safely validating OIDC and rotating
-credentials would exceed a simple supported proof script, and belongs in a
-reviewed harness or Phase 7 implementation.
+The phase 1 HTTP shell and Go tooling are present, but do not implement auth
+or inference. No auth helper is shipped: safely validating OIDC and rotating
+credentials belongs in a reviewed proof harness or Phase 7 implementation.
 
 ## Prerequisites (all must be satisfied before the opt-in proof)
 

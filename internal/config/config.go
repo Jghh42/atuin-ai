@@ -80,7 +80,7 @@ func Load(path string) (Config, error) {
 			}
 		}
 		if !valid {
-			return Config{}, fmt.Errorf("config contains a noncanonical or unknown key")
+			return Config{}, fmt.Errorf("config contains a noncanonical or unknown key: %s", key.String())
 		}
 	}
 	if keys := meta.Undecoded(); len(keys) > 0 {

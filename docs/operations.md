@@ -27,13 +27,16 @@ container port publication. Loopback does not protect against other local
 processes/users or browser-origin attacks; this is a personal local process,
 not a multi-user security boundary.
 
-At most four chat requests are admitted, including body reads, with no waiting
-queue. Excess requests return 503 with `Retry-After: 1`. Each admitted body is
+At most 64 TCP connections are retained; further accepted connections are
+closed immediately without creating HTTP connection goroutines. The finite OS
+TCP backlog is separate. At most four chat requests are admitted, including
+body reads, with no waiting queue. Excess requests return 503 with `Retry-After: 1`. Each admitted body is
 limited to 4 MiB (including chunked bodies); larger bodies return 413. Headers
 have a 16 KiB configured limit and a five-second read deadline; full request
 reads have a 15-second deadline. Idle HTTP connections expire after 60 seconds.
-The HTTP write deadline is 310 seconds. Future provider work must enforce the
-separate 60-second inactivity and 300-second generation timeouts, 1 MiB SSE
+The HTTP write deadline is 310 seconds, and admitted chat processing has a
+300-second context deadline after the bounded body read. Future provider work
+must honor cancellation and enforce the separate 60-second inactivity timeout, 1 MiB SSE
 events, 256 KiB tool arguments, and 32 calls per response; those limits are
 constants only until those layers exist.
 
