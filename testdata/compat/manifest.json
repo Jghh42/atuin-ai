@@ -1,8 +1,1095 @@
 {
   "schema_version": 1,
   "recorded_on": "2026-10-16",
-  "status": "inventory-only; no imported or derived fixture cases",
+  "status": "Phase 2–3 request fixtures, tool/prompt snapshots and Go table-test provenance; no real CLI proof",
   "source_manifest": "../../docs/provenance/upstream-sources.json",
   "contract": "../../docs/specs/atuin-ai-server-api.md",
-  "cases": []
+  "cases": [
+    {
+      "id": "string_messages",
+      "destination": "testdata/compat/requests.json#string_messages",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/http/request_test.gleam",
+      "original_test": [
+        "decodes_string_messages_test",
+        "estimate_counts_string_content_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "specification_basis": "docs/plans/implementation.md Phase 2; docs/specs/atuin-ai-server-api.md messages",
+      "intentional_behavior_differences": [],
+      "notes": "Synthetic Go-era inputs, not live data. No upstream implementation or fixture JSON copied."
+    },
+    {
+      "id": "empty_blocks",
+      "destination": "testdata/compat/requests.json#empty_blocks",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/http/request_test.gleam",
+      "original_test": [
+        "decodes_empty_block_content_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "specification_basis": "docs/plans/implementation.md Phase 2; docs/specs/atuin-ai-server-api.md messages",
+      "intentional_behavior_differences": [],
+      "notes": "Synthetic Go-era inputs, not live data. No upstream implementation or fixture JSON copied."
+    },
+    {
+      "id": "text_tool_use_and_inline_result",
+      "destination": "testdata/compat/requests.json#text_tool_use_and_inline_result",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/http/request_test.gleam",
+      "original_test": [
+        "decodes_text_and_tool_use_blocks_test",
+        "decodes_inline_tool_result_test",
+        "estimate_counts_tool_use_input_test",
+        "estimate_counts_inline_tool_result_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "specification_basis": "docs/plans/implementation.md Phase 2; docs/specs/atuin-ai-server-api.md messages",
+      "intentional_behavior_differences": [
+        "Tool cases supply complete matched history: this decoder rejects unresolved/orphan/duplicate calls and wrong-role blocks instead of deferring repair to the provider adapter."
+      ],
+      "notes": "Synthetic Go-era inputs, not live data. No upstream implementation or fixture JSON copied."
+    },
+    {
+      "id": "remote_result",
+      "destination": "testdata/compat/requests.json#remote_result",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/http/request_test.gleam",
+      "original_test": [
+        "decodes_remote_tool_result_test",
+        "estimate_counts_remote_content_length_test",
+        "hydrate_missing_result_degrades_to_placeholder_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "specification_basis": "docs/plans/implementation.md Phase 2; docs/specs/atuin-ai-server-api.md messages",
+      "intentional_behavior_differences": [
+        "Tool cases supply complete matched history: this decoder rejects unresolved/orphan/duplicate calls and wrong-role blocks instead of deferring repair to the provider adapter."
+      ],
+      "notes": "Synthetic Go-era inputs, not live data. No upstream implementation or fixture JSON copied."
+    },
+    {
+      "id": "legacy_calls",
+      "destination": "testdata/compat/requests.json#legacy_calls",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/http/request_test.gleam",
+      "original_test": [
+        "normalizes_legacy_tool_calls_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "specification_basis": "docs/plans/implementation.md Phase 2; docs/specs/atuin-ai-server-api.md messages",
+      "intentional_behavior_differences": [
+        "Tool cases supply complete matched history: this decoder rejects unresolved/orphan/duplicate calls and wrong-role blocks instead of deferring repair to the provider adapter."
+      ],
+      "notes": "Synthetic Go-era inputs, not live data. No upstream implementation or fixture JSON copied."
+    },
+    {
+      "id": "assistant_without_content",
+      "destination": "testdata/compat/requests.json#assistant_without_content",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/http/request_test.gleam",
+      "original_test": [
+        "decodes_assistant_tool_call_without_content_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "specification_basis": "docs/plans/implementation.md Phase 2; docs/specs/atuin-ai-server-api.md messages",
+      "intentional_behavior_differences": [
+        "Tool cases supply complete matched history: this decoder rejects unresolved/orphan/duplicate calls and wrong-role blocks instead of deferring repair to the provider adapter."
+      ],
+      "notes": "Synthetic Go-era inputs, not live data. No upstream implementation or fixture JSON copied."
+    },
+    {
+      "id": "missing_content",
+      "destination": "testdata/compat/requests.json#missing_content",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/http/request_test.gleam",
+      "original_test": [
+        "rejects_missing_content_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "specification_basis": "docs/plans/implementation.md Phase 2; docs/specs/atuin-ai-server-api.md messages",
+      "intentional_behavior_differences": [],
+      "notes": "Synthetic Go-era inputs, not live data. No upstream implementation or fixture JSON copied."
+    },
+    {
+      "id": "non_list_messages",
+      "destination": "testdata/compat/requests.json#non_list_messages",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/http/request_test.gleam",
+      "original_test": [
+        "rejects_non_list_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "specification_basis": "docs/plans/implementation.md Phase 2; docs/specs/atuin-ai-server-api.md messages",
+      "intentional_behavior_differences": [],
+      "notes": "Synthetic Go-era inputs, not live data. No upstream implementation or fixture JSON copied."
+    },
+    {
+      "id": "non_map_message",
+      "destination": "testdata/compat/requests.json#non_map_message",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/http/request_test.gleam",
+      "original_test": [
+        "rejects_non_map_message_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "specification_basis": "docs/plans/implementation.md Phase 2; docs/specs/atuin-ai-server-api.md messages",
+      "intentional_behavior_differences": [],
+      "notes": "Synthetic Go-era inputs, not live data. No upstream implementation or fixture JSON copied."
+    },
+    {
+      "id": "missing_role",
+      "destination": "testdata/compat/requests.json#missing_role",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/http/request_test.gleam",
+      "original_test": [
+        "rejects_missing_role_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "specification_basis": "docs/plans/implementation.md Phase 2; docs/specs/atuin-ai-server-api.md messages",
+      "intentional_behavior_differences": [],
+      "notes": "Synthetic Go-era inputs, not live data. No upstream implementation or fixture JSON copied."
+    },
+    {
+      "id": "invalid_role",
+      "destination": "testdata/compat/requests.json#invalid_role",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/http/request_test.gleam",
+      "original_test": [
+        "rejects_invalid_role_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "specification_basis": "docs/plans/implementation.md Phase 2; docs/specs/atuin-ai-server-api.md messages",
+      "intentional_behavior_differences": [],
+      "notes": "Synthetic Go-era inputs, not live data. No upstream implementation or fixture JSON copied."
+    },
+    {
+      "id": "empty_messages",
+      "destination": "testdata/compat/requests.json#empty_messages",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "original",
+      "specification_basis": "docs/plans/implementation.md Phase 2; docs/specs/atuin-ai-server-api.md messages",
+      "intentional_behavior_differences": [],
+      "notes": "Synthetic Go-era inputs, not live data. No upstream implementation or fixture JSON copied."
+    },
+    {
+      "id": "null_content",
+      "destination": "testdata/compat/requests.json#null_content",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "original",
+      "specification_basis": "docs/plans/implementation.md Phase 2; docs/specs/atuin-ai-server-api.md messages",
+      "intentional_behavior_differences": [],
+      "notes": "Synthetic Go-era inputs, not live data. No upstream implementation or fixture JSON copied."
+    },
+    {
+      "id": "unknown_block",
+      "destination": "testdata/compat/requests.json#unknown_block",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "original",
+      "specification_basis": "docs/plans/implementation.md Phase 2; docs/specs/atuin-ai-server-api.md messages",
+      "intentional_behavior_differences": [],
+      "notes": "Synthetic Go-era inputs, not live data. No upstream implementation or fixture JSON copied."
+    },
+    {
+      "id": "orphan_result",
+      "destination": "testdata/compat/requests.json#orphan_result",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "original",
+      "specification_basis": "docs/plans/implementation.md Phase 2; docs/specs/atuin-ai-server-api.md messages",
+      "intentional_behavior_differences": [],
+      "notes": "Synthetic Go-era inputs, not live data. No upstream implementation or fixture JSON copied."
+    },
+    {
+      "id": "unresolved_call",
+      "destination": "testdata/compat/requests.json#unresolved_call",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "original",
+      "specification_basis": "docs/plans/implementation.md Phase 2; docs/specs/atuin-ai-server-api.md messages",
+      "intentional_behavior_differences": [],
+      "notes": "Synthetic Go-era inputs, not live data. No upstream implementation or fixture JSON copied."
+    },
+    {
+      "id": "terminal_suggestion",
+      "destination": "testdata/compat/requests.json#terminal_suggestion",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "original",
+      "specification_basis": "docs/plans/implementation.md Phase 2; docs/specs/atuin-ai-server-api.md messages",
+      "intentional_behavior_differences": [],
+      "notes": "Synthetic Go-era inputs, not live data. No upstream implementation or fixture JSON copied."
+    },
+    {
+      "id": "bad_session_uuid",
+      "destination": "testdata/compat/requests.json#bad_session_uuid",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "original",
+      "specification_basis": "docs/plans/implementation.md Phase 2; docs/specs/atuin-ai-server-api.md messages",
+      "intentional_behavior_differences": [],
+      "notes": "Synthetic Go-era inputs, not live data. No upstream implementation or fixture JSON copied."
+    },
+    {
+      "id": "TestAdvisoryDefaults",
+      "destination": "internal/atuin/advisory_test.go#TestAdvisoryDefaults",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/domain/config_test.gleam",
+      "original_test": [
+        "empty_params_gives_default_test",
+        "non_map_config_gives_default_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [],
+      "notes": "Table assertions independently recreated from source behavior; includes extra malformed-field and Unicode boundaries. Capability tests additionally follow domain/capabilities.gleam and from_list_* / merge_unions_test in domain/capabilities_test.gleam."
+    },
+    {
+      "id": "TestAdvisoryContext",
+      "destination": "internal/atuin/advisory_test.go#TestAdvisoryContext",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/http/controller.gleam",
+      "original_test": "no named test; context decoder behavior",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [],
+      "notes": "Table assertions independently recreated from source behavior; includes extra malformed-field and Unicode boundaries. Capability tests additionally follow domain/capabilities.gleam and from_list_* / merge_unions_test in domain/capabilities_test.gleam."
+    },
+    {
+      "id": "TestAdvisoryIndependentConfigFields",
+      "destination": "internal/atuin/advisory_test.go#TestAdvisoryIndependentConfigFields",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/domain/config_test.gleam",
+      "original_test": [
+        "parses_nested_fields_test",
+        "invalid_field_values_fall_back_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [],
+      "notes": "Table assertions independently recreated from source behavior; includes extra malformed-field and Unicode boundaries. Capability tests additionally follow domain/capabilities.gleam and from_list_* / merge_unions_test in domain/capabilities_test.gleam."
+    },
+    {
+      "id": "TestAdvisorySelection",
+      "destination": "internal/atuin/advisory_test.go#TestAdvisorySelection",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/domain/config_test.gleam",
+      "original_test": [
+        "rejects_raw_provider_model_ids_test",
+        "without_llm_selection_clears_prompt_fn_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [],
+      "notes": "Table assertions independently recreated from source behavior; includes extra malformed-field and Unicode boundaries. Capability tests additionally follow domain/capabilities.gleam and from_list_* / merge_unions_test in domain/capabilities_test.gleam."
+    },
+    {
+      "id": "TestAdvisoryCapabilities",
+      "destination": "internal/atuin/advisory_test.go#TestAdvisoryCapabilities",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/domain/config_test.gleam",
+      "original_test": [
+        "unions_legacy_and_nested_capabilities_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [],
+      "notes": "Table assertions independently recreated from source behavior; includes extra malformed-field and Unicode boundaries. Capability tests additionally follow domain/capabilities.gleam and from_list_* / merge_unions_test in domain/capabilities_test.gleam."
+    },
+    {
+      "id": "TestAdvisoryLists",
+      "destination": "internal/atuin/advisory_test.go#TestAdvisoryLists",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/domain/config_test.gleam",
+      "original_test": [
+        "user_contexts_truncate_and_skip_invalid_test",
+        "user_contexts_take_ten_before_validity_test",
+        "skills_name_only_gets_empty_description_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [],
+      "notes": "Table assertions independently recreated from source behavior; includes extra malformed-field and Unicode boundaries. Capability tests additionally follow domain/capabilities.gleam and from_list_* / merge_unions_test in domain/capabilities_test.gleam."
+    },
+    {
+      "id": "TestAdvisoryTruncation",
+      "destination": "internal/atuin/advisory_test.go#TestAdvisoryTruncation",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/domain/config_test.gleam",
+      "original_test": [
+        "user_contexts_truncate_and_skip_invalid_test",
+        "skills_overflow_truncates_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [],
+      "notes": "Table assertions independently recreated from source behavior; includes extra malformed-field and Unicode boundaries. Capability tests additionally follow domain/capabilities.gleam and from_list_* / merge_unions_test in domain/capabilities_test.gleam."
+    },
+    {
+      "id": "TestStrictMessageValidation",
+      "destination": "internal/atuin/decode_test.go#TestStrictMessageValidation",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "docs/plans/implementation.md Phase 2 and documented strict replay/bounded-work policies",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "TestResultValidation",
+      "destination": "internal/atuin/decode_test.go#TestResultValidation",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "docs/plans/implementation.md Phase 2 and documented strict replay/bounded-work policies",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "TestTranscriptConsistency",
+      "destination": "internal/atuin/decode_test.go#TestTranscriptConsistency",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "docs/plans/implementation.md Phase 2 and documented strict replay/bounded-work policies",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "TestEstimateBounds",
+      "destination": "internal/atuin/decode_test.go#TestEstimateBounds",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "docs/plans/implementation.md Phase 2 and documented strict replay/bounded-work policies",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "TestSessionIDs",
+      "destination": "internal/atuin/decode_test.go#TestSessionIDs",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "docs/plans/implementation.md Phase 2 and documented strict replay/bounded-work policies",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "TestWorkBounds",
+      "destination": "internal/atuin/decode_test.go#TestWorkBounds",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "docs/plans/implementation.md Phase 2 and documented strict replay/bounded-work policies",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "FuzzDecode",
+      "destination": "internal/atuin/decode_test.go#FuzzDecode",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "docs/plans/implementation.md Phase 2 and documented strict replay/bounded-work policies",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "TestToolInputEstimateRepresentation",
+      "destination": "internal/atuin/decode_test.go#TestToolInputEstimateRepresentation",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "docs/plans/implementation.md Phase 2; representation-independent estimates and HTTP protocol boundary",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "TestChatProtocolBoundary",
+      "destination": "internal/httpserver/chat_test.go#TestChatProtocolBoundary",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "docs/plans/implementation.md Phase 2; representation-independent estimates and HTTP protocol boundary",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "tool-definition-suggest_command",
+      "destination": "testdata/tools/suggest_command.json",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/tools.gleam",
+      "original_test": "no named schema snapshot test; suggest_command() definition",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Tool/field prose is original; schema names/types/required sets/enums/bounds match the source."
+      ],
+      "notes": "Golden generated from Go Definition, not provider-specific wire JSON. Output-range prose additionally warns about CLI missing/empty range behavior."
+    },
+    {
+      "id": "tool-definition-read_file",
+      "destination": "testdata/tools/read_file.json",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/tools.gleam",
+      "original_test": "no named schema snapshot test; read_file() definition",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Tool/field prose is original; schema names/types/required sets/enums/bounds match the source."
+      ],
+      "notes": "Golden generated from Go Definition, not provider-specific wire JSON. Output-range prose additionally warns about CLI missing/empty range behavior."
+    },
+    {
+      "id": "tool-definition-edit_file",
+      "destination": "testdata/tools/edit_file.json",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/tools.gleam",
+      "original_test": "no named schema snapshot test; edit_file() definition",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Tool/field prose is original; schema names/types/required sets/enums/bounds match the source."
+      ],
+      "notes": "Golden generated from Go Definition, not provider-specific wire JSON. Output-range prose additionally warns about CLI missing/empty range behavior."
+    },
+    {
+      "id": "tool-definition-write_file",
+      "destination": "testdata/tools/write_file.json",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/tools.gleam",
+      "original_test": "no named schema snapshot test; write_file() definition",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Tool/field prose is original; schema names/types/required sets/enums/bounds match the source."
+      ],
+      "notes": "Golden generated from Go Definition, not provider-specific wire JSON. Output-range prose additionally warns about CLI missing/empty range behavior."
+    },
+    {
+      "id": "tool-definition-atuin_history",
+      "destination": "testdata/tools/atuin_history.json",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/tools.gleam",
+      "original_test": "no named schema snapshot test; atuin_history() definition",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Tool/field prose is original; schema names/types/required sets/enums/bounds match the source."
+      ],
+      "notes": "Golden generated from Go Definition, not provider-specific wire JSON. Output-range prose additionally warns about CLI missing/empty range behavior."
+    },
+    {
+      "id": "tool-definition-atuin_output",
+      "destination": "testdata/tools/atuin_output.json",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/tools.gleam",
+      "original_test": "no named schema snapshot test; atuin_output() definition",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Tool/field prose is original; schema names/types/required sets/enums/bounds match the source."
+      ],
+      "notes": "Golden generated from Go Definition, not provider-specific wire JSON. Output-range prose additionally warns about CLI missing/empty range behavior."
+    },
+    {
+      "id": "tool-definition-execute_shell_command",
+      "destination": "testdata/tools/execute_shell_command.json",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/tools.gleam",
+      "original_test": "no named schema snapshot test; execute_shell_command() definition",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Tool/field prose is original; schema names/types/required sets/enums/bounds match the source."
+      ],
+      "notes": "Golden generated from Go Definition, not provider-specific wire JSON. Output-range prose additionally warns about CLI missing/empty range behavior."
+    },
+    {
+      "id": "tool-definition-load_skill",
+      "destination": "testdata/tools/load_skill.json",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/tools.gleam",
+      "original_test": "no named schema snapshot test; load_skill() definition",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Tool/field prose is original; schema names/types/required sets/enums/bounds match the source."
+      ],
+      "notes": "Golden generated from Go Definition, not provider-specific wire JSON. Output-range prose additionally warns about CLI missing/empty range behavior."
+    },
+    {
+      "id": "tool-capability-matrix",
+      "destination": "testdata/tools/capabilities.golden",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/domain/tools_test.gleam",
+      "original_test": [
+        "no_capabilities_means_no_client_tools_test",
+        "each_capability_gates_its_tool_test",
+        "client_tools_keep_stable_order_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Always includes terminal suggest_command plus gated client tools; tests all 256 tool/invocation masks."
+      ],
+      "notes": "Independently recreated in Go; no upstream code, prompt or description prose copied."
+    },
+    {
+      "id": "TestDefinitionsCapabilityMatrix",
+      "destination": "internal/tools/registry_test.go#TestDefinitionsCapabilityMatrix",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/tools.gleam; test/atuin_ai_core/domain/tools_test.gleam",
+      "original_test": [
+        "no_capabilities_means_no_client_tools_test",
+        "each_capability_gates_its_tool_test",
+        "client_tools_keep_stable_order_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Golden prose is original; matrix additionally asserts invocation/unknown/v2 markers never enable a tool."
+      ],
+      "notes": "Independently recreated in Go; no upstream code, prompt or description prose copied."
+    },
+    {
+      "id": "TestCapabilityMatrixGolden",
+      "destination": "internal/tools/registry_test.go#TestCapabilityMatrixGolden",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/tools.gleam; test/atuin_ai_core/domain/tools_test.gleam",
+      "original_test": [
+        "no_capabilities_means_no_client_tools_test",
+        "each_capability_gates_its_tool_test",
+        "client_tools_keep_stable_order_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Golden prose is original; matrix additionally asserts invocation/unknown/v2 markers never enable a tool."
+      ],
+      "notes": "Independently recreated in Go; no upstream code, prompt or description prose copied."
+    },
+    {
+      "id": "TestDefinitionGoldens",
+      "destination": "internal/tools/registry_test.go#TestDefinitionGoldens",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/tools.gleam; test/atuin_ai_core/domain/tools_test.gleam",
+      "original_test": [
+        "no_capabilities_means_no_client_tools_test",
+        "each_capability_gates_its_tool_test",
+        "client_tools_keep_stable_order_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Golden prose is original; matrix additionally asserts invocation/unknown/v2 markers never enable a tool."
+      ],
+      "notes": "Independently recreated in Go; no upstream code, prompt or description prose copied."
+    },
+    {
+      "id": "TestDefinitionSchemaVocabulary",
+      "destination": "internal/tools/registry_test.go#TestDefinitionSchemaVocabulary",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/tools.gleam; test/atuin_ai_core/domain/tools_test.gleam",
+      "original_test": [
+        "no_capabilities_means_no_client_tools_test",
+        "each_capability_gates_its_tool_test",
+        "client_tools_keep_stable_order_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Golden prose is original; matrix additionally asserts invocation/unknown/v2 markers never enable a tool."
+      ],
+      "notes": "Independently recreated in Go; no upstream code, prompt or description prose copied."
+    },
+    {
+      "id": "TestDefinitionsMutationIndependent",
+      "destination": "internal/tools/registry_test.go#TestDefinitionsMutationIndependent",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "Phase 3 stable independently owned tool definitions",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "TestValidateCapabilities",
+      "destination": "internal/tools/validate_test.go#TestValidateCapabilities",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "docs/plans/implementation.md Phase 3; docs/specs/atuin-ai-server-api.md tool-call input schemas; documented atomic/safe JSON batch policies",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "TestValidateInputs",
+      "destination": "internal/tools/validate_test.go#TestValidateInputs",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "docs/plans/implementation.md Phase 3; docs/specs/atuin-ai-server-api.md tool-call input schemas; documented atomic/safe JSON batch policies",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "TestRequiredToolFields",
+      "destination": "internal/tools/validate_test.go#TestRequiredToolFields",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "docs/plans/implementation.md Phase 3; docs/specs/atuin-ai-server-api.md tool-call input schemas; documented atomic/safe JSON batch policies",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "TestAtomicToolBatches",
+      "destination": "internal/tools/validate_test.go#TestAtomicToolBatches",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "docs/plans/implementation.md Phase 3; docs/specs/atuin-ai-server-api.md tool-call input schemas; documented atomic/safe JSON batch policies",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "TestToolJSONValidation",
+      "destination": "internal/tools/validate_test.go#TestToolJSONValidation",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "docs/plans/implementation.md Phase 3; docs/specs/atuin-ai-server-api.md tool-call input schemas; documented atomic/safe JSON batch policies",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "TestClientJSONCompatibility",
+      "destination": "internal/tools/validate_test.go#TestClientJSONCompatibility",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "docs/plans/implementation.md Phase 3; docs/specs/atuin-ai-server-api.md tool-call input schemas; documented atomic/safe JSON batch policies",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "TestToolResourceBounds",
+      "destination": "internal/tools/validate_test.go#TestToolResourceBounds",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "docs/plans/implementation.md Phase 3; docs/specs/atuin-ai-server-api.md tool-call input schemas; documented atomic/safe JSON batch policies",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "TestSuggestionDangerBackstop",
+      "destination": "internal/tools/validate_test.go#TestSuggestionDangerBackstop",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "docs/plans/implementation.md Phase 3; docs/specs/atuin-ai-server-api.md tool-call input schemas; documented atomic/safe JSON batch policies",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "FuzzValidateBatch",
+      "destination": "internal/tools/validate_test.go#FuzzValidateBatch",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "docs/plans/implementation.md Phase 3; docs/specs/atuin-ai-server-api.md tool-call input schemas; documented atomic/safe JSON batch policies",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "prompt-default",
+      "destination": "testdata/prompts/default.golden",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/prompt.gleam",
+      "original_test": "no named equivalent; build_system_prompt, build_context_description, turn_context behavior",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Original concise prompt prose; explicit one-generation/local-tool and untrusted-data boundaries; no dev mode, custom prompt variants, docs fetching, version upgrade or PTY claims."
+      ],
+      "notes": "Independently recreated in Go; no upstream code, prompt or description prose copied."
+    },
+    {
+      "id": "prompt-full",
+      "destination": "testdata/prompts/full.golden",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/prompt.gleam",
+      "original_test": "no named equivalent; build_system_prompt, build_context_description, turn_context behavior",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Original concise prompt prose; explicit one-generation/local-tool and untrusted-data boundaries; no dev mode, custom prompt variants, docs fetching, version upgrade or PTY claims."
+      ],
+      "notes": "Independently recreated in Go; no upstream code, prompt or description prose copied."
+    },
+    {
+      "id": "prompt-turn",
+      "destination": "testdata/prompts/turn.golden",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/prompt.gleam",
+      "original_test": "no named equivalent; build_system_prompt, build_context_description, turn_context behavior",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Original concise prompt prose; explicit one-generation/local-tool and untrusted-data boundaries; no dev mode, custom prompt variants, docs fetching, version upgrade or PTY claims."
+      ],
+      "notes": "Independently recreated in Go; no upstream code, prompt or description prose copied."
+    },
+    {
+      "id": "prompt-TestGoldens",
+      "destination": "internal/prompt/prompt_test.go#TestGoldens",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/prompt.gleam; test/atuin_ai_core/domain/prompt_test.gleam",
+      "original_test": "no named equivalent for most rendering; pty_proxy_* tests inform deliberate omission",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Original policy prose and stronger lifecycle/untrusted-data boundaries; no variants/dev mode/docs fetch/version/PTY guidance."
+      ],
+      "notes": "Independently recreated in Go; no upstream code, prompt or description prose copied."
+    },
+    {
+      "id": "prompt-TestExecutionPreferenceGating",
+      "destination": "internal/prompt/prompt_test.go#TestExecutionPreferenceGating",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/prompt.gleam; test/atuin_ai_core/domain/prompt_test.gleam",
+      "original_test": "no named equivalent for most rendering; pty_proxy_* tests inform deliberate omission",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Original policy prose and stronger lifecycle/untrusted-data boundaries; no variants/dev mode/docs fetch/version/PTY guidance."
+      ],
+      "notes": "Independently recreated in Go; no upstream code, prompt or description prose copied."
+    },
+    {
+      "id": "prompt-TestCapabilitiesSkillsAndInvocationGating",
+      "destination": "internal/prompt/prompt_test.go#TestCapabilitiesSkillsAndInvocationGating",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/prompt.gleam; test/atuin_ai_core/domain/prompt_test.gleam",
+      "original_test": "no named equivalent for most rendering; pty_proxy_* tests inform deliberate omission",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Original policy prose and stronger lifecycle/untrusted-data boundaries; no variants/dev mode/docs fetch/version/PTY guidance."
+      ],
+      "notes": "Independently recreated in Go; no upstream code, prompt or description prose copied."
+    },
+    {
+      "id": "prompt-TestStablePrefixAndNoVariants",
+      "destination": "internal/prompt/prompt_test.go#TestStablePrefixAndNoVariants",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/prompt.gleam; test/atuin_ai_core/domain/prompt_test.gleam",
+      "original_test": "no named equivalent for most rendering; pty_proxy_* tests inform deliberate omission",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Original policy prose and stronger lifecycle/untrusted-data boundaries; no variants/dev mode/docs fetch/version/PTY guidance."
+      ],
+      "notes": "Independently recreated in Go; no upstream code, prompt or description prose copied."
+    },
+    {
+      "id": "prompt-TestHostileXMLIsData",
+      "destination": "internal/prompt/prompt_test.go#TestHostileXMLIsData",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/prompt.gleam; test/atuin_ai_core/domain/prompt_test.gleam",
+      "original_test": "no named equivalent for most rendering; pty_proxy_* tests inform deliberate omission",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Original policy prose and stronger lifecycle/untrusted-data boundaries; no variants/dev mode/docs fetch/version/PTY guidance."
+      ],
+      "notes": "Independently recreated in Go; no upstream code, prompt or description prose copied."
+    },
+    {
+      "id": "prompt-TestGraphemeBoundaries",
+      "destination": "internal/prompt/prompt_test.go#TestGraphemeBoundaries",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/prompt.gleam; test/atuin_ai_core/domain/prompt_test.gleam",
+      "original_test": "no named equivalent for most rendering; pty_proxy_* tests inform deliberate omission",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Original policy prose and stronger lifecycle/untrusted-data boundaries; no variants/dev mode/docs fetch/version/PTY guidance."
+      ],
+      "notes": "Independently recreated in Go; no upstream code, prompt or description prose copied."
+    },
+    {
+      "id": "prompt-TestTurnUTCAndAbsentVersusEmpty",
+      "destination": "internal/prompt/prompt_test.go#TestTurnUTCAndAbsentVersusEmpty",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "src/atuin_ai_core/domain/prompt.gleam; test/atuin_ai_core/domain/prompt_test.gleam",
+      "original_test": "no named equivalent for most rendering; pty_proxy_* tests inform deliberate omission",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "Original policy prose and stronger lifecycle/untrusted-data boundaries; no variants/dev mode/docs fetch/version/PTY guidance."
+      ],
+      "notes": "Independently recreated in Go; no upstream code, prompt or description prose copied."
+    },
+    {
+      "id": "TestCommandSafetyBaseline",
+      "destination": "internal/safety/commands_test.go#TestCommandSafetyBaseline",
+      "upstream_repository": "https://github.com/atuinsh/atuin-ai-core",
+      "upstream_commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "original_file": "test/atuin_ai_core/domain/safety_test.gleam",
+      "original_test": [
+        "benign_commands_are_safe_test",
+        "recursive_delete_of_root_test",
+        "recursive_delete_flag_orders_test",
+        "safe_rm_commands_test",
+        "disk_write_test",
+        "filesystem_destruction_test",
+        "tier_one_keyword_gate_test",
+        "comments_are_safe_test",
+        "case_insensitive_matching_test"
+      ],
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSES/Apache-2.0.txt",
+      "reuse": "independently_recreated",
+      "intentional_behavior_differences": [
+        "The broken keyword gate is not reproduced: chmod 777 and curl-to-shell warn rather than being classified Safe."
+      ],
+      "notes": "Independently recreated in Go; no upstream code, prompt or description prose copied."
+    },
+    {
+      "id": "TestCommandSafetyGaps",
+      "destination": "internal/safety/commands_test.go#TestCommandSafetyGaps",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "Phase 3 risk-only escalation backstop, documented heuristic limitations and independently designed gap/resource scenarios",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "TestEscalateNeverLowersRisk",
+      "destination": "internal/safety/commands_test.go#TestEscalateNeverLowersRisk",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "Phase 3 risk-only escalation backstop, documented heuristic limitations and independently designed gap/resource scenarios",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "TestWarningsStableAndUnique",
+      "destination": "internal/safety/commands_test.go#TestWarningsStableAndUnique",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "Phase 3 risk-only escalation backstop, documented heuristic limitations and independently designed gap/resource scenarios",
+      "intentional_behavior_differences": []
+    },
+    {
+      "id": "FuzzEscalate",
+      "destination": "internal/safety/commands_test.go#FuzzEscalate",
+      "upstream_repository": "not applicable; original case",
+      "upstream_commit": "not applicable",
+      "original_file": "not applicable",
+      "original_test": "not applicable",
+      "reuse": "original",
+      "license_spdx": "Apache-2.0",
+      "notice": "NOTICE; LICENSE",
+      "specification_basis": "Phase 3 risk-only escalation backstop, documented heuristic limitations and independently designed gap/resource scenarios",
+      "intentional_behavior_differences": []
+    }
+  ]
 }

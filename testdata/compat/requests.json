@@ -1,0 +1,20 @@
+[
+ {"name":"string_messages","request":{"messages":[{"role":"user","content":"hello"},{"role":"assistant","content":"hi"}]},"tokens":1},
+ {"name":"empty_blocks","request":{"messages":[{"role":"user","content":[]}]},"tokens":0},
+ {"name":"text_tool_use_and_inline_result","request":{"messages":[{"role":"assistant","content":[{"type":"text","text":"read"},{"type":"tool_use","id":"c1","name":"read_file","input":{"n":9007199254740993}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"c1","content":"okay"}]}]},"tokens":7},
+ {"name":"remote_result","request":{"messages":[{"role":"assistant","content":[{"type":"tool_use","id":"c1","name":"read_file","input":null}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"c1","remote":true,"content_length":20,"is_error":true}]}]},"tokens":6},
+ {"name":"legacy_calls","request":{"messages":[{"role":"assistant","content":"read","tool_calls":[{"id":"c1","name":"read_file","input":{}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"c1","content":"ok"}]}]},"tokens":2},
+ {"name":"assistant_without_content","request":{"messages":[{"role":"assistant","tool_calls":[{"id":"c1","name":"read_file","input":{}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"c1","content":"ok"}]}]},"tokens":1},
+ {"name":"missing_content","request":{"messages":[{"role":"user"}]},"error":"invalid_request"},
+ {"name":"non_list_messages","request":{"messages":{}},"error":"invalid_request"},
+ {"name":"non_map_message","request":{"messages":[true]},"error":"invalid_request"},
+ {"name":"missing_role","request":{"messages":[{"content":"hi"}]},"error":"invalid_request"},
+ {"name":"invalid_role","request":{"messages":[{"role":"system","content":"hi"}]},"error":"invalid_request"},
+ {"name":"empty_messages","request":{"messages":[]},"error":"invalid_request"},
+ {"name":"null_content","request":{"messages":[{"role":"assistant","content":null,"tool_calls":[{"id":"c","name":"suggest_command","input":{}}]}]},"error":"invalid_request"},
+ {"name":"unknown_block","request":{"messages":[{"role":"user","content":[{"type":"image","url":"x"}]}]},"error":"invalid_request"},
+ {"name":"orphan_result","request":{"messages":[{"role":"user","content":[{"type":"tool_result","tool_use_id":"missing","content":"ok"}]}]},"error":"invalid_request"},
+ {"name":"unresolved_call","request":{"messages":[{"role":"assistant","content":[{"type":"tool_use","id":"c","name":"read_file","input":{}}]}]},"error":"invalid_request"},
+ {"name":"terminal_suggestion","request":{"messages":[{"role":"assistant","content":[{"type":"tool_use","id":"c","name":"suggest_command","input":{}}]},{"role":"user","content":"again"}]},"tokens":1},
+ {"name":"bad_session_uuid","request":{"messages":[{"role":"user","content":"hi"}],"session_id":"secret-invalid-id"},"error":"invalid_request"}
+]

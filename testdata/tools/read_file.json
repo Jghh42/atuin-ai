@@ -1,0 +1,26 @@
+{
+  "name": "read_file",
+  "description": "Inspect a local file or directory. File lines include one-based numbers and tabs. Read only unseen ranges unless an edit reports that the file changed; do not re-read merely to check freshness.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file_path": {
+        "type": "string",
+        "description": "Absolute path or path relative to the working directory."
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000,
+        "description": "Line count to read; defaults to 100. Unused for directories."
+      },
+      "offset": {
+        "type": "integer",
+        "description": "Lines to skip; defaults to zero. Unused for directories."
+      }
+    },
+    "required": [
+      "file_path"
+    ]
+  }
+}

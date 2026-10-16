@@ -1,0 +1,49 @@
+{
+  "name": "suggest_command",
+  "description": "Offer a command for the user to run, with an explanation and confidence and risk ratings. Use plain text instead when no command is being proposed.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "command": {
+        "type": "string",
+        "description": "Shell command offered for the user to run."
+      },
+      "description": {
+        "type": "string",
+        "description": "Short explanation of the command."
+      },
+      "confidence": {
+        "type": "string",
+        "enum": [
+          "high",
+          "med",
+          "low"
+        ],
+        "description": "Estimated confidence that the command fits the request."
+      },
+      "confidence_notes": {
+        "type": "string",
+        "description": "Reason for the confidence rating."
+      },
+      "danger": {
+        "type": "string",
+        "enum": [
+          "high",
+          "med",
+          "low"
+        ],
+        "description": "Risk: high for destructive or sudo commands, med for file changes, low for read-only work."
+      },
+      "danger_notes": {
+        "type": "string",
+        "description": "Specific risks the user should consider."
+      }
+    },
+    "required": [
+      "command",
+      "description",
+      "confidence",
+      "danger"
+    ]
+  }
+}

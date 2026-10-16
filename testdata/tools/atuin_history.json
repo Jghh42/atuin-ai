@@ -1,0 +1,37 @@
+{
+  "name": "atuin_history",
+  "description": "Find past commands in Atuin history. Prefer the narrowest useful scope: workspace for a project, directory for a location, session for the current shell, host for this machine, or global for all machines.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "type": "string",
+        "description": "History search text; an empty string requests recent commands."
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 50,
+        "description": "Result count; defaults to 10."
+      },
+      "filter_modes": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": [
+            "workspace",
+            "directory",
+            "session",
+            "host",
+            "global"
+          ]
+        },
+        "description": "Search scopes in preference order; the first permitted scope is used."
+      }
+    },
+    "required": [
+      "query",
+      "filter_modes"
+    ]
+  }
+}

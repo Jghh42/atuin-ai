@@ -1,0 +1,30 @@
+{
+  "name": "edit_file",
+  "description": "Replace exact text in a file already read with read_file. Require a unique match unless replace_all is true. Prefer targeted edits over rewriting; re-read after a changed-file error, not preemptively.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file_path": {
+        "type": "string",
+        "description": "Absolute or working-directory-relative path of the previously read file."
+      },
+      "old_string": {
+        "type": "string",
+        "description": "Exact existing text, including all whitespace."
+      },
+      "new_string": {
+        "type": "string",
+        "description": "Replacement text."
+      },
+      "replace_all": {
+        "type": "boolean",
+        "description": "Replace every match when true; otherwise require one match. Defaults to false."
+      }
+    },
+    "required": [
+      "file_path",
+      "old_string",
+      "new_string"
+    ]
+  }
+}

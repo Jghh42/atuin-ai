@@ -111,7 +111,8 @@ gates.
 - `GET /api/cli/models`
 - `POST /api/cli/chat`
 - a fixed loopback-only listener with no client-facing authentication
-- model aliases and default-model selection
+- login-driven Codex model discovery, upstream IDs as aliases, and automatic
+  default-model selection; no manually configured model list
 - Atuin request decoding and normalization
 - OpenAI Responses projection and SSE parsing
 - text streaming
@@ -173,6 +174,59 @@ therefore a correctness decision, not merely schedule reduction.
 11. V1 listens on `127.0.0.1` only and has no Atuin-client authentication.
     Any non-loopback listener is a later security feature, not a config toggle
     exposed by the initial implementation.
+12. The target default listener is `127.0.0.1:17391`, replacing the common
+    `8080` development default. Port remains configurable; host does not.
+    A collision fails clearly rather than silently switching ports.
+13. Explicit application login is sufficient for initialization. Configuration
+    is optional, with only `port` and an optional `default_model` override in
+    the initial target schema. Manual `[[models]]` declarations and alias
+    mappings are superseded by authenticated upstream discovery.
+
+### Configuration and model-discovery target
+
+These decisions revise the completed Phase 1–2 scaffolding, not its historical
+implementation status. Runtime defaults and `config.example.toml` still use
+`8080` and a static placeholder catalog until the Phase 3a follow-up below.
+The intended no-config workflow is application login, then `serve`, then Atuin
+configured with `endpoint = "http://127.0.0.1:17391"` and
+`endpoint_protocol = "oss"`.
+
+- Discover models through the native Codex backend's authenticated catalog
+  contract, not public `/v1/models` or an app-server/Pi subprocess. Current
+  Codex source uses `/backend-api/codex/models` with a `client_version` query;
+  pin the source and verify required version/auth/account headers and actual
+  response metadata with this application's isolated login before relying on
+  it. This discovery route has not yet passed a live project gate.
+- Translate the catalog to Atuin's `{default, models:[{alias,name,description}]}`
+  response. Use upstream model IDs as aliases; do not forward raw Codex JSON,
+  credential data or arbitrary upstream fields to Atuin.
+- Apply upstream picker visibility and our compatibility eligibility checks.
+  Discovery establishes availability, not stateless replay/tool compatibility.
+  Initially enable only models satisfying the existing replay gates; expanding
+  eligibility is an internal compatibility decision, not user configuration.
+- Honor an explicit `default_model` only if it resolves to an eligible discovered
+  ID; otherwise fail clearly rather than quietly choosing a different model.
+  Without an override, prefer the latest eligible Sol release using verified
+  catalog release metadata or a source-verified, numerically tested version
+  convention. Do not infer recency from lexical sorting or invent model IDs.
+  If release ordering is unavailable/ambiguous, use upstream priority (lower
+  numeric values first) within the eligible Sol family; if no Sol is eligible,
+  use the highest-priority
+  eligible picker model. Resolve equal priorities deterministically by ID.
+- Maintain a bounded immutable catalog snapshot shared by model listing and
+  chat resolution. Cache it in memory for 15 minutes, coalesce refreshes, and
+  bound upstream response size, model count, string lengths and fetch timeout.
+  Use injected clocks/transports for tests. Avoid a fresh upstream call for
+  every Atuin model-list request; use ETag revalidation if verified supported.
+- Scope snapshots to the authenticated account/provider and invalidate them on
+  logout or account change. On a transient refresh failure, a last-known-good
+  snapshot for that same account may serve for at most one hour since its last
+  successful validation. Never reuse it after explicit credential revocation
+  or reauthentication failure. Missing login, an empty eligible catalog or a
+  failed initial discovery returns a safe unavailable response; never restore
+  a fabricated placeholder model. The default must always appear in `models`.
+- Keep unknown chat-model fallback to the current discovered default, as in
+  Phase 2, resolving a request against one consistent catalog snapshot.
 
 ## 5. Proposed repository layout
 
@@ -309,7 +363,9 @@ before building the full server:
 Pin the installed Pi 1.1.0 OAuth/provider source and capture redacted request,
 response, account-header, tool-shape, model-selection, and completion evidence.
 Do not assume public `/v1/models` is the Codex model-discovery contract. Verify
-which model IDs can be configured/advertised by our local catalog.
+which discovered model IDs can be advertised by our local catalog. The passed
+Phase 0 inference proof does not establish model-discovery correctness; the
+additional discovery gate is tracked in Phase 3a.
 Never commit tokens, device codes, or raw authorization URLs.
 
 Record the independent SIWC naming-consent/organization-policy denial as a
@@ -331,11 +387,12 @@ installed Pi, and the independent SIWC denial is not counted as a pass.
 Implement:
 
 - a `serve` command;
-- familiar TOML configuration and `CHAT_CONFIG`;
-- a fixed `127.0.0.1:<port>` listener (port configurable, host not
-  configurable in v1);
+- optional TOML configuration and `CHAT_CONFIG`;
+- a fixed `127.0.0.1:<port>` listener (target default port `17391`, port
+  configurable, host not configurable in v1);
 - no client-facing authentication middleware;
-- ordered model aliases and a default alias;
+- ordered model aliases and a default alias (completed initially with a static
+  catalog; replace with discovered IDs and automatic selection in Phase 3a);
 - model endpoint;
 - chat endpoint placeholder;
 - graceful shutdown and structured safe logging.
@@ -360,6 +417,9 @@ saturation, loopback-only binding, unknown routes, and shutdown.
 
 ### Phase 2 — Atuin protocol decoder
 
+Implemented in `internal/atuin`; see the [Phase 2 checkpoint](phase2-status.md)
+for validation, integration scope and explicit compatibility policies.
+
 Implement:
 
 - string and content-block messages;
@@ -382,6 +442,9 @@ unintentionally converted through `float64`.
 panic or exceed configured work bounds.
 
 ### Phase 3 — prompts, tool registry, and safety
+
+Implemented in `internal/prompt`, `internal/tools`, and `internal/safety`; see
+the [Phase 3 checkpoint](phase3-status.md) for validation and integration scope.
 
 Implement model-facing definitions for:
 
@@ -410,6 +473,39 @@ new text; choose explicitly and record provenance.
 
 **Exit:** every capability combination and tool schema has snapshot tests;
 malformed and mixed terminal tool batches are rejected before emission.
+
+### Phase 3a — zero-config initialization and discovered catalog follow-up
+
+This is a newly planned follow-up, not part of the completed Phase 3 work.
+
+1. Pin the native Codex catalog source/contract and capture redacted live
+   discovery evidence using this application's isolated Phase 0 credentials.
+   Do not access existing Pi/Codex credential files, log raw catalog bodies or
+   infer success from source inspection alone.
+2. Implement bounded catalog fetch/validation, Atuin projection, eligibility,
+   automatic Sol/default selection and account-scoped snapshot/cache behavior
+   described above, behind the credential interface. Keep provider-specific
+   discovery separate from Atuin response types.
+3. Change the default port to `17391` in code, examples, operations docs and
+   tests. Make configuration genuinely optional and remove the required static
+   model catalog and public/private alias distinction from config validation.
+   Treat old `[[models]]` config as an actionable migration error, not silently
+   ignored settings; do not add a second manual-catalog mode.
+4. Replace the catalog/config/HTTP tests that assume static placeholder models.
+   Cover automatic selection, explicit overrides, numeric release ordering,
+   visibility/eligibility, deterministic ties, no-Sol fallback, empty catalogs,
+   malformed/oversized metadata, timeouts, refresh coalescing, TTL/stale bounds,
+   account isolation, logout, discovery failure and no-config startup defaults.
+5. Integrate discovery with production login/refresh/logout in Phase 7. Until
+   that credential lifecycle exists, use injected credentials and fake upstream
+   tests for production packages; retain the isolated probe for live validation.
+   Do not import probe credentials into production automatically or claim a
+   completed login-only startup experience before Phase 7 integration passes.
+
+**Exit:** the additional live catalog contract is demonstrated, deterministic
+fake-upstream tests prove zero-model-config discovery/default behavior, and
+`17391` is the implemented/documented default. Production login-only startup
+remains a Phase 7 integration gate.
 
 ### Phase 4 — Responses request projection
 
@@ -501,7 +597,10 @@ Implement the Pi-style device flow established in Phase 0 natively in Go:
 - access-token expiry handling and serialized rotating refresh;
 - atomic persistence of replacement tokens before allowing further use;
 - local logout/deletion and remote revocation only where verified supported;
-- explicit reauthentication on `invalid_grant`.
+- explicit reauthentication on `invalid_grant`;
+- production catalog discovery after login, safe account-bound cache handling
+  across refresh/logout, and no-config startup with port `17391`, completing
+  Phase 3a's login-only initialization workflow.
 
 Credential record includes:
 
@@ -765,6 +864,9 @@ implementation begins.
 
 The project is complete when:
 
+- explicit application login is sufficient to initialize the server without a
+  model configuration file; eligible models are discovered automatically and
+  the no-config listener is `127.0.0.1:17391`;
 - an unmodified supported Atuin CLI can list models and complete text,
   suggestion, and all local-tool workflows;
 - native Go inference uses the validated Codex Responses adapter directly,

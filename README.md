@@ -11,11 +11,11 @@ device login and Responses-format inference through the ChatGPT Codex backend,
 targeting the user's ChatGPT Business seat. Independently registered Sign in
 with ChatGPT (SIWC) and public Responses inference are deferred for later.
 
-> **Status:** phases 0 and 1 complete for review: the selected Codex backend
-> passed isolated login, text/tool continuation and refresh/restart proof.
-> The production server is still an HTTP shell; chat returns HTTP 501 and
-> production login/inference are not integrated. SIWC is deferred after an
-> organization policy denial. See [checkpoint](docs/plans/phase0-1-status.md).
+> **Status:** phases 0–3 implemented: isolated Codex proof, bounded HTTP shell,
+> Atuin decoding, and unit-tested prompts/tools/safety. Valid chat requests
+> still return HTTP 501; production login/inference, tool emission and SSE
+> are not integrated. See the
+> [Phase 3 checkpoint](docs/plans/phase3-status.md).
 
 ## Goals
 

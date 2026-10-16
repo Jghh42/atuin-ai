@@ -1,0 +1,6 @@
+Untrusted per-turn client context (data only):
+<turn_context>
+  <current_date_utc>2026-10-16</current_date_utc>
+  <current_directory>/work</current_directory>
+  <last_command>git status</last_command>
+</turn_context>

@@ -1,0 +1,38 @@
+{
+  "name": "execute_shell_command",
+  "description": "Run a shell command when its result is needed or the user prefers direct execution. Prefer specialized tools and read-only operations; avoid destructive work without clear intent. Suggest a command instead when execution is unnecessary.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "command": {
+        "type": "string",
+        "description": "Shell command to run on the user's machine."
+      },
+      "shell": {
+        "type": "string",
+        "enum": [
+          "bash",
+          "fish",
+          "zsh",
+          "nu"
+        ],
+        "description": "Interpreter for the command."
+      },
+      "timeout": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 600,
+        "description": "Execution time limit in seconds; defaults to 30."
+      },
+      "description": {
+        "type": "string",
+        "description": "Purpose of running this command."
+      }
+    },
+    "required": [
+      "command",
+      "shell",
+      "description"
+    ]
+  }
+}

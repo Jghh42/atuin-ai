@@ -1,0 +1,35 @@
+name: Nightly bounded fuzzing
+on:
+  schedule:
+    - cron: '23 3 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: ./internal/atuin
+            target: FuzzDecode
+          - package: ./internal/tools
+            target: FuzzValidateBatch
+          - package: ./internal/safety
+            target: FuzzEscalate
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go test '${{ matrix.package }}' -run='^$' -fuzz='${{ matrix.target }}' -fuzztime=2m -parallel=2
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: fuzz-${{ matrix.target }}-${{ github.run_id }}
+          path: internal/**/testdata/fuzz/**
+          if-no-files-found: ignore
+          retention-days: 7

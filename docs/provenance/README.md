@@ -14,11 +14,12 @@ v0.4.0 baseline described in the specification.
 | Reference server and core | Source-informed protocol/plan research; no code imported in Phase 0 | Apache-2.0; full unmodified license text retained in `LICENSES/Apache-2.0.txt` (identical in both pinned trees) |
 | Atuin client | Source-informed protocol/plan research; no code imported in Phase 0 | MIT; full license and Copyright (c) 2021 Ellie Huxtable retained in `LICENSES/Atuin-MIT.txt` |
 | OpenAI SIWC public documentation | Summarized/linked research in auth ADR/checklist, not vendored | No redistribution license inferred; not covered by the Apache/MIT source records |
-| Compatibility fixtures | None imported or derived yet | Empty [fixture manifest](../../testdata/compat/manifest.json) |
+| Phase 2 decoder tests/fixtures | Independently recreated request/config/capability behavior, plus original boundary tests; no upstream implementation copied | Apache-2.0; per-case [fixture manifest](../../testdata/compat/manifest.json), attribution in `NOTICE` |
+| Phase 3 prompts, descriptions, schemas and safety | Original prose and implementation; source-informed schemas/behavior and independently recreated baseline cases | Apache-2.0; [Phase 3 checkpoint](../plans/phase3-status.md), per-case manifest, attribution in `NOTICE` |
 | Installed `@earendil-works/pi-ai` 1.1.0 | Source-only research for native Codex auth/inference decision; no implementation copied by the decision | MIT; artifact paths/hashes and future import requirements in [ADR 0004](../decisions/0004-pi-style-codex-authentication.md) |
 
 This is a reference-source inventory, not a dependency SBOM. The Go module's
-runtime dependency is recorded in [dependency notices](dependencies.md). No root NOTICE was present in the
+runtime dependencies are recorded in [dependency notices](dependencies.md). No root NOTICE was present in the
 three pinned upstream trees; this says nothing about notices in future import
 paths or transitive dependencies. Apache license boilerplate is not a basis
 for inventing an upstream copyright holder. Preserve any actual file headers

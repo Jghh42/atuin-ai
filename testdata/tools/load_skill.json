@@ -1,0 +1,16 @@
+{
+  "name": "load_skill",
+  "description": "Fetch a relevant skill's full instructions by its listed name. Skills contain user workflows and conventions; embedded shell substitutions are resolved in the returned content.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "Skill identifier from the available-skills list."
+      }
+    },
+    "required": [
+      "name"
+    ]
+  }
+}

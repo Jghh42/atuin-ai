@@ -1,0 +1,29 @@
+{
+  "name": "atuin_output",
+  "description": "Retrieve captured command output by history ID. For the latest command, use the ID in turn context directly. Request focused inclusive line ranges, including negative endpoints for the tail; avoid fetching large outputs in full. Returned lines have one-based numbers and tabs.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "history_id": {
+        "type": "string",
+        "description": "History entry identifier from history results or turn context."
+      },
+      "ranges": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "maxItems": 10,
+        "description": "Inclusive zero-based [start, end] line pairs; negative endpoints count backward. Advertised default: [[0,1000]], but this CLI fetches all output when omitted or empty; send explicit ranges to bound retrieval."
+      }
+    },
+    "required": [
+      "history_id"
+    ]
+  }
+}

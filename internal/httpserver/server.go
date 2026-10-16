@@ -13,20 +13,48 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Jghh42/atuin-ai/internal/atuin"
 	"github.com/Jghh42/atuin-ai/internal/catalog"
 	"github.com/Jghh42/atuin-ai/internal/config"
 )
 
 // Server owns admission control and downstream HTTP writes. Chat is deliberately
-// a placeholder until the protocol and turn coordinator phases are implemented.
+// a generation placeholder after protocol validation until the turn coordinator
+// and provider phases are implemented.
 type Server struct {
 	http *http.Server
 	log  *slog.Logger
 }
 
 func New(cfg config.Config, logger *slog.Logger) (*Server, error) {
-	return newServer(cfg, logger, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		writeError(w, http.StatusNotImplemented, "not_implemented", "Chat is not implemented yet")
+	models := atuin.ModelCatalog{Default: cfg.DefaultModel, Models: make(map[string]string)}
+	for _, m := range cfg.Models {
+		models.Models[m.Alias] = m.Model
+	}
+	if models.Default == "" && len(cfg.Models) > 0 {
+		models.Default = cfg.Models[0].Alias
+	}
+	decoder := atuin.Decoder{Catalog: models}
+	return newServer(cfg, logger, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			writeError(w, 400, "invalid_request", "Unable to read request body")
+			return
+		}
+		if _, err := decoder.Decode(body); err != nil {
+			var protocolError *atuin.Error
+			if errors.As(err, &protocolError) {
+				status := http.StatusBadRequest
+				if protocolError.Code == "internal_error" {
+					status = http.StatusInternalServerError
+				}
+				writeError(w, status, protocolError.Code, protocolError.Message)
+				return
+			}
+			writeError(w, 500, "internal_error", "Unable to decode chat request")
+			return
+		}
+		writeError(w, http.StatusNotImplemented, "not_implemented", "Chat generation is not implemented yet")
 	}))
 }
 
@@ -85,7 +113,7 @@ func newServer(cfg config.Config, logger *slog.Logger, chat http.Handler) (*Serv
 				}
 				return
 			}
-			// Bound body buffering and generation lifetime before the future protocol layer.
+			// Bound body buffering and the admitted request's generation lifetime.
 			ctx, cancel := context.WithTimeout(r.Context(), config.GenerationTimeout)
 			defer cancel()
 			r = r.WithContext(ctx)

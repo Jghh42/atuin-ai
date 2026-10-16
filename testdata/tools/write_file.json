@@ -1,0 +1,25 @@
+{
+  "name": "write_file",
+  "description": "Write complete file contents, creating parent directories as needed. Existing files require overwrite=true; use edit_file for localized changes.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "file_path": {
+        "type": "string",
+        "description": "Absolute path or path relative to the working directory."
+      },
+      "content": {
+        "type": "string",
+        "description": "Entire contents of the resulting file."
+      },
+      "overwrite": {
+        "type": "boolean",
+        "description": "Allow replacing an existing file. Defaults to false."
+      }
+    },
+    "required": [
+      "file_path",
+      "content"
+    ]
+  }
+}
