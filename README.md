@@ -17,7 +17,10 @@ with ChatGPT (SIWC) and public Responses inference are deferred for later.
 > Live discovery returned no replay-proven model: its eligible-catalog gate is
 > **NOT PASSED**. Production login wiring remains Phase 7; standalone models/chat
 > return 503, while injected valid chat still returns 501 (no generation/SSE).
-> See the [Phase 3a checkpoint](docs/plans/phase3a-status.md).
+> Phase 4 adds tested native Responses request projection/HTTP opening behind
+> injected credentials, not stream parsing or chat integration.
+> See the [Phase 3a](docs/plans/phase3a-status.md) and
+> [Phase 4](docs/plans/phase4-status.md) checkpoints.
 
 ## Goals
 

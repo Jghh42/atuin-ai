@@ -9,9 +9,36 @@ and delivery before moving on. This file distinguishes code from live gates.
 | 1–2 | Historical bounded shell and decoder completed; static catalog/8080 assumptions now superseded by Phase 3a, not retroactively claimed discovery behavior. [Phase 2](phase2-status.md). |
 | 3 | Prompts/tools/safety implemented, no tool emission. [Checkpoint](phase3-status.md). |
 | 3a | Independently reviewed implementation checkpoint, cleared for authorized direct-main delivery. Native HTTP discovery/required-field decoding demonstrated, but eligible live catalog **NOT PASSED**: returned catalog omits replay-proven `gpt-6.1-sol`. Injected tests and independent verification pass. Production credential wiring deferred to 7; full phase exit is not claimed. [Checkpoint](phase3a-status.md). |
-| 4–6 | Not implemented by this change. Can proceed using deterministic injected credentials/providers while retaining the live blocker. Chat generation stays 501 when a valid injected catalog exists. |
+| 4 | Independently reviewed native Responses request projection/HTTP opening checkpoint, cleared for authorized direct-main delivery. Deterministic injected tests; no parser/Stream implementation or live attempts. [Checkpoint](phase4-status.md). |
+| 5–6 | Not implemented. Chat generation stays 501 when a valid injected catalog exists; production remains safe 503. |
 | 7 | Not implemented. Must complete isolated production lifecycle, durable refresh, logout/account cache invalidation and no-config login-to-serve experience. |
 | 8–9 | Not implemented; real CLI, resource hardening and release gates remain. |
+
+## Phase 3a delivery checkpoint
+
+Delivered on main as `2431b10fe9fb8287de008f0ad0ceacca6f5f096b`.
+Exact-HEAD GitHub Actions run `38950960197`: completed **success** (verified
+read-only before Phase 4 implementation). Live eligible catalog remains
+**NOT PASSED**; the green deterministic CI does not clear that gate.
+
+## Phase 4 validation checkpoint
+
+Request projection only, independently reviewed and cleared for authorized
+direct-main delivery. Exact SHA and CI outcome belong in the delivery report.
+No Phase 5 parser/state machine, Phase 6 integration, or Phase 7 store work.
+`make check`, `make build`, and `git diff --check`: PASS. Full check includes
+unit/race tests, vet, pinned staticcheck/govulncheck (no vulnerabilities), and
+bounded existing fuzz smoke tests. Results/interfaces/next steps are recorded
+in [Phase 4 status](phase4-status.md). Independent review found a dangling
+terminal-suggestion replay and credential-lookup cancellation classification.
+Both fixes cleared by independent final review: suggestions replay as labeled non-execution assistant
+text with original raw arguments, never synthetic outputs; context errors are
+preserved immediately after lookup. Added before/after-turn and blocked-source
+regressions, and pinned/read Pi's `dist/api/transform-messages.js` dependency.
+No new live attempts or eligibility changes; the catalog blocker is still
+**NOT PASSED**. Post-fix `make check`, `make build`, `git diff --check`, and
+`go test -race ./internal/provider/codex -count=20`: PASS. Independent validation
+also passed full check/build and repeated race tests. No new review findings.
 
 ## Phase 3a validation checkpoint
 

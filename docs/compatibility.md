@@ -125,6 +125,22 @@ text segmentation only when those are not the behavior under test.
   **No match is not proof of safety.** This heuristic is not a parser, sandbox
   or authorization mechanism; CLI permissions remain the enforcement point.
 
+## Phase 4 Responses history exception
+
+Ordinary historical local tools retain original call_id/raw argument JSON and
+must have corresponding results across the supplied history. No missing-result
+repair or executed output is fabricated. Atuin's `suggest_command` is a terminal
+suggestion with no result, so it instead becomes deterministic assistant text:
+`Terminal command suggestion (suggest_command; suggestion only, not evidence of execution). Original arguments JSON: `
+followed by unchanged raw argument JSON. It is never replayed as a dangling
+Responses function call. This explicit compatibility exception preserves the
+suggestion without asserting that the user ran it. It differs from pinned Pi's
+`transform-messages.js` synthetic-result repair; [provenance/pins](provenance/pi-codex.md)
+record the inspected dependency and decision. `internal/provider/codex/request_test.go`
+contains independently written synthetic before/after-user-turn regressions,
+including raw numeric spellings and ordinary paired local calls. This is not
+live proof or real-CLI validation; the live eligible-catalog gate remains NOT PASSED.
+
 Before importing, follow the [third-party process](provenance/README.md).
 Before claiming model support, complete the selected-backend
 [live validation](authentication.md). The isolated Codex proof covers only the

@@ -515,11 +515,20 @@ remains a Phase 7 integration gate.
 
 ### Phase 4 — Responses request projection
 
+Independently reviewed implementation checkpoint behind injected credentials/HTTP; see the
+[Phase 4 checkpoint](phase4-status.md). This is request projection/opening only,
+not a complete streaming provider or chat integration. TurnContext is a separate
+first user input item on every request, followed by complete historical blocks.
+The live eligible-catalog blocker remains NOT PASSED.
+
 Project normalized Atuin history to Responses input:
 
 - system policy → `instructions` or documented developer-message form;
 - user and assistant text → message items;
-- assistant `tool_use` → `function_call` using the same `call_id`;
+- ordinary assistant `tool_use` → `function_call` using the same `call_id`;
+- historical terminal `suggest_command` → labeled non-execution assistant text
+  plus original raw argument JSON, because Atuin supplies no result; never a
+  dangling function call or fabricated execution output;
 - user tool result → `function_call_output`;
 - failed tool result → deterministic textual error representation;
 - full relevant transcript included on every request;
