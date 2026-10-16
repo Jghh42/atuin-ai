@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "recorded_on": "2026-10-16",
+  "baseline_document": "docs/specs/atuin-ai-server-api.md",
+  "project_license_status": "unconfirmed; Apache-2.0 proposed only",
+  "sources": [
+    {
+      "repository": "https://github.com/atuinsh/atuin-ai-server",
+      "commit": "4d582bc5ceea5b5edfdcf3abb49dc850400cda7c",
+      "role": "reference server",
+      "license_spdx": "Apache-2.0",
+      "upstream_license_url": "https://github.com/atuinsh/atuin-ai-server/blob/4d582bc5ceea5b5edfdcf3abb49dc850400cda7c/LICENSE",
+      "upstream_license_path": "LICENSE",
+      "retained_license_path": "LICENSES/Apache-2.0.txt",
+      "license_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "root_notice_present": false,
+      "verification": "Pinned local git tree and license blob inspected; no implementation material imported by Phase 0."
+    },
+    {
+      "repository": "https://github.com/atuinsh/atuin-ai-core",
+      "commit": "565877e97ed3ff4840481b8d47e12eb2f9854039",
+      "role": "shared reference core",
+      "license_spdx": "Apache-2.0",
+      "upstream_license_url": "https://github.com/atuinsh/atuin-ai-core/blob/565877e97ed3ff4840481b8d47e12eb2f9854039/LICENSE",
+      "upstream_license_path": "LICENSE",
+      "retained_license_path": "LICENSES/Apache-2.0.txt",
+      "license_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "root_notice_present": false,
+      "verification": "Pinned local git tree and license blob inspected; no implementation material imported by Phase 0."
+    },
+    {
+      "repository": "https://github.com/atuinsh/atuin",
+      "commit": "4ca8b77c8a526b8c294eb864a2b74c95c685c983",
+      "role": "client",
+      "license_spdx": "MIT",
+      "upstream_license_url": "https://github.com/atuinsh/atuin/blob/4ca8b77c8a526b8c294eb864a2b74c95c685c983/LICENSE",
+      "upstream_license_path": "LICENSE",
+      "retained_license_path": "LICENSES/Atuin-MIT.txt",
+      "license_sha256": "f87d1042ef858e746db8429f69a0cdd9dc73a28595dc738e5cbeb97ad8586d64",
+      "root_notice_present": false,
+      "verification": "Pinned local git tree and license blob inspected; no implementation material imported by Phase 0."
+    }
+  ]
+}

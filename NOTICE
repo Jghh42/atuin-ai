@@ -1,0 +1,22 @@
+atuin-ai — provenance notice (not a project license grant)
+
+This is a source-informed rewrite design referencing:
+- atuinsh/atuin-ai-server, Apache License 2.0
+- atuinsh/atuin-ai-core, Apache License 2.0
+- atuinsh/atuin, MIT License; Copyright (c) 2021 Ellie Huxtable
+
+Exact source revisions, upstream license locations and retained license-text
+checksums are in docs/provenance/upstream-sources.json. License reference texts
+are retained under LICENSES/. No root upstream NOTICE file was present in the
+three pinned trees inspected. This inventory does not replace a per-file
+notice review before any future code, prompt, description, or fixture import.
+
+Existing protocol/plan documentation is informed by these sources. This
+Phase 0 change imports no upstream implementation code, prompts, tool
+text, tests, or compatibility cases; it retains upstream license texts only.
+Future copied or transformed material must preserve required attribution,
+license/copyright notices and modification notices, with file-level provenance.
+
+Project-owned material has no confirmed project license. Apache-2.0 is a
+proposal pending explicit user authorization, not an adopted license; see
+docs/decisions/0003-project-license-proposal.md.

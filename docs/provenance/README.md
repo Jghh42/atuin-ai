@@ -1,0 +1,45 @@
+# Third-party and source provenance
+
+[`upstream-sources.json`](upstream-sources.json) pins the client, server and
+core contract from the existing API specification. Each record identifies the
+repository, immutable commit, license path and retained license SHA-256.
+Pinned local git trees and their license blobs were inspected on 2026-10-16;
+there is no claim that HEAD/latest upstream was used. The core is the server's
+v0.4.0 baseline described in the specification.
+
+## Current inventory
+
+| Material | Use | Terms / attribution |
+| --- | --- | --- |
+| Reference server and core | Source-informed protocol/plan research; no code imported in Phase 0 | Apache-2.0; full unmodified license text retained in `LICENSES/Apache-2.0.txt` (identical in both pinned trees) |
+| Atuin client | Source-informed protocol/plan research; no code imported in Phase 0 | MIT; full license and Copyright (c) 2021 Ellie Huxtable retained in `LICENSES/Atuin-MIT.txt` |
+| OpenAI SIWC public documentation | Summarized/linked research in auth ADR/checklist, not vendored | No redistribution license inferred; not covered by the Apache/MIT source records |
+| Compatibility fixtures | None imported or derived yet | Empty [fixture manifest](../../testdata/compat/manifest.json) |
+
+This is a reference-source inventory, not a dependency SBOM. There is no Go
+module or runtime dependency graph yet. No root NOTICE was present in the
+three pinned upstream trees; this says nothing about notices in future import
+paths or transitive dependencies. Apache license boilerplate is not a basis
+for inventing an upstream copyright holder. Preserve any actual file headers
+and applicable attribution when importing material.
+
+## Required import process
+
+Before copying or adapting code, prompts, tool descriptions, tests or fixtures:
+
+1. Select an immutable commit and exact path/test; inspect its actual license,
+   file headers and applicable NOTICE records (including nested/vendored work).
+2. Retain required copyright, license and attribution notices. For modified
+   Apache material, add prominent modification notices; do not imply endorsement.
+3. Record destination, repository/commit, original path/test, license and
+   copied/transformed/independently-recreated classification. Record intentional
+   behavior changes; independently recreated cases still need their source basis.
+4. Update `NOTICE`, the source inventory, and fixture manifest as applicable.
+   Keep third-party licensing distinct from project-license confirmation.
+5. Scrub secrets and personal data before import, review the diff, and only then
+   treat the material as available test coverage. Chat Completions recordings
+   are not Responses correctness evidence.
+
+See [project-license proposal](../decisions/0003-project-license-proposal.md).
+The files under `LICENSES/` are third-party reference texts, not a license grant
+for the repository's original work.

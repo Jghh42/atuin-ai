@@ -8,6 +8,16 @@
 
 - [Go rewrite implementation plan](plans/implementation.md)
 
+## Phase 0 records
+
+- [Authentication research and live proof checklist](authentication.md) — exit blocked
+- [Compatibility baseline and empty fixture inventory](compatibility.md)
+- [Third-party provenance and pinned revisions](provenance/README.md)
+- [Project-license proposal](decisions/0003-project-license-proposal.md) — user confirmation pending
+
+No server, Go module/tooling, or OAuth implementation is included in this
+records-only scope. Live SIWC proof remains required; documentation is not proof.
+
 ## Architecture decisions
 
 Architecture decision records belong in [`decisions/`](decisions/README.md).

@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "recorded_on": "2026-10-16",
+  "status": "inventory-only; no imported or derived fixture cases",
+  "source_manifest": "../../docs/provenance/upstream-sources.json",
+  "contract": "../../docs/specs/atuin-ai-server-api.md",
+  "cases": []
+}

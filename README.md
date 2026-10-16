@@ -10,8 +10,9 @@ ChatGPT Business plan access through OpenAI's documented Sign in with ChatGPT
 OAuth flow.
 
 > **Status:** phase 1 HTTP shell implemented; chat returns HTTP 501. Phase 0
-> live SIWC proof and project-license confirmation remain review gates. No
-> inference or OAuth login implementation is shipped yet.
+> records are present, but live SIWC text/tool/refresh proof and project-license
+> confirmation remain review gates. No inference or OAuth login implementation
+> is shipped yet.
 
 ## Goals
 
@@ -40,6 +41,9 @@ OAuth flow.
 - [Atuin AI protocol specification](docs/specs/atuin-ai-server-api.md)
 - [Go rewrite implementation plan](docs/plans/implementation.md)
 - [Architecture decision records](docs/decisions/README.md)
+- [Authentication prerequisites and live proof checklist](docs/authentication.md)
+- [Compatibility fixture inventory](docs/compatibility.md)
+- [Third-party provenance and pinned sources](docs/provenance/README.md)
 
 The protocol specification is based on pinned revisions of:
 
@@ -88,6 +92,7 @@ be committed to this repository.
 
 ## License
 
-A project license has not been selected yet. Upstream material referenced by
-the documentation has its own licenses; any copied or transformed material
-must retain the required attribution and notices.
+Apache-2.0 is [proposed, pending explicit user confirmation](docs/decisions/0003-project-license-proposal.md);
+no project license has been granted. `LICENSES/` contains third-party reference
+texts only. Upstream material has its own licenses; copied or transformed
+material must retain required attribution and notices. See [NOTICE](NOTICE).
