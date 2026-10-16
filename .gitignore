@@ -1,0 +1,26 @@
+# Go build and test output
+/bin/
+/dist/
+*.test
+*.prof
+coverage.out
+
+# Local configuration and runtime state
+.env
+.env.*
+config.toml
+config.local.toml
+/data/
+/secrets/
+
+# OAuth and credential material
+credentials.json
+auth.json
+*.token
+
+# Editor and OS files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
