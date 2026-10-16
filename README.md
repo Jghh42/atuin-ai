@@ -9,8 +9,9 @@ personal, single-user process that binds only to `127.0.0.1`, with eligible
 ChatGPT Business plan access through OpenAI's documented Sign in with ChatGPT
 OAuth flow.
 
-> **Status:** design and compatibility research. The server has not been
-> implemented yet.
+> **Status:** phase 1 HTTP shell implemented; chat returns HTTP 501. Phase 0
+> live SIWC proof and project-license confirmation remain review gates. No
+> inference or OAuth login implementation is shipped yet.
 
 ## Goals
 
@@ -71,9 +72,16 @@ tools.
 
 ## Development
 
-Implementation has not started. The phased work breakdown, proposed package
-layout, test strategy, resource limits, and definition of done are in the
-[implementation plan](docs/plans/implementation.md).
+```sh
+make check
+make build
+./bin/atuin-ai-server serve --config config.example.toml
+curl http://127.0.0.1:8080/api/cli/models
+```
+
+See [local operations](docs/operations.md) for configuration precedence,
+limits, shutdown, and the intentionally unimplemented chat endpoint. The
+remaining phased work is in the [implementation plan](docs/plans/implementation.md).
 
 OAuth credentials, API keys, local configuration, and runtime state must never
 be committed to this repository.

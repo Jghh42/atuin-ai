@@ -66,6 +66,23 @@ func Load(path string) (Config, error) {
 	if err != nil {
 		return Config{}, fmt.Errorf("load config %q: %w", path, err)
 	}
+	// The decoder matches struct fields case-insensitively. Require canonical
+	// spellings before applying defaults, so Models and models cannot alias or
+	// bypass the explicit-empty catalog check.
+	for _, key := range meta.Keys() {
+		valid := false
+		if len(key) == 1 {
+			valid = key[0] == "port" || key[0] == "default_model" || key[0] == "models"
+		} else if len(key) == 2 && key[0] == "models" {
+			switch key[1] {
+			case "alias", "name", "description", "model":
+				valid = true
+			}
+		}
+		if !valid {
+			return Config{}, fmt.Errorf("config contains a noncanonical or unknown key")
+		}
+	}
 	if keys := meta.Undecoded(); len(keys) > 0 {
 		names := make([]string, len(keys))
 		for i, key := range keys {
