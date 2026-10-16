@@ -51,7 +51,7 @@ func run(ctx context.Context, args []string, stderr io.Writer) error {
 	}
 	listener, err := server.Listen()
 	if err != nil {
-		return errors.New("cannot open IPv4 loopback listener")
+		return errors.New("cannot open IPv4 loopback listener; check whether the configured port is already in use")
 	}
 	return server.Serve(ctx, listener)
 }
@@ -71,6 +71,9 @@ func loadConfiguration(path string) (config.Config, error) {
 	cfg, err := config.Load(path)
 	if err == nil {
 		return cfg, nil
+	}
+	if errors.Is(err, config.ErrLegacyModels) {
+		return config.Config{}, config.ErrLegacyModels
 	}
 	if !explicit && errors.Is(err, os.ErrNotExist) {
 		return config.Default(), nil

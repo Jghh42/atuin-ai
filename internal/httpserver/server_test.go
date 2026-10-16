@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
@@ -14,16 +15,25 @@ import (
 
 	"github.com/Jghh42/atuin-ai/internal/catalog"
 	"github.com/Jghh42/atuin-ai/internal/config"
+	"github.com/Jghh42/atuin-ai/internal/credentials"
+	"github.com/Jghh42/atuin-ai/internal/provider/codex"
 )
 
 func start(t *testing.T, cfg config.Config, chat http.Handler) (string, context.CancelFunc, <-chan error) {
 	t.Helper()
 	var s *Server
 	var err error
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.WriteString(w, `{"models":[{"slug":"gpt-6.1-sol","display_name":"Sol","description":"Verified replay model","visibility":"list","priority":0}]}`)
+	}))
+	t.Cleanup(upstream.Close)
+	source := catalog.New(credentials.SourceFunc(func(context.Context) (credentials.Credential, error) {
+		return credentials.Credential{Identity: credentials.Identity{Provider: "codex", Account: "test-account", Epoch: 1}, AccessToken: "test-token"}, nil
+	}), codex.Discovery{URL: upstream.URL}, cfg.DefaultModel, nil)
 	if chat == nil {
-		s, err = New(cfg, nil)
+		s, err = NewWithCatalog(cfg, nil, source)
 	} else {
-		s, err = newServer(cfg, nil, chat)
+		s, err = buildServer(cfg, nil, source, chat)
 	}
 	if err != nil {
 		t.Fatal(err)
@@ -87,8 +97,7 @@ func request(t *testing.T, method, url string, body io.Reader, status int) []byt
 
 func TestRoutesAndModels(t *testing.T) {
 	cfg := config.Default()
-	cfg.Models = []config.Model{{Alias: "second", Name: "Second", Description: "two", Model: "private-upstream-2"}, {Alias: "first", Name: "First", Description: "one", Model: "private-upstream-1"}}
-	cfg.DefaultModel = "first"
+	cfg.DefaultModel = "gpt-6.1-sol"
 	base, _, _ := start(t, cfg, nil)
 	body := request(t, "GET", base+"/api/cli/models", nil, 200)
 	var got struct {
@@ -98,7 +107,7 @@ func TestRoutesAndModels(t *testing.T) {
 	if err := json.Unmarshal(body, &got); err != nil {
 		t.Fatal(err)
 	}
-	if got.Default != "first" || len(got.Models) != 2 || got.Models[0].Alias != "second" || got.Models[1].Alias != "first" {
+	if got.Default != "gpt-6.1-sol" || len(got.Models) != 1 || got.Models[0].Alias != "gpt-6.1-sol" {
 		t.Fatalf("%s", body)
 	}
 	if bytes.Contains(body, []byte("private-upstream")) {
@@ -125,7 +134,7 @@ func TestDefaultFirstModel(t *testing.T) {
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatal(err)
 	}
-	if got.Default != cfg.Models[0].Alias {
+	if got.Default != "gpt-6.1-sol" {
 		t.Fatalf("%s", data)
 	}
 }

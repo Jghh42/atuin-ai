@@ -185,8 +185,10 @@ therefore a correctness decision, not merely schedule reduction.
 ### Configuration and model-discovery target
 
 These decisions revise the completed Phase 1–2 scaffolding, not its historical
-implementation status. Runtime defaults and `config.example.toml` still use
-`8080` and a static placeholder catalog until the Phase 3a follow-up below.
+implementation status. Phase 3a replaces the old `8080`/static scaffolding with
+`17391` and injected native discovery. Its live response omits the replay-proven
+model; the eligible-catalog gate is NOT PASSED, and production login wiring is
+still deferred to Phase 7. See the [Phase 3a checkpoint](phase3a-status.md).
 The intended no-config workflow is application login, then `serve`, then Atuin
 configured with `endpoint = "http://127.0.0.1:17391"` and
 `endpoint_protocol = "oss"`.
@@ -476,7 +478,11 @@ malformed and mixed terminal tool batches are rejected before emission.
 
 ### Phase 3a — zero-config initialization and discovered catalog follow-up
 
-This is a newly planned follow-up, not part of the completed Phase 3 work.
+This follow-up is implemented behind injected credentials/HTTP, not part of
+the historical Phase 3 work. Live native schema discovery succeeded but returned
+no replay-proven eligible model, so the live eligible-catalog exit remains
+**NOT PASSED**. See [Phase 3a checkpoint](phase3a-status.md); the checklist below
+is retained as the target, not a claim that all live/production gates passed.
 
 1. Pin the native Codex catalog source/contract and capture redacted live
    discovery evidence using this application's isolated Phase 0 credentials.

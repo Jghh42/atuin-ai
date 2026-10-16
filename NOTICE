@@ -55,5 +55,13 @@ The Phase 2 executable also links github.com/rivo/uniseg v0.4.7 (MIT),
 Copyright (c) 2019 Oliver Kuederle. Its unmodified license is retained in
 LICENSES/Uniseg-MIT.txt.
 
+Phase 3a native model discovery is a source-informed protocol adaptation of
+OpenAI Codex, Apache-2.0, Copyright 2025 OpenAI, commit
+96eb400d1231f0199e96f640c740096087cf3e9b. No upstream implementation or fixture
+was copied; Go code/tests and cache policies are independently authored.
+Source hashes and differences: docs/provenance/codex-discovery.md. Retained
+license and upstream NOTICE: LICENSES/OpenAI-Codex-Apache-2.0.txt and
+LICENSES/OpenAI-Codex-NOTICE.txt.
+
 The user explicitly approved Apache-2.0 for project-owned material; see
 docs/decisions/0003-project-license-proposal.md.

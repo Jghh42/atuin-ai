@@ -7,6 +7,11 @@ Pinned local git trees and their license blobs were inspected on 2026-10-16;
 there is no claim that HEAD/latest upstream was used. The core is the server's
 v0.4.0 baseline described in the specification.
 
+Phase 3a adds the exact [native Codex discovery source pin](codex-discovery.md),
+retained upstream license/NOTICE, independently authored protocol/cache/tests,
+and [redacted live evidence](../proofs/codex-discovery-phase3a.md). No raw model
+catalog or credential material is retained.
+
 ## Current inventory
 
 | Material | Use | Terms / attribution |

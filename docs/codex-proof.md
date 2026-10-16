@@ -47,6 +47,24 @@ are deliberately omitted in this replay experiment and their presence is
 reported; failure means no stateless compatibility proof. This is not a general
 production SSE implementation or permission to silently discard required state.
 
+Phase 3a adds `./bin/codex-proof discover --approve-live`, which fetches the
+native catalog with the same isolated record. It emits fixed-schema counters,
+HTTP status, whether the fixed replay-proven model is present/listed, schema
+validation and eligible-selection result—never raw metadata, unknown model
+names, account IDs or tokens. It does not log in or refresh automatically.
+Expired credentials require the existing explicit probe refresh; do not start
+unattended interactive login.
+
+`prove-discovered --approve-live` is a separate, explicitly opt-in bounded
+follow-up: it selects one actual visible native candidate (Sol preference using
+verified upstream priority fallback, otherwise first upstream priority), then
+runs at most the same three harmless generations. It never retries/tries another
+model or expands production eligibility automatically. Candidate IDs are withheld
+on failure; successful proof alone may be reviewed for a later allowlist change.
+The sole authorized follow-up failed before text completion; do not rerun it
+without a new explicit decision. [Evidence](proofs/codex-discovered-replay-followup.md). Current discovery schema succeeded but returned
+no proven eligible model: [live gate NOT PASSED](proofs/codex-discovery-phase3a.md).
+
 Refresh and local cleanup are explicitly opt-in:
 
 ```sh

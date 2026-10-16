@@ -13,12 +13,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Jghh42/atuin-ai/internal/catalog"
 	"github.com/Jghh42/atuin-ai/internal/codexproof"
 )
 
 func run(ctx context.Context, args []string, out io.Writer) int {
 	if len(args) == 0 {
-		fmt.Fprintln(out, "Use login, status, prove, refresh or logout with --approve-live.")
+		fmt.Fprintln(out, "Use login, status, prove, discover, prove-discovered, refresh or logout with --approve-live.")
 		return 2
 	}
 	flags := flag.NewFlagSet("codex-proof", flag.ContinueOnError)
@@ -76,6 +77,51 @@ func run(ctx context.Context, args []string, out io.Writer) int {
 				return errors.New("proof report write failed")
 			}
 			return e
+		})
+	case "prove-discovered":
+		err = codexproof.WithRecord(ctx, func(r codexproof.Record) error {
+			report, e := codexproof.ProveDiscovered(ctx, r)
+			// Native proof errors are locally constructed safe classifications, never
+			// provider bodies, account identifiers or candidate metadata.
+			if e != nil {
+				fmt.Fprintln(out, "Discovered replay diagnostic:", e.Error())
+			}
+			if writeErr := json.NewEncoder(out).Encode(report); writeErr != nil {
+				return errors.New("proof report write failed")
+			}
+			return e
+		})
+	case "discover":
+		err = codexproof.WithRecord(ctx, func(r codexproof.Record) error {
+			if r.AccessToken == "" || !time.Now().Before(r.ExpiresAt) {
+				return errors.New("no current credential")
+			}
+			report, snapshot, e := codexproof.Discover(ctx, r)
+			if writeErr := json.NewEncoder(out).Encode(report); writeErr != nil {
+				return errors.New("proof report write failed")
+			}
+			if e != nil {
+				category := "unavailable"
+				switch {
+				case errors.Is(e, catalog.ErrUnauthorized):
+					category = "reauthentication_required"
+				case errors.Is(e, catalog.ErrTransient):
+					category = "transient"
+				case errors.Is(e, catalog.ErrInvalid):
+					category = "invalid_or_no_eligible_metadata"
+				}
+				_ = json.NewEncoder(out).Encode(struct {
+					DiscoveryPassed bool   `json:"discovery_passed"`
+					Category        string `json:"category"`
+				}{false, category})
+				return e
+			}
+			// Only the proof-allowlisted fixed ID and count leave the native probe.
+			return json.NewEncoder(out).Encode(struct {
+				DiscoveryPassed bool   `json:"discovery_passed"`
+				EligibleCount   int    `json:"eligible_count"`
+				Default         string `json:"default"`
+			}{true, len(snapshot.Response().Models), snapshot.Resolve("")})
 		})
 	case "refresh":
 		err = codexproof.Refresh(ctx)

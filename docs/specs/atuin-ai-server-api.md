@@ -159,6 +159,17 @@ not the upstream model ID, is sent back in chat requests. The reference server
 returns models in configuration order. If `default_model` is omitted, the
 first configured model is the default.
 
+Project Phase 3a intentionally replaces that reference configuration policy:
+upstream discovered IDs are aliases, only picker-visible replay-proven IDs are
+advertised, and default selection prefers eligible Sol models using verified
+ordering (currently numeric upstream priority, with deterministic ID ties).
+`default_model` may override only to an eligible discovered ID. Snapshots are
+account/provider/reauthentication-bound, fresh for 15 minutes, and may survive
+only transient failures up to one hour since successful validation. Missing
+login, empty eligibility or failed initial discovery returns JSON 503, not a
+placeholder catalog. Production login wiring remains Phase 7. See
+[Phase 3a status](../plans/phase3a-status.md).
+
 Source: [server model response](https://github.com/atuinsh/atuin-ai-core/blob/565877e97ed3ff4840481b8d47e12eb2f9854039/src/atuin_ai_core/http/controller.gleam#L63-L100) and [client model types](https://github.com/atuinsh/atuin/blob/4ca8b77c8a526b8c294eb864a2b74c95c685c983/crates/atuin-ai/src/models.rs#L15-L51).
 
 ## `POST /api/cli/chat`

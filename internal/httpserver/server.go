@@ -26,22 +26,45 @@ type Server struct {
 	log  *slog.Logger
 }
 
+// New starts safely unavailable until Phase 7 wires a credential lifecycle.
 func New(cfg config.Config, logger *slog.Logger) (*Server, error) {
-	models := atuin.ModelCatalog{Default: cfg.DefaultModel, Models: make(map[string]string)}
-	for _, m := range cfg.Models {
-		models.Models[m.Alias] = m.Model
+	return NewWithCatalog(cfg, logger, catalog.New(nil, nil, cfg.DefaultModel, nil))
+}
+
+type CatalogSource interface {
+	Get(context.Context) (catalog.Snapshot, error)
+}
+
+// NewWithCatalog injects the same snapshot source for listing and chat resolution.
+func NewWithCatalog(cfg config.Config, logger *slog.Logger, source CatalogSource) (*Server, error) {
+	return newWithCatalog(cfg, logger, source, nil)
+}
+
+// newWithCatalog's private observer verifies decoder resolution without adding
+// test-only public APIs or implementing generation before its planned phase.
+func newWithCatalog(cfg config.Config, logger *slog.Logger, source CatalogSource, decoded func(atuin.Request)) (*Server, error) {
+	if source == nil {
+		return nil, errors.New("catalog source required")
 	}
-	if models.Default == "" && len(cfg.Models) > 0 {
-		models.Default = cfg.Models[0].Alias
-	}
-	decoder := atuin.Decoder{Catalog: models}
-	return newServer(cfg, logger, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return buildServer(cfg, logger, source, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		snapshot, err := source.Get(r.Context())
+		if err != nil {
+			writeError(w, 503, "models_unavailable", "Login and successful model discovery required; check default_model override")
+			return
+		}
+		response := snapshot.Response()
+		models := atuin.ModelCatalog{Default: response.Default, Models: make(map[string]string)}
+		for _, m := range response.Models {
+			models.Models[m.Alias] = m.Alias
+		}
+		decoder := atuin.Decoder{Catalog: models}
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			writeError(w, 400, "invalid_request", "Unable to read request body")
 			return
 		}
-		if _, err := decoder.Decode(body); err != nil {
+		request, err := decoder.Decode(body)
+		if err != nil {
 			var protocolError *atuin.Error
 			if errors.As(err, &protocolError) {
 				status := http.StatusBadRequest
@@ -54,12 +77,19 @@ func New(cfg config.Config, logger *slog.Logger) (*Server, error) {
 			writeError(w, 500, "internal_error", "Unable to decode chat request")
 			return
 		}
+		if decoded != nil {
+			decoded(request)
+		}
 		writeError(w, http.StatusNotImplemented, "not_implemented", "Chat generation is not implemented yet")
 	}))
 }
 
 // newServer accepts a chat implementation for deterministic boundary tests.
 func newServer(cfg config.Config, logger *slog.Logger, chat http.Handler) (*Server, error) {
+	return buildServer(cfg, logger, catalog.New(nil, nil, cfg.DefaultModel, nil), chat)
+}
+
+func buildServer(cfg config.Config, logger *slog.Logger, source CatalogSource, chat http.Handler) (*Server, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -67,14 +97,6 @@ func newServer(cfg config.Config, logger *slog.Logger, chat http.Handler) (*Serv
 		logger = slog.New(slog.NewJSONHandler(io.Discard, nil))
 	}
 	slots := make(chan struct{}, config.MaxConcurrentChats)
-	models, err := catalog.New(cfg)
-	if err != nil {
-		return nil, err
-	}
-	modelBody, err := json.Marshal(models)
-	if err != nil {
-		return nil, err
-	}
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Match literally: no redirecting path cleanup or implicit HEAD route.
 		switch r.URL.Path {
@@ -84,9 +106,14 @@ func newServer(cfg config.Config, logger *slog.Logger, chat http.Handler) (*Serv
 				writeError(w, 405, "method_not_allowed", "Method not allowed")
 				return
 			}
+			snapshot, err := source.Get(r.Context())
+			if err != nil {
+				writeError(w, 503, "models_unavailable", "Login and successful model discovery required; check default_model override")
+				return
+			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write(modelBody)
+			_ = json.NewEncoder(w).Encode(snapshot.Response())
 		case "/api/cli/chat":
 			if r.Method != http.MethodPost {
 				w.Header().Set("Allow", "POST")

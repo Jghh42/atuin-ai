@@ -12,10 +12,12 @@ targeting the user's ChatGPT Business seat. Independently registered Sign in
 with ChatGPT (SIWC) and public Responses inference are deferred for later.
 
 > **Status:** phases 0–3 implemented: isolated Codex proof, bounded HTTP shell,
-> Atuin decoding, and unit-tested prompts/tools/safety. Valid chat requests
-> still return HTTP 501; production login/inference, tool emission and SSE
-> are not integrated. See the
-> [Phase 3 checkpoint](docs/plans/phase3-status.md).
+> Atuin decoding, and unit-tested prompts/tools/safety. Phase 3a adds bounded
+> native model discovery/cache behind injected credentials and port 17391.
+> Live discovery returned no replay-proven model: its eligible-catalog gate is
+> **NOT PASSED**. Production login wiring remains Phase 7; standalone models/chat
+> return 503, while injected valid chat still returns 501 (no generation/SSE).
+> See the [Phase 3a checkpoint](docs/plans/phase3a-status.md).
 
 ## Goals
 
@@ -86,8 +88,8 @@ tools.
 ```sh
 make check
 make build
-./bin/atuin-ai-server serve --config config.example.toml
-curl http://127.0.0.1:8080/api/cli/models
+./bin/atuin-ai-server serve # optional --config config.example.toml
+curl http://127.0.0.1:17391/api/cli/models # 503 until production login is wired
 ```
 
 See [local operations](docs/operations.md) for configuration precedence,

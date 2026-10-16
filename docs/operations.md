@@ -1,26 +1,43 @@
-# Local development server (phases 1–3)
+# Local development server (through Phase 3a)
 
 Requires Go 1.26.9 or newer (security fixes; Go's automatic toolchain selection
 can download it when the installed compiler is older). Build with `make build`, then run:
 
 ```sh
-./bin/atuin-ai-server serve --config config.example.toml
-curl http://127.0.0.1:8080/api/cli/models
+./bin/atuin-ai-server serve # config is optional
+curl http://127.0.0.1:17391/api/cli/models # currently 503 without injected credentials
 ```
 
 Configuration precedence: `serve --config PATH`, then `CHAT_CONFIG`, then
 `$XDG_CONFIG_HOME/atuin-ai/config.toml` (the platform's `os.UserConfigDir` on
 other systems). A missing default file uses built-in defaults; an explicitly
-selected missing file is an error. Unknown keys are rejected. No upstream
-credentials are needed for this shell. Example model IDs are placeholders,
-not a claim of SIWC availability or stateless-replay compatibility.
+selected missing file is an error. Files are read once with a 64 KiB bound;
+key validation and typed decoding use the same byte snapshot. Only `port` (default **17391**) and optional
+`default_model` are accepted. Remove obsolete `[[models]]`/alias mappings: they
+produce a migration error. Overrides must match an eligible discovered upstream
+ID, not a private/public alias mapping.
 
-`GET /api/cli/models` returns the configured catalog. `POST /api/cli/chat`
-now decodes and validates the Atuin protocol before returning JSON HTTP 501
-for valid requests, **not** an SSE stream. Invalid requests return JSON 400
-(`invalid_request` or `conversation_too_large`); oversized bodies return 413.
-No provider is called yet. Other paths return JSON 404; unsupported methods
+Native Codex discovery is implemented behind injected credentials/HTTP. The
+standalone executable does **not** load the isolated proof store or third-party
+credentials: production login/refresh/logout wiring remains Phase 7. Until then
+models/chat return safe JSON 503. With injected credentials, `GET /api/cli/models`
+returns the visible replay-proven catalog; chat resolves unknown IDs to that same
+snapshot's default, decodes the protocol, and returns HTTP 501 for valid requests,
+**not** SSE. Invalid decoded requests return 400 (`invalid_request` or
+`conversation_too_large`); oversized bodies return 413 before discovery. No
+inference provider is called yet. Other paths return JSON 404; unsupported methods
 on known routes return 405. See [decoder policies](compatibility.md).
+
+Discovery limits: 2 MiB body, 256 models, 128-byte IDs, 256-byte display names,
+4096-byte descriptions, eight-second fetch timeout, 15-minute freshness. A
+transient transport/429/5xx failure may serve the same account's last validated
+snapshot for at most one hour; auth/metadata/override errors clear it. Refreshes
+coalesce, individual waiters can cancel, and the last cancellation stops the
+fetch. Logout/reauth/account change must synchronously invalidate the cache;
+Phase 7 must implement the documented credential source/epoch contract. No
+fabricated fallback exists. Only `gpt-6.1-sol` has replay proof; the live catalog
+currently omits it, so the live eligible-catalog gate is **NOT PASSED**. See
+[discovery evidence](proofs/codex-discovery-phase3a.md).
 
 The port is configurable; the host is not. The listener is always IPv4
 `127.0.0.1`. Client authentication is absent, and Authorization headers are

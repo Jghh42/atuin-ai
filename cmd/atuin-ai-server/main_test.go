@@ -15,7 +15,7 @@ func TestConfigPrecedenceAndDefaults(t *testing.T) {
 	t.Setenv("HOME", dir)
 	t.Setenv("CHAT_CONFIG", "")
 	cfg, err := loadConfiguration("")
-	if err != nil || cfg.Port != 8080 {
+	if err != nil || cfg.Port != 17391 {
 		t.Fatalf("default: %+v %v", cfg, err)
 	}
 	defaultPath := filepath.Join(dir, "atuin-ai", "config.toml")
@@ -52,6 +52,11 @@ func TestConfigPrecedenceAndDefaults(t *testing.T) {
 	write(flagPath, `secret_unknown_key = "do-not-log-this-secret"`)
 	if _, err = loadConfiguration(flagPath); err == nil || strings.Contains(err.Error(), "do-not-log") {
 		t.Fatalf("unsafe error: %v", err)
+	}
+	write(flagPath, `[[models]]
+alias="do-not-log-this-secret"`)
+	if _, err = loadConfiguration(flagPath); err == nil || !strings.Contains(err.Error(), "remove [[models]]") || strings.Contains(err.Error(), "do-not-log") {
+		t.Fatalf("migration error missing/unsafe: %v", err)
 	}
 }
 
