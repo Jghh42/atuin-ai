@@ -7,10 +7,10 @@ import (
 	"io"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/Jghh42/atuin-ai/internal/atuin"
 	"github.com/Jghh42/atuin-ai/internal/config"
+	"github.com/Jghh42/atuin-ai/internal/jsoncheck"
 	"github.com/Jghh42/atuin-ai/internal/safety"
 )
 
@@ -199,7 +199,7 @@ func integer(value any) (int64, bool) {
 // Token walking rejects duplicate keys at every depth rather than letting
 // server/client JSON decoders disagree on which value should be executed.
 func inputObject(raw json.RawMessage) (map[string]any, error) {
-	if len(raw) == 0 || len(raw) > config.MaxCallArgumentsBytes || !validUnicodeJSON(raw) {
+	if len(raw) == 0 || len(raw) > config.MaxCallArgumentsBytes || !jsoncheck.ValidUnicode(raw) {
 		return nil, ErrInvalidBatch
 	}
 	decoder := json.NewDecoder(bytes.NewReader(raw))
@@ -282,54 +282,4 @@ func inputValue(d *json.Decoder, depth int, budget *int) (any, error) {
 		}
 		return token, nil
 	}
-}
-
-// Go replaces lone UTF-16 surrogate escapes, whereas the pinned Rust client
-// rejects them when decoding a whole SSE event. Check every string, including
-// unknown nested values and object keys, before keeping the original raw JSON.
-// General JSON syntax validation still belongs to the token decoder above.
-func validUnicodeJSON(raw []byte) bool {
-	if !utf8.Valid(raw) {
-		return false
-	}
-	quoted := false
-	for i := 0; i < len(raw); i++ {
-		if raw[i] == '"' {
-			quoted = !quoted
-			continue
-		}
-		if !quoted || raw[i] != '\\' {
-			continue
-		}
-		if i+1 >= len(raw) {
-			return false
-		}
-		if raw[i+1] != 'u' {
-			i++
-			continue
-		}
-		if i+6 > len(raw) {
-			return false
-		}
-		code, err := strconv.ParseUint(string(raw[i+2:i+6]), 16, 16)
-		if err != nil {
-			return false
-		}
-		if code >= 0xd800 && code <= 0xdbff {
-			if i+12 > len(raw) || raw[i+6] != '\\' || raw[i+7] != 'u' {
-				return false
-			}
-			low, err := strconv.ParseUint(string(raw[i+8:i+12]), 16, 16)
-			if err != nil || low < 0xdc00 || low > 0xdfff {
-				return false
-			}
-			i += 11
-		} else {
-			if code >= 0xdc00 && code <= 0xdfff {
-				return false
-			}
-			i += 5
-		}
-	}
-	return true
 }

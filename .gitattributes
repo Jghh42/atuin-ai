@@ -1,0 +1,2 @@
+# The final empty line is the SSE event delimiter, not incidental whitespace.
+testdata/responses/phase5-text.sse whitespace=-blank-at-eof

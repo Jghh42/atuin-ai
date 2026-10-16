@@ -36,7 +36,10 @@ Retained license: LICENSES/Pi-MIT.txt. Protocol/provenance and modification
 records are in docs/provenance/pi-codex.md. Phase 4 native Responses request
 projection also uses this pinned package's Codex/shared converters as protocol
 references; independently authored Go code/fixtures, no runtime dependency or
-upstream implementation text copied. Retain the same MIT attribution.
+upstream implementation text copied. Phase 5 native SSE parsing likewise uses
+this pinned shared adapter as a protocol reference; Go parser/tests and safe
+synthetic fixtures are independently written, without copied implementation
+text or upstream fixtures. Retain the same MIT attribution.
 
 Phase 2 decoder behavior and independently recreated tests/fixtures are
 source-informed by atuinsh/atuin-ai-core v0.4.0, Apache-2.0, commit

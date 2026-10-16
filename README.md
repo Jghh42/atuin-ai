@@ -18,9 +18,12 @@ with ChatGPT (SIWC) and public Responses inference are deferred for later.
 > **NOT PASSED**. Production login wiring remains Phase 7; standalone models/chat
 > return 503, while injected valid chat still returns 501 (no generation/SSE).
 > Phase 4 adds tested native Responses request projection/HTTP opening behind
-> injected credentials, not stream parsing or chat integration.
-> See the [Phase 3a](docs/plans/phase3a-status.md) and
-> [Phase 4](docs/plans/phase4-status.md) checkpoints.
+> injected credentials. Phase 5 adds the bounded native SSE provider with
+> explicit completion, buffered calls, token usage and cancellation. Independent
+> review cleared the checkpoint. No chat integration or production login is added.
+> See the [Phase 3a](docs/plans/phase3a-status.md),
+> [Phase 4](docs/plans/phase4-status.md), and
+> [Phase 5](docs/plans/phase5-status.md) checkpoints.
 
 ## Goals
 

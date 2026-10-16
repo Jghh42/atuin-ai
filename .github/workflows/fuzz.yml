@@ -19,6 +19,8 @@ jobs:
             target: FuzzValidateBatch
           - package: ./internal/safety
             target: FuzzEscalate
+          - package: ./internal/provider/codex
+            target: FuzzResponsesSSE
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5

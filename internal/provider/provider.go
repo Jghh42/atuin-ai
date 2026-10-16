@@ -26,11 +26,17 @@ type Event struct {
 	Calls []tools.Call
 }
 
-type Usage struct{ InputTokens, OutputTokens int64 }
+// Usage counts tokens, not price/credits. Input includes cached tokens. Known
+// flags distinguish an explicit zero from absent upstream accounting. Total is
+// derived only when both input and output are known; no other missing counts
+// are invented.
+type Usage struct {
+	InputTokens, OutputTokens, TotalTokens, CachedTokens int64
+	InputKnown, OutputKnown, TotalKnown, CachedKnown     bool
+}
 
 // Stream makes one generation, without automatic retries. Sink failure must
-// cancel upstream work immediately. Codex does not implement this yet: Phase 4
-// provides only request projection/HTTP opening; Phase 5 owns stream parsing.
+// cancel upstream work immediately. Implementations never execute tools.
 type Provider interface {
 	Stream(context.Context, Request, func(Event) error) (Usage, error)
 }

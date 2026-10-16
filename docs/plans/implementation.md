@@ -546,6 +546,11 @@ suggestions, single/parallel tools, failures, and multi-turn continuations.
 
 ### Phase 5 — Responses SSE parser
 
+Independently reviewed implementation checkpoint behind injected
+credentials/HTTP, cleared for authorized direct-main delivery. See [Phase 5 checkpoint](phase5-status.md) for explicit
+fail-closed/refusal, bounded SSE, duplicate/snapshot, usage and timeout policies.
+This does not integrate the chat turn runner or clear the live catalog gate.
+
 Implement bounded parsing for:
 
 - arbitrary TCP/chunk boundaries;

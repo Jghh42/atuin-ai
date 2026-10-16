@@ -184,10 +184,11 @@ func bounded(r atuin.Request) bool {
 	return budget >= 0
 }
 
-// RequestClient opens one native HTTP generation. It is NOT a Provider: HTTP
-// 200 is not stream success. The caller owns Body.Close and must parse explicit
-// completion in Phase 5. Keep ctx alive through body consumption; cancellation
-// closes upstream work. URL/Transport injection is for local deterministic tests.
+// RequestClient implements Provider.Stream with one native HTTP generation.
+// Open alone only returns headers: HTTP 200 is not generation success. Direct
+// Open callers own Body.Close and must keep ctx alive through consumption;
+// Stream owns bounded parsing, explicit completion and upstream cancellation.
+// URL/Transport injection is for local deterministic tests.
 type RequestClient struct {
 	Credentials credentials.Source
 	Transport   http.RoundTripper

@@ -45,6 +45,27 @@ code remains Apache-2.0; retain applicable MIT notices with source/binaries.
 This provenance record is not a support guarantee for the Codex registration
 or backend and is not successful live validation evidence.
 
+## Phase 5 native stream parsing (2026-10-16)
+
+`internal/provider/codex/{stream,sse,parser,json}.go` and tests are independently
+written Go, using the pinned shared adapter's `processResponsesStream`
+(lines 321–699) as a protocol reference (read during implementation). No code
+or fixture text copied. Unlike Pi, all refusal/reasoning and unsupported output
+channels fail closed; explicit completed status is mandatory, argument/text
+snapshots must reconcile, and token numbers and all buffers are bounded. No
+opaque state, tool execution, pricing, incomplete-success mapping or transport
+retry/fallback is adapted. Tests/fixtures are safe synthetic data described in
+`testdata/responses/README.md`; precise policy is in the Phase 5 checkpoint.
+Existing MIT attribution/license above applies to this source-informed work.
+Independent-review fixes add strict duplicate-member/Unicode/depth/work checks,
+response-identity tracking, sparse-index reconciliation and unsupported execution
+channel rejection. Nonempty nonterminal lifecycle output is explicitly rejected,
+not silently discarded or partially reconciled; absent/empty arrays remain
+supported, while explicit null/non-array output fails. `internal/jsoncheck/unicode.go` is extracted from this
+project's pre-existing tools validator (not from Pi); both actual callers share
+its unchanged Unicode-checking behavior. New review regressions are original
+synthetic data, not captured traffic or adapted upstream fixtures.
+
 ## Phase 4 production request projection (2026-10-16)
 
 `internal/provider/codex/request.go` is independently written Go using the same

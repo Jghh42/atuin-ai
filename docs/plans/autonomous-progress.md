@@ -10,9 +10,44 @@ and delivery before moving on. This file distinguishes code from live gates.
 | 3 | Prompts/tools/safety implemented, no tool emission. [Checkpoint](phase3-status.md). |
 | 3a | Independently reviewed implementation checkpoint, cleared for authorized direct-main delivery. Native HTTP discovery/required-field decoding demonstrated, but eligible live catalog **NOT PASSED**: returned catalog omits replay-proven `gpt-6.1-sol`. Injected tests and independent verification pass. Production credential wiring deferred to 7; full phase exit is not claimed. [Checkpoint](phase3a-status.md). |
 | 4 | Independently reviewed native Responses request projection/HTTP opening checkpoint, cleared for authorized direct-main delivery. Deterministic injected tests; no parser/Stream implementation or live attempts. [Checkpoint](phase4-status.md). |
-| 5–6 | Not implemented. Chat generation stays 501 when a valid injected catalog exists; production remains safe 503. |
+| 5 | Native bounded Responses SSE provider implemented behind injection; six initial findings/shared helper and lifecycle-output follow-up independently reviewed and cleared for authorized direct-main delivery. No live calls. [Checkpoint](phase5-status.md). |
+| 6 | Not implemented. Chat generation stays 501 when a valid injected catalog exists; production remains safe 503. |
 | 7 | Not implemented. Must complete isolated production lifecycle, durable refresh, logout/account cache invalidation and no-config login-to-serve experience. |
 | 8–9 | Not implemented; real CLI, resource hardening and release gates remain. |
+
+## Phase 5 decoder-fuzz validation anomaly — cause unknown
+
+The first post-lifecycle-fix `make check` stopped at the unchanged command:
+
+```text
+go test ./internal/atuin -run='^$' -fuzz=FuzzDecode -fuzztime=5s -parallel=2
+fuzz: elapsed: 0s, gathering baseline coverage: 0/267 completed
+fuzz: elapsed: 0s, gathering baseline coverage: 267/267 completed, now fuzzing with 2 workers
+fuzz: elapsed: 3s, execs: 166199 (55386/sec), new interesting: 1 (total: 268)
+fuzz: elapsed: 5s, execs: 287396 (57687/sec), new interesting: 3 (total: 270)
+--- FAIL: FuzzDecode (5.11s)
+    context deadline exceeded
+FAIL
+exit status 1
+FAIL	github.com/Jghh42/atuin-ai/internal/atuin	5.113s
+make: *** [Makefile:22: fuzz] Error 1
+```
+
+Original local output is retained at `/tmp/phase5-lifecycle-check.log`. It has
+no stack trace, assertion message, saved-failing-input path, or reproducer.
+Read-only checks found no repository `testdata/fuzz` artifacts. The Go fuzz
+cache for `internal/atuin/FuzzDecode` exists, but coverage-cache files are not
+identified as failing inputs by this log. No saved failing corpus is known.
+
+An unchanged full rerun (`/tmp/phase5-lifecycle-check-rerun.log`) completed
+270/270 baseline entries, ran 285663 executions, and passed at 5.095s. The
+subsequent build/diff check and provider race x20 passed too. This does **not**
+prove an infrastructure/budget cause or rule out a decoder problem: exact cause
+remains **unknown**. No deadline/timeout suppression or decoder changes were
+made. Independent verification subsequently passed five isolated decoder fuzz
+runs, full `make check`/build, focused race x10 and targeted lifecycle/regression
+tests. The nonreproduced initial failure remains recorded with unknown cause;
+these passes do not establish an infrastructure/budget diagnosis.
 
 ## Phase 3a delivery checkpoint
 
@@ -20,6 +55,14 @@ Delivered on main as `2431b10fe9fb8287de008f0ad0ceacca6f5f096b`.
 Exact-HEAD GitHub Actions run `38950960197`: completed **success** (verified
 read-only before Phase 4 implementation). Live eligible catalog remains
 **NOT PASSED**; the green deterministic CI does not clear that gate.
+
+## Phase 4 delivery checkpoint
+
+Delivered on main as `2b446ac047d4a6acbb1f41b635dcc4625491d5ea`.
+Exact-HEAD GitHub Actions run `38953006689`: completed **success** (verified
+read-only before Phase 5 validation). The eligible-catalog gate remains
+**NOT PASSED**. Phase 5 is independently reviewed and cleared for delivery;
+its exact SHA and CI result belong in the delivery report.
 
 ## Phase 4 validation checkpoint
 

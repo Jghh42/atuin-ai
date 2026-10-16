@@ -1,0 +1,11 @@
+: synthetic heartbeat
+
+event: response.output_item.added
+data: {"type":"response.output_item.added","output_index":0,"item":{"type":"message","id":"msg-1","content":[]}}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","output_index":0,"content_index":0,"item_id":"msg-1","delta":"Hello 🙂"}
+
+event: response.completed
+data: {"type":"response.completed","response":{"id":"response-1","status":"completed","output":[{"type":"message","id":"msg-1","content":[{"type":"output_text","text":"Hello 🙂"}]}],"usage":{"input_tokens":5,"output_tokens":2,"total_tokens":7,"input_tokens_details":{"cached_tokens":0}}}}
+
