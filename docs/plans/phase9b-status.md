@@ -1,5 +1,13 @@
 # Phase 9b — offline shipping resource / lifecycle review checkpoint
 
+> **Bundled catalog correction (2026-10-17):** [authorized policy](bundled-catalog-policy.md)
+> removes 15 automatic metadata GETs (one per fresh catalog/process lifetime),
+> not generation work: full suite still requires 446 generations, peak four,
+> unchanged barriers/budgets and real 60s/300s defaults. Expected automatic
+> catalogs is now zero; explicit TLS catalog wire tests remain. Prior counts
+> below describe prior source only. Current Mac/both-model native/live gates
+> remain release blockers; no publication is authorized.
+
 ## Boundary
 
 Base: CLEAN main `edfa90452922cc2792e6e001277821bfcad6da3d`.

@@ -151,3 +151,37 @@ save are deliberate hardening beyond the isolated proof/Pi reference. No runtime
 Pi/Codex subprocess, app-server, harness, automatic import, browser interaction
 or live call was used. Existing MIT attribution/license applies to the protocol
 adaptation; the new Unix dependency is recorded in [dependencies](dependencies.md).
+
+## Bundled catalog reference (2026-10-17)
+
+The explicitly user-approved [policy correction](../plans/bundled-catalog-policy.md)
+uses only public installed package data/code, not user profile/settings/auth/models
+files. Both installed packages identify version **1.1.0**. Public artifacts were
+read and hashed; paths below are relative to their package roots:
+
+| Package / artifact | SHA-256 |
+| --- | --- |
+| pi-ai `dist/providers/data/openai-codex.json` | `3cc35a7e122e5c77ee8ec30a9a3bd8bd59629997e85ba2cb3f9e0ed62e9a09c0` |
+| pi-ai `dist/providers/openai-codex.models.js` | `6cf3121e84d836dccf2c738c205884dbecce844b80a168035de4adb9ba218343` |
+| pi-ai `dist/providers/openai-codex.js` | `44087142be22adfd09cf1a87edbbdb74ce155b5fd34e70fa4666f3a9f8a9a680` |
+| pi-coding-agent `dist/core/remote-catalog-provider.js` | `1adadd993f0c2efe8326480f5ac8ba3d3300a02ef1089f022907b1a5e4385499` |
+
+The built-in data literally contains `gpt-6.1-sol` and `gpt-6-luna` under
+`openai-codex-responses`, both `contextWindow: 272000`, `maxTokens: 128000`.
+The generated models module loads that JSON and the provider supplies those
+built-in models. The coding-agent overlay merges dynamic metadata with a static
+baseline; its pi.dev refresh/retry/persistence implementation is NOT ported.
+This patch implements only the two-ID local baseline, no automatic enrichment.
+No prices, images, reasoning flags or capacity guarantees are adopted. The
+existing 180000 estimated-input cap remains, not a promise of 180k input plus
+128k output simultaneously. Names/descriptions and all Go code/tests are original.
+Existing MIT attribution (Copyright (c) 2025 Mario Zechner) and retained license
+above apply to this source-informed metadata work; no third-party implementation
+text was copied. This is not live proof, entitlement or an upstream support claim.
+
+Separately, the pinned public Codex checkout `96eb400d1231f0199e96f640c740096087cf3e9b`
+contains literal `gpt-6.1-sol` in `codex-rs/models-manager/models.json` (SHA-256
+`943ca7fe1d19ed019054158303f0dbbd80b3bef43b3aa425a71aa7cb3fb52c2b`).
+It corroborates the exact Sol slug, not Luna live acceptance. No probe credentials,
+private source or user state were consulted. Both-model native/current Mac/live
+release gates remain separate from this reference evidence.

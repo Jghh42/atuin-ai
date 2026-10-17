@@ -960,8 +960,8 @@ def inside(args):
             except Exception as e:
                 report['failures'].append({'case':'cleanup','error':str(e)})
         if suite and not args.case and not report['failures']:
-            if suite.fixture.generations != 446 or suite.fixture.catalogs != 15:
-                report['failures'].append({'case':'total-counts','error':'full suite must have exactly 446 generations and 15 native catalogs'})
+            if suite.fixture.generations != 446 or suite.fixture.catalogs != 0:
+                report['failures'].append({'case':'total-counts','error':'full suite must have exactly 446 generations and zero automatic remote catalogs (bundled runtime metadata)'})
         report['status'] = 'FAIL' if report['failures'] else ('PARTIAL' if args.case else 'PASS')
         pathlib.Path(args.report).write_text(json.dumps(report,indent=2)+'\n')
     return int(bool(report['failures']))

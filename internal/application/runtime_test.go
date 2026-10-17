@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Jghh42/atuin-ai/internal/catalog"
 	"github.com/Jghh42/atuin-ai/internal/config"
 	"github.com/Jghh42/atuin-ai/internal/credentials"
 	"github.com/Jghh42/atuin-ai/internal/httpserver"
@@ -29,9 +28,6 @@ type fakeNative struct {
 	token                                          string
 	refresh                                        string
 	exchanges, rotations, discoveries, generations int
-	// Optional per-fetch handshake, installed only with no active fetch.
-	fetchEntered chan struct{}
-	fetchRelease chan struct{}
 }
 
 func (f *fakeNative) clock() time.Time        { f.mu.Lock(); defer f.mu.Unlock(); return f.now }
@@ -76,15 +72,6 @@ func (f *fakeNative) RoundTrip(r *http.Request) (*http.Response, error) {
 	case codex.ModelsURL:
 		f.checkCredential(r)
 		f.discoveries++
-		entered, release := f.fetchEntered, f.fetchRelease
-		f.fetchEntered = nil
-		f.fetchRelease = nil
-		if entered != nil {
-			close(entered)
-			f.mu.Unlock()
-			<-release
-			f.mu.Lock()
-		}
 		return response(200, `{"models":[{"slug":"gpt-6.1-sol","display_name":"Sol","visibility":"list","priority":0}]}`), nil
 	case codex.ResponsesURL:
 		f.checkCredential(r)
@@ -261,11 +248,11 @@ func TestComposedNativeLoginDiscoveryToolRefreshRestartLogout(t *testing.T) {
 	stop2()
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	if f.exchanges != 1 || f.rotations != 1 || f.generations != 4 || f.discoveries != 2 {
+	if f.exchanges != 1 || f.rotations != 1 || f.generations != 4 || f.discoveries != 0 {
 		t.Fatal("unexpected native lifecycle call counts", f.exchanges, f.rotations, f.generations, f.discoveries)
 	}
 }
-func TestSameAccountLoginAndLogoutIsolateInflightCatalog(t *testing.T) {
+func TestSameAccountLoginAndLogoutIsolateBundledCatalog(t *testing.T) {
 	f := &fakeNative{t: t, now: time.Date(2026, 10, 16, 12, 0, 0, 0, time.UTC)}
 	r := runtime(t, privatePath(t), f)
 	login := func() {
@@ -276,17 +263,9 @@ func TestSameAccountLoginAndLogoutIsolateInflightCatalog(t *testing.T) {
 	login()
 	for _, action := range []string{"same-account-login", "logout"} {
 		t.Run(action, func(t *testing.T) {
-			entered, release := make(chan struct{}), make(chan struct{})
-			f.mu.Lock()
-			f.fetchEntered = entered
-			f.fetchRelease = release
-			f.mu.Unlock()
-			done := make(chan error, 1)
-			go func() { _, e := r.Catalog.Get(context.Background()); done <- e }()
-			select {
-			case <-entered:
-			case <-time.After(2 * time.Second):
-				t.Fatal("fetch not entered")
+			old, err := r.Catalog.Get(context.Background())
+			if err != nil || old.Identity().Epoch != r.Manager.Status().AuthEpoch {
+				t.Fatal(err)
 			}
 			if action == "same-account-login" {
 				login()
@@ -295,21 +274,11 @@ func TestSameAccountLoginAndLogoutIsolateInflightCatalog(t *testing.T) {
 					t.Fatal(e)
 				}
 			}
-			close(release)
-			select {
-			case e := <-done:
-				if e == nil {
-					t.Fatal("obsolete discovery survived lifecycle")
-				}
-			case <-time.After(2 * time.Second):
-				t.Fatal("old catalog waiter stranded")
-			}
 			snapshot, e := r.Catalog.Get(context.Background())
 			if action == "same-account-login" {
 				if e != nil || snapshot.Identity().Epoch != 2 {
 					t.Fatal("new epoch not bound")
 				}
-				f.advance(catalog.FreshFor)
 			} else if e == nil {
 				t.Fatal("logged-out catalog repopulated")
 			}

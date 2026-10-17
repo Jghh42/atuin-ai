@@ -1,5 +1,24 @@
 # Autonomous implementation progress
 
+## Current bundled catalog correction — 2026-10-17
+
+User-approved [bundled native Sol/Luna policy](bundled-catalog-policy.md) replaces
+historical discovery availability gating, not old test outcomes. Sol is first/
+default; Luna is selectable for authorized development with live proof pending.
+Valid application credentials and identity/lifecycle pinning remain required.
+Normal metadata GETs are zero; explicit no-refresh diagnosis retains historical
+proof semantics. No Pi runtime/state import or live calls by the writer. Both
+independent reviews CLEARED lifecycle/security and behavior/protocol; independent
+complete acceptance passed for source `a1af55411682264e09d1004e5ca8c53f8ef57f0c413d10a5fb845c336b2c0b96`.
+Development-only commit/push is authorized; no tag or GitHub Release. The separate
+private retained-credential verifier has not produced live results: both-model
+native/current Mac/production gates remain open. [Acceptance receipt and immutable
+artifact boundary](bundled-catalog-policy.md#review-and-independent-acceptance-receipt).
+Base `7981bb43647dacbab2a4b3d77c07a80cca5c4b98` had all four CI families GREEN:
+Go39015864252, package39015864170, compat39015864214, resources39015864201.
+Those receipts do not validate this uncommitted patch. Older progress below is
+historical and must not override this explicitly authorized policy correction.
+
 Updated 2026-10-17. User-authorized sequential work; checkpoints require review
 and delivery before moving on. This file distinguishes code from live gates.
 

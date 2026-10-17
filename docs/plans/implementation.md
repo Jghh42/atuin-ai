@@ -1,5 +1,10 @@
 # Go rewrite implementation plan
 
+> **2026-10-17 policy correction:** [bundled native Sol/Luna catalog](bundled-catalog-policy.md)
+> supersedes historical remote availability/replay gating and TTL plans below.
+> Earlier phase steps/results remain historical, not retroactive proof. Both-model
+> native proof, current Mac and production live gates still block release.
+
 ## 1. Goal
 
 Build a small, personal, localhost-only Go server for a developer machine,
@@ -111,8 +116,8 @@ gates.
 - `GET /api/cli/models`
 - `POST /api/cli/chat`
 - a fixed loopback-only listener with no client-facing authentication
-- login-driven Codex model discovery, upstream IDs as aliases, and automatic
-  default-model selection; no manually configured model list
+- credential-gated bundled Sol/Luna metadata, upstream IDs as aliases, Sol
+  default and either known-ID override; no manually configured model list
 - Atuin request decoding and normalization
 - OpenAI Responses projection and SSE parsing
 - text streaming
@@ -180,55 +185,33 @@ therefore a correctness decision, not merely schedule reduction.
 13. Explicit application login is sufficient for initialization. Configuration
     is optional, with only `port` and an optional `default_model` override in
     the initial target schema. Manual `[[models]]` declarations and alias
-    mappings are superseded by authenticated upstream discovery.
+    mappings are superseded by the credential-gated bundled known catalog.
 
-### Configuration and model-discovery target
+### Configuration and bundled model catalog target
 
-These decisions revise the completed Phase 1–2 scaffolding, not its historical
-implementation status. Phase 3a replaces the old `8080`/static scaffolding with
-`17391` and injected native discovery. Its live response omits the replay-proven
-model; the eligible-catalog gate is NOT PASSED, and production login wiring is
-still deferred to Phase 7. See the [Phase 3a checkpoint](phase3a-status.md).
-The intended no-config workflow is application login, then `serve`, then Atuin
-configured with `endpoint = "http://127.0.0.1:17391"` and
-`endpoint_protocol = "oss"`.
+The user-approved [policy correction](bundled-catalog-policy.md) replaces the
+historical Phase 3a availability gate, not its recorded results. The no-config
+workflow is application login, `serve`, then Atuin configured with
+`endpoint = "http://127.0.0.1:17391"` and `endpoint_protocol = "oss"`.
 
-- Discover models through the native Codex backend's authenticated catalog
-  contract, not public `/v1/models` or an app-server/Pi subprocess. Current
-  Codex source uses `/backend-api/codex/models` with a `client_version` query;
-  pin the source and verify required version/auth/account headers and actual
-  response metadata with this application's isolated login before relying on
-  it. This discovery route has not yet passed a live project gate.
-- Translate the catalog to Atuin's `{default, models:[{alias,name,description}]}`
-  response. Use upstream model IDs as aliases; do not forward raw Codex JSON,
-  credential data or arbitrary upstream fields to Atuin.
-- Apply upstream picker visibility and our compatibility eligibility checks.
-  Discovery establishes availability, not stateless replay/tool compatibility.
-  Initially enable only models satisfying the existing replay gates; expanding
-  eligibility is an internal compatibility decision, not user configuration.
-- Honor an explicit `default_model` only if it resolves to an eligible discovered
-  ID; otherwise fail clearly rather than quietly choosing a different model.
-  Without an override, prefer the latest eligible Sol release using verified
-  catalog release metadata or a source-verified, numerically tested version
-  convention. Do not infer recency from lexical sorting or invent model IDs.
-  If release ordering is unavailable/ambiguous, use upstream priority (lower
-  numeric values first) within the eligible Sol family; if no Sol is eligible,
-  use the highest-priority
-  eligible picker model. Resolve equal priorities deterministically by ID.
-- Maintain a bounded immutable catalog snapshot shared by model listing and
-  chat resolution. Cache it in memory for 15 minutes, coalesce refreshes, and
-  bound upstream response size, model count, string lengths and fetch timeout.
-  Use injected clocks/transports for tests. Avoid a fresh upstream call for
-  every Atuin model-list request; use ETag revalidation if verified supported.
-- Scope snapshots to the authenticated account/provider and invalidate them on
-  logout or account change. On a transient refresh failure, a last-known-good
-  snapshot for that same account may serve for at most one hour since its last
-  successful validation. Never reuse it after explicit credential revocation
-  or reauthentication failure. Missing login, an empty eligible catalog or a
-  failed initial discovery returns a safe unavailable response; never restore
-  a fabricated placeholder model. The default must always appear in `models`.
-- Keep unknown chat-model fallback to the current discovered default, as in
-  Phase 2, resolving a request against one consistent catalog snapshot.
+- Bundle exactly `gpt-6.1-sol` (first/default) and `gpt-6-luna` (second/selectable),
+  using upstream IDs as Atuin aliases and original concise descriptions. Luna
+  remains live-validation-pending, enabled for authorized development tests.
+- Accept only port/default_model configuration; either exact bundled ID is a
+  valid override. Unknown overrides fail; unknown chat IDs resolve to the known
+  default. No manual `[[models]]` mappings or automatic unknown-ID enrichment.
+- Every lookup preflights application credentials; local immutable snapshots
+  retain account/epoch identity and defensive response copying. Lifecycle revision
+  guards reject obsolete unlocked lookups after logout/reauth/rotation failure.
+- No normal remote metadata GET, TTL, worker, stale grace or network availability
+  dependency. Explicit `auth diagnose` preserves its native one-GET/no-refresh,
+  fixed-report historical replay-proof semantics independently of membership.
+- Known metadata is not account entitlement. Inference remains native Go, one
+  generation/request; authentication failures never retry, fall back to another
+  model or emit executable partial batches. Both-model/current Mac/production
+  live gates remain release blockers.
+- Preserve the 180000 estimated-input cap. Public Pi 1.1.0's 272000 context and
+  128000 max-output metadata is not a simultaneous input-plus-output guarantee.
 
 ## 5. Proposed repository layout
 

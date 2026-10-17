@@ -135,7 +135,7 @@ func TestOriginalReferenceOracle(t *testing.T) {
 	args = append(args, "--mount", "type=bind,src="+fake+",dst=/fakecc,readonly", "--mount", "type=bind,src="+casesPath+",dst=/cases.json,readonly", alpine, "/fakecc", "/cases.json")
 	fakeID := owned.create(t, args...)
 	config := filepath.Join(root, "config.toml")
-	if e = os.WriteFile(config, []byte("port = 8080\nendpoint = \"http://fakecc:8081/v1\"\ndefault_model = \"gpt-6.1-sol\"\n[[models]]\nalias = \"gpt-6.1-sol\"\nname = \"Sol\"\ndescription = \"\"\nmodel = \"gpt-6.1-sol\"\n"), 0644); e != nil {
+	if e = os.WriteFile(config, []byte("port = 8080\nendpoint = \"http://fakecc:8081/v1\"\ndefault_model = \"gpt-6.1-sol\"\n[[models]]\nalias = \"gpt-6.1-sol\"\nname = \"Sol\"\ndescription = \"Native Codex Sol\"\nmodel = \"gpt-6.1-sol\"\n[[models]]\nalias = \"gpt-6-luna\"\nname = \"Luna\"\ndescription = \"Native Codex Luna (live validation pending)\"\nmodel = \"gpt-6-luna\"\n"), 0644); e != nil {
 		t.Fatal(e)
 	}
 	args = append([]string{"run", "-d", "--name", networkName + "-oracle", "--network", network, "--network-alias", "oracle", "--cap-drop=ALL", "--security-opt=no-new-privileges", "--memory=256m", "--cpus=2", "--pids-limit=128"}, owned.labels()...)

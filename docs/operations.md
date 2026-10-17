@@ -17,10 +17,10 @@ filter/retry wrapper. Build with `make build`, then run:
 # Attended live login only after explicit opt-in; production live gate NOT PASSED:
 ./bin/atuin-ai-server auth login
 ./bin/atuin-ai-server auth status
-# If saved login reports models unavailable, with serve STOPPED, run ONCE:
+# OPTIONAL remote metadata diagnosis only, with serve STOPPED; not a bundled availability test:
 ./bin/atuin-ai-server auth diagnose # sanitized stderr JSON; NO refresh/inference
 ./bin/atuin-ai-server serve # config is optional
-curl http://127.0.0.1:17391/api/cli/models # 503 unless login AND eligible discovery succeed
+curl http://127.0.0.1:17391/api/cli/models # valid login required; returns bundled Sol/Luna without metadata GET
 # Stop serve before auth status/login/logout in a separate process:
 ./bin/atuin-ai-server auth logout
 ```
@@ -40,40 +40,40 @@ other systems). A missing default file uses built-in defaults; an explicitly
 selected missing file is an error. Files are read once with a 64 KiB bound;
 key validation and typed decoding use the same byte snapshot. Only `port` (default **17391**) and optional
 `default_model` are accepted. Remove obsolete `[[models]]`/alias mappings: they
-produce a migration error. Overrides must match an eligible discovered upstream
-ID, not a private/public alias mapping.
+produce a migration error. Overrides must be exactly `gpt-6.1-sol` (default)
+or `gpt-6-luna`, not private/public alias mappings or arbitrary IDs.
 
-The executable now composes native Codex discovery/inference with one lifetime
-credential manager and one shared account/epoch-bound catalog. It never imports
+The executable composes native Codex inference with one lifetime credential
+manager and one shared account/epoch-bound bundled catalog. It never imports
 isolated proof, Pi or Codex state. `auth login` displays the fixed activation URL
-and user code only to `/dev/tty`; there is no unattended/browser-cookie/import
-path. Login is durably saved before discovery, and successful login with failed
-or ineligible discovery is reported as saved with models unavailable, not rolled
-back. Missing credentials or an eligible catalog gives safe JSON 503. Production
-live login/lifecycle and the historical eligible-catalog gate are **NOT PASSED**;
-see [authentication/security and opt-in steps](authentication.md).
+and user code only to `/dev/tty`; no unattended/browser-cookie/import path exists.
+Saved login reports bundled availability with upstream acceptance not verified.
+Missing valid credentials or an unknown default override gives safe JSON 503.
+Both-model native/current Mac/production live gates still block release; see the
+[authorized catalog policy](plans/bundled-catalog-policy.md) and
+[authentication/security and opt-in steps](authentication.md).
 
-`GET /api/cli/models` returns the visible replay-proven catalog; chat resolves
-unknown IDs to that same snapshot's default. `httpserver.NewWithRuntime` accepts
+`GET /api/cli/models` returns Sol first/default and selectable Luna second;
+chat resolves unknown IDs to that same snapshot's known default. `httpserver.NewWithRuntime` accepts
 credentials, that catalog, and the native streaming provider. Catalog-only or
 uncredentialed library construction remains safely unavailable, never a
 fabricated provider. Invalid decoded requests return 400 (`invalid_request` or
-`conversation_too_large`); oversized bodies return 413 before discovery. Other paths return JSON 404; unsupported methods
+`conversation_too_large`); oversized bodies return 413 before catalog lookup. Other paths return JSON 404; unsupported methods
 on known routes return 405. See [decoder policies](compatibility.md).
 
-Discovery limits: 2 MiB body, 256 models, 128-byte IDs, 256-byte display names,
-4096-byte descriptions, eight-second fetch timeout, 15-minute freshness. A
-transient transport/429/5xx failure may serve the same account's last validated
-snapshot for at most one hour; auth/metadata/override errors clear it. Refreshes
-coalesce, individual waiters can cancel, and the last cancellation stops the
-fetch. Logout/reauth/account change and failed rotating refresh publish unavailable/new
-source state then synchronously invalidate the cache. Successful rotation
-preserves auth_epoch; fresh login always advances it, even for the same account.
-Inference is pinned to discovery's identity and rejects later account/epoch
-changes rather than rebinding a decoded request. No
-fabricated fallback exists. Only `gpt-6.1-sol` has replay proof; the live catalog
-currently omits it, so the live eligible-catalog gate is **NOT PASSED**. See
-[discovery evidence](proofs/codex-discovery-phase3a.md).
+Normal model listing performs no remote metadata request: no discovery worker,
+TTL, stale grace or remote enrichment. Every lookup still preflights application
+credentials. Logout/reauth/account change and failed rotating refresh publish
+unavailable/new state then synchronously invalidate local snapshots. Lifecycle
+revision checks reject obsolete credential lookups. Successful rotation preserves
+auth_epoch; fresh login advances it even for the same account. Inference is pinned
+to the snapshot's account/epoch and rejects later changes rather than rebinding.
+401/403 during inference fails closed after one generation, with no retry, model
+fallback or executable partial batch. Bundled membership is not entitlement.
+The 180000 estimated-input cap is unchanged. Pi's 272000 context/128000 max-output
+metadata is not a simultaneous input-plus-output promise. Luna live proof is
+pending; [historical discovery evidence](proofs/codex-discovery-phase3a.md) remains
+historical, not a current availability gate.
 
 ## Private state and single-process operation
 

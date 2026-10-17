@@ -84,7 +84,7 @@ func newWithOptions(path string, cfg config.Config, opts Options, diagnostic boo
 	}
 	// Bind once, before exposing either source. No dynamic cache/source rebind.
 	discovery := codex.Discovery{Transport: transport}
-	cache = catalog.New(manager, discovery, cfg.DefaultModel, opts.Now)
+	cache = catalog.New(manager, cfg.DefaultModel)
 	native := codex.RequestClient{Credentials: manager, Transport: transport, Now: opts.Now}
 	return &Runtime{Manager: manager, Catalog: cache, HTTP: httpserver.Runtime{Credentials: manager, Catalog: cache, Provider: native}, transport: owned, discovery: discovery, defaultModel: cfg.DefaultModel}, nil
 }

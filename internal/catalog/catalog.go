@@ -1,4 +1,5 @@
-// Package catalog owns immutable, account-scoped discovery snapshots.
+// Package catalog owns immutable, credential-bound bundled model snapshots.
+// Remote metadata is used only by explicit diagnostics, never for availability.
 package catalog
 
 import (
@@ -14,18 +15,15 @@ import (
 )
 
 var (
-	ErrUnavailable  = errors.New("model discovery unavailable; application login and successful discovery required")
-	ErrUnauthorized = errors.New("model discovery requires reauthentication")
+	ErrUnavailable  = errors.New("bundled model catalog unavailable; valid application login required")
+	ErrUnauthorized = errors.New("model catalog requires reauthentication")
 	ErrTransient    = errors.New("temporary model discovery failure")
 	ErrInvalid      = errors.New("invalid or incompatible model catalog")
-	ErrOverride     = errors.New("default_model is not an eligible discovered ID; remove or update the override")
+	ErrOverride     = errors.New("default_model is not a known bundled ID; remove or update the override")
 )
 
-const (
-	FreshFor     = 15 * time.Minute
-	StaleFor     = time.Hour
-	FetchTimeout = 8 * time.Second
-)
+// FetchTimeout bounds explicit diagnostic metadata requests only.
+const FetchTimeout = 8 * time.Second
 
 type Model struct {
 	Alias       string `json:"alias"`
@@ -44,15 +42,18 @@ type Entry struct {
 	ID, Name, Description, Visibility string
 	Priority                          int32
 }
+
+// Fetcher is used by explicit diagnostic/proof tooling, never by Cache.
 type Fetcher interface {
 	Fetch(context.Context, credentials.Credential) ([]Entry, error)
 }
+
 type Snapshot struct {
 	response Response
 	identity credentials.Identity
 }
 
-// Identity binds inference to the account/epoch that supplied discovery.
+// Identity binds inference to the account/epoch checked before listing.
 func (s Snapshot) Identity() credentials.Identity { return s.identity }
 
 func (s Snapshot) Response() Response {
@@ -69,7 +70,8 @@ func (s Snapshot) Resolve(id string) string {
 	return s.response.Default
 }
 
-// Build validates a bounded immutable snapshot using the internal proof allowlist.
+// Build preserves historical remote replay-proof selection for diagnostics and
+// proof tooling ONLY. Runtime availability uses BuildBundled instead.
 func Build(entries []Entry, override string) (Snapshot, error) {
 	return selectSnapshot(entries, override, replayProven)
 }
@@ -82,8 +84,8 @@ type Eligibility struct {
 	ProvenPresent, ProvenListed bool
 }
 
-// InspectEligibility examines already-validated metadata using the SAME proof
-// predicate as Build. It does not select or enable additional models.
+// InspectEligibility examines historical replay proof, NOT runtime membership.
+// Luna's bundled availability does not assert historical replay or live proof.
 func InspectEligibility(entries []Entry) Eligibility {
 	var result Eligibility
 	for _, m := range entries {
@@ -175,158 +177,80 @@ func validID(s string) bool {
 	return true
 }
 
-type flight struct {
-	done      chan struct{}
-	cancel    context.CancelFunc
-	waiters   int
-	snapshot  Snapshot
-	err       error
-	revision  uint64
-	validated time.Time
+// BuildBundled constructs a fresh snapshot of the exact reviewed native IDs.
+// These are known metadata, not an account entitlement or capacity promise.
+func BuildBundled(override string) (Snapshot, error) {
+	const sol = "gpt-6.1-sol"
+	const luna = "gpt-6-luna"
+	if override != "" && override != sol && override != luna {
+		return Snapshot{}, ErrOverride
+	}
+	def := sol
+	if override != "" {
+		def = override
+	}
+	return Snapshot{response: Response{Default: def, Models: []Model{
+		{Alias: sol, Name: "Sol", Description: "Native Codex Sol"},
+		{Alias: luna, Name: "Luna", Description: "Native Codex Luna (live validation pending)"},
+	}}}, nil
 }
+
+// Cache pins local immutable metadata to a credential identity. There is no
+// remote fetch, TTL, background worker, or stale credential fallback.
 type Cache struct {
 	mu        sync.Mutex
 	source    credentials.Source
-	fetcher   Fetcher
-	now       func() time.Time
 	override  string
-	identity  credentials.Identity
 	snapshot  Snapshot
-	validated time.Time
-	active    *flight
-	revision  uint64
 	lifecycle uint64
 }
 
-func New(source credentials.Source, fetcher Fetcher, override string, now func() time.Time) *Cache {
-	if now == nil {
-		now = time.Now
-	}
-	return &Cache{source: source, fetcher: fetcher, override: override, now: now}
+func New(source credentials.Source, override string) *Cache {
+	return &Cache{source: source, override: override}
 }
 
-// Invalidate must be called synchronously by lifecycle writers. It also prevents
-// in-flight discovery from repopulating a logged-out or changed account cache.
-func (c *Cache) Invalidate() { c.mu.Lock(); defer c.mu.Unlock(); c.lifecycle++; c.clearLocked() }
-func (c *Cache) clearLocked() {
-	c.revision++
-	if c.active != nil {
-		c.active.cancel()
-		c.active = nil
-	}
+// Invalidate must be called synchronously by lifecycle writers after publishing
+// new credential state. Unlocked obsolete lookups cannot repopulate the cache.
+func (c *Cache) Invalidate() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.lifecycle++
 	c.snapshot = Snapshot{}
-	c.validated = time.Time{}
-	c.identity = credentials.Identity{}
 }
+
 func (c *Cache) Get(ctx context.Context) (Snapshot, error) {
 	if err := ctx.Err(); err != nil {
 		return Snapshot{}, err
 	}
-	if c.source == nil || c.fetcher == nil {
+	if c.source == nil {
 		return Snapshot{}, ErrUnavailable
 	}
 	c.mu.Lock()
-	sourceRevision := c.lifecycle
+	revision := c.lifecycle
 	c.mu.Unlock()
+	// Preflight on EVERY lookup, including cached metadata. Current may refresh
+	// application credentials, but never requests remote model metadata.
 	cred, err := c.source.Current(ctx)
 	if ctx.Err() != nil {
 		return Snapshot{}, ctx.Err()
 	}
 	c.mu.Lock()
-	if c.lifecycle != sourceRevision {
-		c.mu.Unlock()
+	defer c.mu.Unlock()
+	if revision != c.lifecycle {
 		return Snapshot{}, ErrUnavailable
 	}
 	if err != nil || cred.Identity.Provider != "codex" || cred.Identity.Account == "" || cred.AccessToken == "" {
 		c.lifecycle++
-		c.clearLocked()
-		c.mu.Unlock()
+		c.snapshot = Snapshot{}
 		return Snapshot{}, ErrUnauthorized
 	}
-	if c.identity != cred.Identity {
-		c.clearLocked()
-		c.identity = cred.Identity
-	}
-	age := c.now().Sub(c.validated)
-	if c.snapshot.response.Default != "" && age >= 0 && age < FreshFor {
-		s := c.snapshot
-		c.mu.Unlock()
-		return s, nil
-	}
-	f := c.active
-	if f == nil {
-		fetchCtx, cancel := context.WithTimeout(context.Background(), FetchTimeout)
-		f = &flight{done: make(chan struct{}), cancel: cancel, revision: c.revision}
-		c.active = f
-		go c.refresh(fetchCtx, cred, f)
-	}
-	f.waiters++
-	c.mu.Unlock()
-	select {
-	case <-ctx.Done():
-		c.mu.Lock()
-		f.waiters--
-		if f.waiters == 0 && c.active == f {
-			f.cancel()
-			c.active = nil
+	if c.snapshot.response.Default == "" || c.snapshot.identity != cred.Identity {
+		s, err := BuildBundled(c.override)
+		if err != nil {
+			return Snapshot{}, err
 		}
-		c.mu.Unlock()
-		return Snapshot{}, ctx.Err()
-	case <-f.done:
-		return c.flightResult(cred.Identity, f)
-	}
-}
-
-// flightResult is the single result-consumption boundary, including waiters
-// delayed after completion while a newer refresh invalidates old snapshots.
-func (c *Cache) flightResult(identity credentials.Identity, f *flight) (Snapshot, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.identity != identity || c.revision != f.revision {
-		return Snapshot{}, ErrUnauthorized
-	}
-	if f.snapshot.response.Default != "" {
-		age := c.now().Sub(f.validated)
-		if age < 0 || age > StaleFor {
-			return Snapshot{}, ErrUnavailable
-		}
-	}
-	return f.snapshot, f.err
-}
-func (c *Cache) refresh(ctx context.Context, cred credentials.Credential, f *flight) {
-	defer f.cancel()
-	entries, err := c.fetcher.Fetch(ctx, cred)
-	var s Snapshot
-	if err == nil {
-		s, err = Build(entries, c.override)
-	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	defer close(f.done)
-	if c.active != f || c.identity != cred.Identity {
-		f.err = ErrUnavailable
-		return
-	}
-	c.active = nil
-	if err == nil {
 		s.identity = cred.Identity
 		c.snapshot = s
-		c.validated = c.now()
-		f.snapshot = s
-		f.validated = c.validated
-		return
 	}
-	age := c.now().Sub(c.validated)
-	if errors.Is(err, ErrTransient) && c.snapshot.response.Default != "" && age >= 0 && age <= StaleFor {
-		f.snapshot = c.snapshot
-		f.validated = c.validated
-		return
-	}
-	// Invalidate even already-completed stale flights. The failing flight owns
-	// this new revision so its own waiters still receive the specific safe error.
-	c.revision++
-	f.revision = c.revision
-	c.snapshot = Snapshot{}
-	c.validated = time.Time{}
-	f.err = err
+	return c.snapshot, nil
 }

@@ -51,7 +51,7 @@ func TestAuthCommandsPersistedLoginDiscoveryFailureStatusAndLogout(t *testing.T)
 			b, _ := json.Marshal(map[string]any{"access_token": token, "refresh_token": "private-refresh", "expires_in": 3600})
 			body = string(b)
 		case "/backend-api/codex/models":
-			body = `{"models":[{"slug":"unproven-model","display_name":"Unproven","visibility":"list","priority":0}]}`
+			t.Error("ordinary login requested remote metadata")
 		default:
 			t.Error("unexpected HTTP endpoint")
 		}
@@ -73,7 +73,7 @@ func TestAuthCommandsPersistedLoginDiscoveryFailureStatusAndLogout(t *testing.T)
 		}
 	}
 	check("status", "Logged out")
-	check("login", "Login saved successfully; models unavailable")
+	check("login", "Login saved successfully; bundled model catalog available; upstream acceptance not verified")
 	if displayed != 1 {
 		t.Fatal("code not restricted to interactive display")
 	}

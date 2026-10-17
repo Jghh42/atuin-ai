@@ -162,12 +162,11 @@ func runAuth(ctx context.Context, args []string, out io.Writer, deps commandDeps
 	case "login":
 		err = runtime.Manager.Login(ctx, display)
 		if err == nil {
-			// Saving login is successful independently of discovery. Do not fabricate
-			// models or roll back a rotating session on an empty/ineligible catalog.
+			// Bundled membership does not verify upstream account acceptance.
 			if _, e := runtime.Catalog.Get(ctx); e != nil {
-				_, err = fmt.Fprintln(out, "Login saved successfully; models unavailable (discovery or eligibility failed)")
+				_, err = fmt.Fprintln(out, "Login saved successfully; bundled model catalog unavailable (credentials or default_model override)")
 			} else {
-				_, err = fmt.Fprintln(out, "Login saved successfully; model discovery available")
+				_, err = fmt.Fprintln(out, "Login saved successfully; bundled model catalog available; upstream acceptance not verified")
 			}
 		}
 	}

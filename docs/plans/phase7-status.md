@@ -1,5 +1,12 @@
 # Phase 7 — production native Codex credential lifecycle
 
+> **Current catalog correction (2026-10-17):** [authorized bundled Sol/Luna policy](bundled-catalog-policy.md)
+> supersedes discovery-driven runtime availability below. Credential preflight,
+> lifecycle revisions and account/epoch inference pinning remain mandatory.
+> Login no longer requests metadata and reports upstream acceptance unverified.
+> Historical live results are unchanged; both-model native/current Mac/production
+> live validation still blocks release. This patch has no live proof claim.
+
 2026-10-16 independently reviewed code checkpoint, **cleared for authorized
 direct-main delivery**. Both security re-reviews cleared the shutdown/Unicode/
 formatter fixes with no new blockers; independent post-fix verification passed.

@@ -131,7 +131,7 @@ intentional SAME-store restart lock witness. No real token/store is imported.
 ## Workloads and barriers
 
 Fresh shipping processes isolate warmed-idle, four-normal and four-near HWM.
-Each first warms native login-record load, TLS catalog, real chat parsing and
+Each first warms native login-record load, local bundled catalog, real TLS chat parsing and
 64KiB output. No shipping forced GC or race instrumentation.
 
 - Normal:16384 decoded history characters,65536 output bytes per request.
@@ -227,8 +227,12 @@ Report includes kernel/CPU/affinity/page size/physical RAM, own cgroup ancestor
 limits, rlimits, Go pin, package build flags/environment, binary/helper/Bubblewrap
 hashes, source inventory, numeric requests/concurrency/bytes, all hard/soft
 outcomes, cancellation/timeout/signal/restart/retention sequences and cleanup.
-Full suite must have exactly446 generations +15 catalogs, peak4 concurrency and
-zero active fixture handlers after cleanup. Reports are flushed after each case;
+Full suite must have exactly446 generations +0 automatic remote catalogs, peak4 concurrency and
+zero active fixture handlers after cleanup. The bundled policy removes the old
+15 metadata GETs (one per fresh process/cache lifetime), without changing any
+446-generation workload, barrier, timeout or budget. Explicit positive/negative
+TLS catalog wire tests remain intact and separate from automatic runtime traffic.
+Reports are flushed after each case;
 first failures are preserved, not overwritten by reruns or filtered to green.
 
 All outputs are DEVELOPMENT/local same-host consistency, not independent

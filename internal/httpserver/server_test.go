@@ -7,7 +7,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
@@ -16,20 +15,15 @@ import (
 	"github.com/Jghh42/atuin-ai/internal/catalog"
 	"github.com/Jghh42/atuin-ai/internal/config"
 	"github.com/Jghh42/atuin-ai/internal/credentials"
-	"github.com/Jghh42/atuin-ai/internal/provider/codex"
 )
 
 func start(t *testing.T, cfg config.Config, chat http.Handler) (string, context.CancelFunc, <-chan error) {
 	t.Helper()
 	var s *Server
 	var err error
-	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = io.WriteString(w, `{"models":[{"slug":"gpt-6.1-sol","display_name":"Sol","description":"Verified replay model","visibility":"list","priority":0}]}`)
-	}))
-	t.Cleanup(upstream.Close)
 	source := catalog.New(credentials.SourceFunc(func(context.Context) (credentials.Credential, error) {
 		return credentials.Credential{Identity: credentials.Identity{Provider: "codex", Account: "test-account", Epoch: 1}, AccessToken: "test-token"}, nil
-	}), codex.Discovery{URL: upstream.URL}, cfg.DefaultModel, nil)
+	}), cfg.DefaultModel)
 	if chat == nil {
 		s, err = NewWithCatalog(cfg, nil, source)
 	} else {
@@ -107,7 +101,7 @@ func TestRoutesAndModels(t *testing.T) {
 	if err := json.Unmarshal(body, &got); err != nil {
 		t.Fatal(err)
 	}
-	if got.Default != "gpt-6.1-sol" || len(got.Models) != 1 || got.Models[0].Alias != "gpt-6.1-sol" {
+	if got.Default != "gpt-6.1-sol" || len(got.Models) != 2 || got.Models[0].Alias != "gpt-6.1-sol" || got.Models[1].Alias != "gpt-6-luna" {
 		t.Fatalf("%s", body)
 	}
 	if bytes.Contains(body, []byte("private-upstream")) {

@@ -54,13 +54,13 @@ func TestDiagnosticCompositionNoRefreshAndNoCacheMutation(t *testing.T) {
 	if report := r.Diagnose(context.Background()); report.Result != codex.ResultSuccess || requests.Load() != 1 {
 		t.Fatal("diagnostic failed")
 	}
-	if _, err := r.Catalog.Get(context.Background()); err != nil || requests.Load() != 2 {
-		t.Fatal("diagnostic populated ordinary cache")
+	if _, err := r.Catalog.Get(context.Background()); err != nil || requests.Load() != 1 {
+		t.Fatal("ordinary catalog made a remote request")
 	}
-	if report := r.Diagnose(context.Background()); report.Result != codex.ResultSuccess || requests.Load() != 3 {
+	if report := r.Diagnose(context.Background()); report.Result != codex.ResultSuccess || requests.Load() != 2 {
 		t.Fatal("diagnostic reused cached data")
 	}
-	if _, err := r.Catalog.Get(context.Background()); err != nil || requests.Load() != 3 {
+	if _, err := r.Catalog.Get(context.Background()); err != nil || requests.Load() != 2 {
 		t.Fatal("diagnostic invalidated ordinary cache")
 	}
 	if status != r.Manager.Status() {
@@ -68,7 +68,7 @@ func TestDiagnosticCompositionNoRefreshAndNoCacheMutation(t *testing.T) {
 	}
 	// Expiry-minus-skew must NOT invoke Current/refresh or send metadata.
 	now = now.Add(time.Hour - credentials.AccessSkew)
-	if report := r.Diagnose(context.Background()); report.Result != codex.ResultRefreshRequired || report.HTTPStatus != nil || requests.Load() != 3 {
+	if report := r.Diagnose(context.Background()); report.Result != codex.ResultRefreshRequired || report.HTTPStatus != nil || requests.Load() != 2 {
 		t.Fatal("diagnostic refreshed expired access")
 	}
 }

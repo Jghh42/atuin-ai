@@ -23,7 +23,7 @@ const (
 )
 
 // ErrLegacyModels is a fixed, safe migration diagnostic for command output.
-var ErrLegacyModels = errors.New("remove [[models]]/models and alias mappings: models are now discovered after application login; optionally set default_model to an eligible upstream ID")
+var ErrLegacyModels = errors.New("remove [[models]]/models and alias mappings: models are now bundled and require application login; optionally set default_model to a known bundled upstream ID")
 
 type Config struct {
 	Port         int    `toml:"port"`

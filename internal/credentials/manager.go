@@ -193,7 +193,7 @@ func (m *Manager) operationContext(ctx context.Context) (context.Context, func()
 }
 
 // Login explicitly replaces this application's session, including the same
-// account. Discovery is intentionally separate: failure cannot undo saved login.
+// account. Catalog membership/diagnosis is separate from saving login.
 func (m *Manager) Login(ctx context.Context, display func(DevicePrompt) error) error {
 	m.op.Lock()
 	defer m.op.Unlock()

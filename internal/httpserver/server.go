@@ -28,7 +28,7 @@ type Server struct {
 // New remains safely unavailable without explicit runtime dependencies. The
 // executable composes the production lifecycle via NewWithRuntime.
 func New(cfg config.Config, logger *slog.Logger) (*Server, error) {
-	return NewWithCatalog(cfg, logger, catalog.New(nil, nil, cfg.DefaultModel, nil))
+	return NewWithCatalog(cfg, logger, catalog.New(nil, cfg.DefaultModel))
 }
 
 type CatalogSource interface {
@@ -66,7 +66,7 @@ func newWithRuntime(cfg config.Config, logger *slog.Logger, runtime Runtime, dec
 		}
 		snapshot, err := source.Get(preflight)
 		if err != nil || preflight.Err() != nil {
-			writeError(w, 503, "models_unavailable", "Login and successful model discovery required; check default_model override")
+			writeError(w, 503, "models_unavailable", "Valid application login required for bundled models; check default_model override")
 			return
 		}
 		response := snapshot.Response()
@@ -111,7 +111,7 @@ func newWithRuntime(cfg config.Config, logger *slog.Logger, runtime Runtime, dec
 
 // newServer accepts a chat implementation for deterministic boundary tests.
 func newServer(cfg config.Config, logger *slog.Logger, chat http.Handler) (*Server, error) {
-	return buildServer(cfg, logger, catalog.New(nil, nil, cfg.DefaultModel, nil), chat)
+	return buildServer(cfg, logger, catalog.New(nil, cfg.DefaultModel), chat)
 }
 
 func buildServer(cfg config.Config, logger *slog.Logger, source CatalogSource, chat http.Handler) (*Server, error) {
@@ -133,7 +133,7 @@ func buildServer(cfg config.Config, logger *slog.Logger, source CatalogSource, c
 			}
 			snapshot, err := source.Get(r.Context())
 			if err != nil {
-				writeError(w, 503, "models_unavailable", "Login and successful model discovery required; check default_model override")
+				writeError(w, 503, "models_unavailable", "Valid application login required for bundled models; check default_model override")
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")

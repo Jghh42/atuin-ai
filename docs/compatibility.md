@@ -148,12 +148,29 @@ model/transcript documented in [its report](proofs/codex-phase0.md), not real
 Atuin CLI compatibility or independent SIWC.
 No live data or credential artifacts may become compatibility fixtures.
 
+## Bundled catalog compatibility correction (2026-10-17)
+
+The [authorized policy](plans/bundled-catalog-policy.md) replaces historical remote
+availability gating: valid application credentials expose exactly Sol (first/
+default) and Luna (second/selectable). Luna live proof remains pending; known
+membership is not entitlement. No normal metadata GET occurs. Explicit diagnosis
+retains historical Sol-only proof semantics and the unchanged 12-field contract.
+Both IDs have native semantic fake tests for role/tool/full-history/account-header
+projection and one-attempt 401/403 safe failure without model fallback. The actual
+20-case pinned CLI baseline now selects Sol -> Luna and verifies both upstream
+IDs and full history. Shared source fakes validate the chosen model, not merely
+membership in an allowed pair. Three oracle corpus cases select Luna (write,
+parallel, continuation). Only the original oracle's TEST configuration has two
+`[[models]]` entries matching our original descriptions; exact model-list/default
+comparison and strict protocol normalization remain intact. No builder/helper
+recipe changes or manifest relabeling is required by these test changes.
+
 ## Phase 8 actual pinned CLI / original-source oracle
 
 [Phase 8 status and exact commands](plans/phase8-status.md) distinguish local
 synthetic passes from production/live/release gates. The unmodified pinned
 Atuin now runs under stdlib PTY automation against the composed native Go
-application with fake OAuth/discovery/Responses. Initial review was NOT CLEARED:
+application with fake OAuth/Responses and the credential-gated bundled catalog. Initial review was NOT CLEARED:
 HOME/XDG alone did not confine ancestor context discovery/embedded commands.
 No retrospective absence of reads/execution or incident is inferred. Corrected
 invocations run in an fd-pinned Bubblewrap filesystem/PID namespace (host

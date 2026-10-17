@@ -2,6 +2,7 @@ package projection
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -39,6 +40,25 @@ func independentWire(t *testing.T, dialect string) map[string]any {
 	}
 	return v
 }
+func TestSelectedLunaRequiresExactProjection(t *testing.T) {
+	for _, dialect := range []string{"responses", "chat-completions"} {
+		raw := strings.Replace(complexAtuin, `"config":{`, `"config":{"model":"gpt-6-luna",`, 1)
+		v := independentWire(t, dialect)
+		v["model"] = "gpt-6-luna"
+		b, _ := json.Marshal(v)
+		if err := Validate(dialect, []byte(raw), b); err != nil {
+			t.Fatal(err)
+		}
+		for _, wrong := range []string{Model, "invented"} {
+			v["model"] = wrong
+			b, _ := json.Marshal(v)
+			if Validate(dialect, []byte(raw), b) == nil {
+				t.Fatal("chosen model not enforced")
+			}
+		}
+	}
+}
+
 func TestSemanticProjectionMutations(t *testing.T) {
 	for _, dialect := range []string{"responses", "chat-completions"} {
 		t.Run(dialect, func(t *testing.T) {

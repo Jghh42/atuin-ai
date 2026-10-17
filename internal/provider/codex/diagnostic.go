@@ -173,7 +173,8 @@ func diagnosticIOResult(ctx context.Context, err error, fallback DiagnosticResul
 }
 
 // Diagnose makes exactly the same bounded native metadata request/decoding as
-// Fetch, then the same selection as Build. Credential lifecycle/no-refresh
+// Fetch, then historical replay-proof selection (NOT bundled runtime membership).
+// Credential lifecycle/no-refresh
 // policy belongs to the application manager, not this provider function.
 func (d Discovery) Diagnose(ctx context.Context, c credentials.Credential, override string) DiagnosticReport {
 	r := DiagnosticReport{DefaultOverrideConfigured: diagnosticValue(override != "")}

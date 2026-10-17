@@ -7,7 +7,7 @@ import (
 	"github.com/Jghh42/atuin-ai/internal/provider/codex"
 )
 
-// Diagnose bypasses the cache but NOT native discovery validation/selection. It
+// Diagnose is an explicit remote check, independent of bundled availability. It
 // uses the manager's no-refresh borrowing boundary; no Current, OAuth, inference,
 // cache mutation, or lifecycle transaction is performed.
 func (r *Runtime) Diagnose(ctx context.Context) codex.DiagnosticReport {

@@ -1,7 +1,7 @@
 # Optional. No config file is required. Host is always 127.0.0.1.
 port = 17391
-# Optional upstream ID; must be discovered, visible and replay-proven.
+# Optional exact bundled upstream ID; Sol is the default, Luna is selectable.
 # default_model = "gpt-6.1-sol"
-# No [[models]] or alias mappings: discovery replaces manual catalogs.
-# Production login/discovery wiring is deferred to Phase 7. Until then, the
-# standalone server returns 503 for models/chat; injected tests cover discovery.
+# default_model = "gpt-6-luna"
+# No [[models]] or alias mappings. Valid application credentials are required.
+# Bundled membership is not upstream entitlement; Luna live validation is pending.

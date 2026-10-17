@@ -360,7 +360,12 @@ func Validate(dialect string, atuin, outbound []byte) error {
 	if !cc && dialect != "responses" {
 		return fmt.Errorf("unknown dialect")
 	}
-	if wire["model"] != Model || wire["stream"] != true {
+	cfg, _ := raw["config"].(map[string]any)
+	selected := Model
+	if cfg["model"] == "gpt-6-luna" {
+		selected = "gpt-6-luna"
+	}
+	if wire["model"] != selected || wire["stream"] != true {
 		return fmt.Errorf("model/stream changed")
 	}
 	if !cc {
@@ -371,7 +376,6 @@ func Validate(dialect string, atuin, outbound []byte) error {
 			return fmt.Errorf("instructions missing")
 		}
 	}
-	cfg, _ := raw["config"].(map[string]any)
 	caps := map[string]bool{}
 	if list, ok := cfg["capabilities"].([]any); ok {
 		for _, v := range list {

@@ -247,10 +247,8 @@ func (n *Native) RoundTrip(r *http.Request) (*http.Response, error) {
 		return reply(200, string(b)), nil
 	case codex.ModelsURL:
 		n.models++
-		if r.Header.Get("ChatGPT-Account-Id") != "synthetic-account" || r.Header.Get("Authorization") != "Bearer "+n.token {
-			n.t.Error("account binding lost")
-		}
-		return reply(200, `{"models":[{"slug":"gpt-6.1-sol","display_name":"Sol","visibility":"list","priority":0}]}`), nil
+		n.t.Error("ordinary runtime requested remote catalog")
+		return reply(500, `{}`), nil
 	case codex.ResponsesURL:
 		b, e := io.ReadAll(r.Body)
 		if e != nil {

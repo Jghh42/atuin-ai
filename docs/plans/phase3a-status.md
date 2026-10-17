@@ -1,5 +1,11 @@
 # Phase 3a checkpoint — discovered catalog, not production login
 
+> **Superseded availability policy (2026-10-17):** the user approved a
+> [bundled known Sol/Luna catalog](bundled-catalog-policy.md). Historical discovery
+> outcomes below remain unchanged; remote replay-proof selection is now explicit
+> diagnosis only, not normal listing availability. Both-model native/current Mac/
+> production live gates remain release blockers. No retrospective proof is claimed.
+
 Date: 2026-10-16. Implemented bounded/testable runtime behavior; **live eligible
 catalog exit NOT PASSED**. No Phase 4 work, generation, SSE or production OAuth
 lifecycle is included. This is not release ready.

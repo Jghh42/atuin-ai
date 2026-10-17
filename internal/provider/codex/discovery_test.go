@@ -28,8 +28,11 @@ func TestNativeContract(t *testing.T) {
 	}))
 	defer s.Close()
 	d := Discovery{URL: s.URL + "/backend-api/codex/models?client_version=0.134.0"}
-	c := catalog.New(credentials.SourceFunc(func(context.Context) (credentials.Credential, error) { return credential(), nil }), d, "", nil)
-	got, err := c.Get(context.Background())
+	entries, err := d.Fetch(context.Background(), credential())
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := catalog.Build(entries, "")
 	if err != nil || got.Resolve("unknown") != "gpt-6.1-sol" {
 		t.Fatal(got, err)
 	}

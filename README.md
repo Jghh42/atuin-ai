@@ -11,27 +11,15 @@ device login and Responses-format inference through the ChatGPT Codex backend,
 targeting the user's ChatGPT Business seat. Independently registered Sign in
 with ChatGPT (SIWC) and public Responses inference are deferred for later.
 
-> **Status:** Phases 1–6 implement the bounded Atuin/Responses streaming
-> pipeline. Phase 7 adds explicit native device login, private application state,
-> fail-closed rotating refresh, logout and production composition. **Independent
-> security re-review and post-fix verification cleared the code checkpoint**
-> for authorized direct-main delivery; this is not a live phase-exit claim.
-> Fresh production login/live lifecycle and the live eligible-catalog gate are
-> **NOT PASSED**. Historical discovery omitted the only replay-proven model;
-> no model eligibility is expanded. Missing login or eligible discovery returns
-> safe 503, never a fabricated model. Phase 8 adds source-pinned real-CLI PTY
-> and reference-oracle suites using **synthetic accounts/backends only**;
-> final independent reviews **CLEARED** confinement, build integrity,
-> semantic/session/policy/normalization assertions and hosted-CI setup. Independent
-> current-artifact CLI/oracle and repeated race gates passed. Historical
-> unconfined passes are not isolation proof. The first delivery CI passed hosted
-> namespace setup and all 20 CLI cases but failed differential Docker-ID handling;
-> the reviewed Docker fix then passed ALL compatibility jobs and their aggregate.
-> Separate Go Checks still failed an offline watchdog fixture race; its focused
-> correction awaits review/new CI. Overall checkpoint remains RED.
-> [CI receipt](docs/plans/phase8-ci-receipt.md). Phase 9 remains paused.
-> See [Phase 8](docs/plans/phase8-status.md), [Phase 7](docs/plans/phase7-status.md) and
-> [progress / remaining gates](docs/plans/autonomous-progress.md).
+> **Development candidate:** native login/refresh/logout and bounded Responses
+> streaming are implemented. With valid application credentials, the bundled
+> catalog offers **Sol (`gpt-6.1-sol`, default)** and **Luna (`gpt-6-luna`)**.
+> Listing does not fetch remote metadata or establish account entitlement.
+> `auth diagnose` remains an explicit remote check, not an availability gate.
+> Luna live validation is pending. Both-model native proof, current Mac and
+> production live lifecycle gates still block release. No release is published.
+> [Authorized policy and proof boundaries](docs/plans/bundled-catalog-policy.md).
+> [Historical progress / CI receipts](docs/plans/autonomous-progress.md).
 
 ## Goals
 
@@ -111,7 +99,7 @@ make build
 ./bin/atuin-ai-server auth login
 ./bin/atuin-ai-server auth status # stop serve before separate auth commands
 ./bin/atuin-ai-server serve # optional --config config.example.toml
-curl http://127.0.0.1:17391/api/cli/models # 503 if no eligible discovered model
+curl http://127.0.0.1:17391/api/cli/models # valid login required; no metadata GET
 ```
 
 See [local operations](docs/operations.md) for configuration precedence,

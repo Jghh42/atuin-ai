@@ -99,7 +99,7 @@ func TestSyntheticCompatibilityCorpus(t *testing.T) {
 				}
 			}
 			client, up, models, exchanges, rotations := n.Captures()
-			if len(client) != 1 || len(up) != 1 || models != 1 || exchanges != 1 || rotations != 0 {
+			if len(client) != 1 || len(up) != 1 || models != 0 || exchanges != 1 || rotations != 0 {
 				t.Fatal("unexpected request/generation/lifecycle counts")
 			}
 		})

@@ -50,7 +50,7 @@ jobs:
           report = json.loads(Path('dist/resource-evidence/report.json').read_text())
           provenance = json.loads(Path('dist/resource-evidence/provenance.json').read_text())
           assert report['status'] == 'PASS' and not report['failures']
-          assert report['fixture']['generations'] == 446 and report['fixture']['catalogs'] == 15
+          assert report['fixture']['generations'] == 446 and report['fixture']['catalogs'] == 0
           assert report['fixture']['active_after_cleanup'] == 0 and report['fixture']['handlers_joined']
           assert all(report['cleanup'][key] for key in ('all_wrappers_reaped', 'all_server_pids_gone', 'all_samplers_joined'))
           assert provenance['scratch_removed'] and provenance['source_snapshot_removed']

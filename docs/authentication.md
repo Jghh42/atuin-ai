@@ -1,5 +1,10 @@
 # Authentication: initial Codex path and deferred SIWC
 
+> **Current policy:** [bundled Sol/Luna catalog](plans/bundled-catalog-policy.md)
+> supersedes historical remote-discovery availability gating below. Valid
+> application credentials remain mandatory. Luna is a development option with
+> live proof pending; both-model native/current Mac/production gates block release.
+
 ## Current decision
 
 [ADR 0004](decisions/0004-pi-style-codex-authentication.md) selects native
@@ -117,8 +122,10 @@ Successful ordinary rotation preserves catalog identity; refresh failures clear
 it. In-flight old catalog results cannot repopulate after logout/reauth. The
 catalog identity is also pinned through the later inference credential lookup:
 a request resolved for one account/epoch cannot silently use another's token.
-Successful saved login is NOT rolled back if discovery fails; the command reports
-`Login saved successfully; models unavailable`. No eligible models are invented.
+Successful saved login reports `Login saved successfully; bundled model catalog
+available; upstream acceptance not verified`. Normal listing uses exact bundled
+Sol/Luna metadata without remote discovery. Invalid credentials or an unknown
+`default_model` override remain unavailable; membership is not entitlement.
 
 The source-informed inference route is
 `https://chatgpt.com/backend-api/codex/responses`, with Bearer authentication
@@ -129,10 +136,10 @@ Atuin still owns all local-tool execution; no Codex/Pi subprocess is selected.
 
 ## Saved-login model diagnostics (native; no refresh)
 
-After a saved login reports models unavailable, do not repeat login, import
-credentials, edit state, guess models or relax replay eligibility. That generic
-message collapses credential/transport/HTTP/schema/metadata/selection/override
-errors; it does NOT establish HTTP 200 or an absent proven model on that machine.
+For explicit remote metadata diagnosis, do not repeat login, import credentials,
+edit state or guess models. Diagnosis is not the bundled runtime availability
+or entitlement gate. Historical generic saved-login messages did not establish
+HTTP 200 or an absent proven model on that machine.
 
 With a reviewed build containing this command, STOP `serve`, retain the SAME
 user/HOME/environment as login, then run ONCE in your own terminal:
@@ -190,9 +197,11 @@ device codes, model IDs/names/descriptions or history. Share only this JSON and
 safe local status, not terminal recordings, environment/config dumps or private
 files. `success` establishes only eligible metadata/selection at that instant,
 NOT native text/tool replay, refresh/restart or a production lifecycle pass.
-If valid metadata omits/hides the proven model, the live catalog gate remains
-blocked; do not advertise unproven entries. Other failures need a targeted fix,
-not a message-only change. Private-backend contract changes require authoritative
+The proven/eligible/default-override fields describe historical remote replay
+selection (Sol only), not bundled runtime membership. A Luna-only HTTP 200 still
+reports `proven_model_absent`; a bundled Luna override can be valid even when
+remote `default_override_valid` is false. Such results do not disable bundled
+models or establish upstream inference acceptance. Private-backend contract changes require authoritative
 source review before any request/validation change, never guessed header probes.
 
 ## Selected-backend Phase 0 validation

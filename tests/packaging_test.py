@@ -713,7 +713,7 @@ def shipping_smoke(directory):
                 response = conn.getresponse()
                 assert response.status == 503
                 body = json.loads(response.read())
-                assert body == {"error": "models_unavailable", "message": "Login and successful model discovery required; check default_model override"}, body
+                assert body == {"error": "models_unavailable", "message": "Valid application login required for bundled models; check default_model override"}, body
                 conn.close()
                 # Lock remains held even for safe auth status, but version is independent.
                 locked = subprocess.run([str(binary), "auth", "status"], env=env, capture_output=True, timeout=5)

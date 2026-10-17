@@ -241,7 +241,7 @@ func TestPinnedCLI(t *testing.T) {
 		if e := os.Chmod(parent, 0777); e != nil {
 			t.Fatal(e)
 		}
-		runPTY(t, binary, root, n.URL, "synthetic first", []step{settled("SYNTHETIC_FIRST"), send("/model\r"), wait("Sol"), send("\r"), send("synthetic second\r"), settled("SYNTHETIC_SECOND"), send("\x1b")})
+		runPTY(t, binary, root, n.URL, "synthetic first", []step{settled("SYNTHETIC_FIRST"), send("/model\r"), wait("Luna"), send("\x1b[B"), send("\r"), send("synthetic second\r"), settled("SYNTHETIC_SECOND"), send("\x1b")})
 		assertGenerations(t, n, 2)
 		client, up, models, _, _ := n.Captures()
 		for _, capture := range append(append([]testutil.Request(nil), client...), up...) {
@@ -254,13 +254,13 @@ func TestPinnedCLI(t *testing.T) {
 		if _, e := os.Lstat(filepath.Join(root, "sandbox", "ANCESTOR_EXECUTED")); !os.IsNotExist(e) {
 			t.Fatal("external context embedded command executed")
 		}
-		if models != 1 {
+		if models != 0 {
 			t.Fatalf("catalog fetches=%d", models)
 		}
-		for _, r := range up {
+		for i, r := range up {
 			var body map[string]any
 			_ = json.Unmarshal(r.Body, &body)
-			if body["model"] != "gpt-6.1-sol" {
+			if body["model"] != []string{"gpt-6.1-sol", "gpt-6-luna"}[i] {
 				t.Fatal("wrong selected/default model")
 			}
 		}
@@ -268,7 +268,7 @@ func TestPinnedCLI(t *testing.T) {
 		_ = json.Unmarshal(client[0].Body, &a)
 		_ = json.Unmarshal(client[1].Body, &b)
 		selected, ok := b["config"].(map[string]any)
-		if !ok || selected["model"] != "gpt-6.1-sol" {
+		if !ok || selected["model"] != "gpt-6-luna" {
 			t.Fatal("actual /model picker choice was not sent by CLI")
 		}
 		sessions := n.Sessions()
