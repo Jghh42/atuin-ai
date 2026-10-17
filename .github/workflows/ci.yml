@@ -5,9 +5,38 @@ on:
 permissions:
   contents: read
 jobs:
+  native-terminal:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: false
+          cache: true
+      - name: Verify and pin exact Go toolchain
+        run: |
+          toolchain="$(awk '$1 == "go" { print "go" $2; exit }' go.mod)"
+          test "$(GOTOOLCHAIN=local go env GOVERSION)" = "$toolchain"
+          printf 'GOTOOLCHAIN=%s\n' "$toolchain" >> "$GITHUB_ENV"
+          go version
+      - name: Require native terminal regressions and PTY helper prerequisite
+        run: |
+          test "$(go env GOOS)" = darwin
+          python3 -I -B -c 'import fcntl'
+          tests="$(go test ./internal/setup -list '^TestDeviceTerminal')"
+          for name in ControllingTTY SafeFailureCategories DarwinSelectBoundaries DarwinInterruptedWait; do
+            printf '%s\n' "$tests" | grep -Fx "TestDeviceTerminal$name"
+          done
+      - name: Synthetic controlling-terminal tests only (no application state or services)
+        run: go test -race ./internal/setup -run '^TestDeviceTerminal' -count=3 -timeout=3m
   check:
+    needs: native-terminal
+    if: always()
     runs-on: ubuntu-latest
     steps:
+      - name: Require native terminal checks
+        run: test '${{ needs.native-terminal.result }}' = success
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:

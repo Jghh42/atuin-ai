@@ -53,7 +53,17 @@ func ask(ctx context.Context, t Terminal, text string) (bool, error) {
 		return false, ErrCanceled
 	}
 	a, e := t.Answer(ctx)
-	if e != nil || ctx.Err() != nil {
+	if ctx.Err() != nil {
+		return false, ErrCanceled
+	}
+	// Preserve only our fixed terminal failure categories, never caller errors.
+	if errors.Is(e, errTerminalReadiness) {
+		return false, errTerminalReadiness
+	}
+	if errors.Is(e, errTerminalRead) {
+		return false, errTerminalRead
+	}
+	if e != nil {
 		return false, ErrCanceled
 	}
 	return strings.EqualFold(strings.TrimSpace(a), "y") || strings.EqualFold(strings.TrimSpace(a), "yes"), nil

@@ -10,11 +10,9 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-type DeviceTerminal struct {
-	file *os.File
-	// Private synchronization seam: tests still call real unix.Poll on a PTY.
-	poll func([]unix.PollFd, int) (int, error)
-}
+// Fixed messages only: never expose terminal contents or arbitrary OS errors.
+var errTerminalReadiness = errors.New("init terminal readiness failed; completed independent steps are retained")
+var errTerminalRead = errors.New("init terminal read failed; completed independent steps are retained")
 
 // OpenTerminal is deliberately independent of stdin/stdout/stderr. Refusal
 // happens before config, state, directory creation or supervisor invocation.
@@ -38,22 +36,17 @@ func (t *DeviceTerminal) Answer(ctx context.Context) (string, error) {
 		if ctx.Err() != nil {
 			return "", ErrCanceled
 		}
-		p := []unix.PollFd{{Fd: int32(fd), Events: unix.POLLIN}}
-		poll := t.poll
-		if poll == nil {
-			poll = unix.Poll
-		}
-		_, e := poll(p, 100)
+		ready, e := t.waitReadable(fd)
 		if errors.Is(e, unix.EINTR) {
 			continue
 		}
+		if ctx.Err() != nil {
+			return "", ErrCanceled
+		}
 		if e != nil {
-			return "", ErrCanceled
+			return "", e
 		}
-		if p[0].Revents&(unix.POLLHUP|unix.POLLERR|unix.POLLNVAL) != 0 {
-			return "", ErrCanceled
-		}
-		if p[0].Revents&unix.POLLIN == 0 {
+		if !ready {
 			continue
 		}
 		var b [1]byte
@@ -61,7 +54,13 @@ func (t *DeviceTerminal) Answer(ctx context.Context) (string, error) {
 		if errors.Is(e, unix.EAGAIN) || errors.Is(e, unix.EINTR) {
 			continue
 		}
-		if e != nil || n == 0 || b[0] == 3 || b[0] == 4 {
+		if ctx.Err() != nil {
+			return "", ErrCanceled
+		}
+		if e != nil {
+			return "", errTerminalRead
+		}
+		if n == 0 || b[0] == 3 || b[0] == 4 {
 			return "", ErrCanceled
 		}
 		if b[0] == '\n' {
