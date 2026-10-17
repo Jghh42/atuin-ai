@@ -95,12 +95,19 @@ failure assertions remain unchanged. [Diagnosis and pin rationale](docs/plans/fu
 ```sh
 make check
 make build
-# Interactive, explicit opt-in login; do not run live unattended:
+# Interactive setup: retain/login, optional user service, optional Atuin config.
+# Every consent defaults to No. No controlling terminal => no changes.
+./bin/atuin-ai-server init
+# Or use separate commands (stop server first); no unattended live login:
 ./bin/atuin-ai-server auth login
 ./bin/atuin-ai-server auth status # stop serve before separate auth commands
 ./bin/atuin-ai-server serve # optional --config config.example.toml
 curl http://127.0.0.1:17391/api/cli/models # valid login required; no metadata GET
 ```
+
+See [native init setup](docs/init.md) for optional macOS/Linux user services,
+conservative Atuin18.19/newer config resolution, backups and removal. The bootstrap
+installer remains noninteractive and never invokes init automatically.
 
 See [local operations](docs/operations.md) for configuration precedence,
 limits, shutdown, private state and the single-process credential lifecycle.

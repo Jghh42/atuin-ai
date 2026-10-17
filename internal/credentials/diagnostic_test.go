@@ -221,7 +221,7 @@ func TestDiagnosticStoreOnlyOpensExistingStateWithoutCleanup(t *testing.T) {
 	if err != nil {
 		t.Fatal("existing diagnostic store failed")
 	}
-	if _, err := OpenDiagnosticStore(path); err != ErrStore {
+	if _, err := OpenDiagnosticStore(path); err != ErrLocked {
 		t.Fatal("diagnostic bypassed lifetime lock")
 	}
 	loaded, err := d.Load()

@@ -23,6 +23,17 @@ remains **NOT PASSED**. The isolated [`cmd/codex-proof`](codex-proof.md) outcome
 including a [fresh retained-session recheck](proofs/codex-retained-probe-2026-10-16.md),
 are PROBE evidence only; no proof-store or third-party credentials are imported. The SIWC harness is a separate deferred experiment.
 
+## Attended setup
+
+[`atuin-ai-server init`](init.md) reuses the normal application manager/device
+login without remote validation. Active local credentials, including expired
+refreshable access, are retained; no refresh/catalog/inference is performed.
+Missing/unusable login asks default-No; declining ends setup. Codes remain only
+on `/dev/tty`. Init can offer to temporarily stop an exact recognized managed
+user service on genuine lock contention, restoring it when safe after full
+runtime Close. Separate auth commands retain their manual-stop rule. No proof,
+Pi or other application state is imported; all service/config consent is separate.
+
 ## Initial login design
 
 `atuin-ai-server auth login` explicitly requests a device code with the reviewed

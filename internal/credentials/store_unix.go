@@ -104,9 +104,12 @@ func openStore(path string, diagnostic bool) (*DiskStore, error) {
 		s.dir.Close()
 		return nil, ErrStore
 	}
-	if unix.Flock(int(lock.Fd()), unix.LOCK_EX|unix.LOCK_NB) != nil {
+	if err := unix.Flock(int(lock.Fd()), unix.LOCK_EX|unix.LOCK_NB); err != nil {
 		lock.Close()
 		s.dir.Close()
+		if errors.Is(err, unix.EWOULDBLOCK) || errors.Is(err, unix.EAGAIN) {
+			return nil, ErrLocked
+		}
 		return nil, ErrStore
 	}
 	s.lock = lock

@@ -38,9 +38,10 @@ func main() {
 }
 
 type commandDeps struct {
-	state     string
-	transport http.RoundTripper
-	display   func(credentials.DevicePrompt) error
+	initialize func(context.Context, string, string) error
+	state      string
+	transport  http.RoundTripper
+	display    func(credentials.DevicePrompt) error
 }
 
 func run(ctx context.Context, args []string, stderr io.Writer) error {
@@ -53,11 +54,14 @@ func runWith(ctx context.Context, args []string, stderr io.Writer, deps commandD
 		}
 		return printVersion(stderr)
 	}
+	if len(args) > 0 && args[0] == "init" {
+		return runInit(ctx, args[1:], deps)
+	}
 	if len(args) > 0 && args[0] == "auth" {
 		return runAuth(ctx, args[1:], stderr, deps)
 	}
 	if len(args) == 0 || args[0] != "serve" {
-		return errors.New("usage: atuin-ai-server serve [--config PATH] | auth login|status|logout|diagnose | version | --version")
+		return errors.New("usage: atuin-ai-server init [--config PATH] [--atuin-config PATH] | serve [--config PATH] | auth login|status|logout|diagnose | version | --version")
 	}
 	flags := flag.NewFlagSet("serve", flag.ContinueOnError)
 	// Do not echo arbitrary command line values into logs.
@@ -76,6 +80,9 @@ func runWith(ctx context.Context, args []string, stderr io.Writer, deps commandD
 	logger := slog.New(slog.NewJSONHandler(stderr, nil))
 	runtime, err := openRuntime(cfg, deps, false)
 	if err != nil {
+		if errors.Is(err, credentials.ErrLocked) {
+			return credentials.ErrStore
+		}
 		return err
 	}
 	defer runtime.Close()
@@ -137,6 +144,9 @@ func runAuth(ctx context.Context, args []string, out io.Writer, deps commandDeps
 		if args[0] == "diagnose" {
 			configured := cfg.DefaultModel != ""
 			return writeDiagnostic(out, codex.DiagnosticReport{Stage: codex.StageCredentials, Result: codex.ResultCredentialUnavailable, DefaultOverrideConfigured: &configured})
+		}
+		if errors.Is(err, credentials.ErrLocked) {
+			return credentials.ErrStore
 		}
 		return err
 	}

@@ -2,6 +2,7 @@ package credentials
 
 import (
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -12,9 +13,11 @@ var (
 	ErrUnavailable = errors.New("application login required")
 	ErrReauth      = errors.New("application reauthentication required; stop server and log in again")
 	ErrStore       = errors.New("credential state unavailable; check private directory and stop other application processes")
-	ErrOAuth       = errors.New("codex authorization failed")
-	ErrDenied      = errors.New("codex authorization denied")
-	ErrExpired     = errors.New("codex device authorization expired")
+	// ErrLocked distinguishes genuine flock contention without changing public error text.
+	ErrLocked  = fmt.Errorf("%w", ErrStore)
+	ErrOAuth   = errors.New("codex authorization failed")
+	ErrDenied  = errors.New("codex authorization denied")
+	ErrExpired = errors.New("codex device authorization expired")
 )
 
 // Record is private application state, never a status or API response.

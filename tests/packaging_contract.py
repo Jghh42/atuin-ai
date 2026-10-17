@@ -25,7 +25,9 @@ SOURCE_LEGAL = {"LICENSE", "NOTICE", *{"LICENSES/" + name for name in (
 BSD = "911f8f5782931320f5b8d1160a76365b83aea6447ee6c04fa6d5591467db9dad"
 PATENTS = "96f408bfae65bf137fc2525d3ecb030271c50c1e90799f87abf8846d8dd505cc"
 GO_LEGAL = {"LICENSES/Go-LICENSE.txt": BSD, "LICENSES/Go-PATENTS.txt": PATENTS,
-            "LICENSES/Go-stdlib-source-notices.txt": "4ebe0243d4d9032fdc65b2447ecd71160aa6cad402ad7c6e780a7e6090124400"}
+            # Native init adds debug/buildinfo, os/exec and os/user standard-library
+            # sources; reviewed additive notices include FreeBSD ELF's BSD-2 clause.
+            "LICENSES/Go-stdlib-source-notices.txt": "99df598e700d9967c194f5993b5b1095c0f007a0a15d2c2dc07e89fffce9b265"}
 for module in ("crypto", "net", "sys", "text"):
     GO_LEGAL[f"LICENSES/Go-stdlib-vendor-golang.org-x-{module}-LICENSE.txt"] = BSD
     GO_LEGAL[f"LICENSES/Go-stdlib-vendor-golang.org-x-{module}-PATENTS.txt"] = PATENTS
@@ -186,7 +188,7 @@ def verify(directory, source_root=ROOT):
     require(manifest["unicode_attribution"] == {"versions": {"uniseg": "15.0.0", "go": "17.0.0"},
             "table_sources_sha256": TABLES, "reviewed_legal_sha256": UNICODE_LEGAL}, "Unicode table/notice completeness")
     legal_sizes = {name: (source_root / name).stat().st_size for name in SOURCE_LEGAL}
-    legal_sizes.update({name: 321753 if "source-notices" in name else 1303 if "PATENTS" in name else 1453 for name in GO_LEGAL})
+    legal_sizes.update({name: 335056 if "source-notices" in name else 1303 if "PATENTS" in name else 1453 for name in GO_LEGAL})
     legal = None
     for target in manifest["targets"]:
         binary_name = binaries[target["target"]]

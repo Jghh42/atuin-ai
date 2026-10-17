@@ -4,6 +4,18 @@
 There is no public release/install endpoint yet. Packaging CI artifacts are
 DEVELOPMENT-only and release-blocked; cross-compilation is not native Mac proof.
 
+## Optional attended initialization
+
+Run `atuin-ai-server init [--config PATH] [--atuin-config PATH]` in your own
+terminal: local authentication first, optional user-service autostart second,
+optional surgical Atuin configuration last. All approvals default No; no TTY
+means no state/config mutation. Existing refreshable local login is retained
+without network validation. Stable executable is `~/.local/bin/atuin-ai-server`.
+macOS uses a LaunchAgent at GUI login (not boot); Linux uses systemd USER,
+without enabling linger. Unsupported sessions use foreground serve, never sudo.
+See [complete setup, lock/rollback rules, paths, start/stop/removal and native
+manual acceptance](init.md). The installer itself does not run setup.
+
 Requires Go **1.27.2** minimum. The exact `go.mod` patch is also the local
 Makefile and CI toolchain pin: Make exports `GOTOOLCHAIN=go1.27.2`, and CI verifies
 setup-go selected that exact release before pinning all subsequent commands.

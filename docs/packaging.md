@@ -5,7 +5,11 @@ not production live/catalog validation or Phase 9b resource clearance. Minimum
 assets are **linux/amd64 (GOAMD64=v1)** and **darwin/arm64**, both pure Go
 (`CGO_ENABLED=0`). macOS execution is pending the user's native test. Go's initial
 ARM64 ad-hoc signature is acceptable; no Developer ID/notarization, Gatekeeper
-bypass, service/autostart, sudo, or shell/profile edits are provided.
+bypass, sudo, or shell/profile edits are provided by packaging/installation.
+The separate attended [`init`](init.md) command now offers explicitly optional
+user-service autostart and Atuin configuration after local authentication.
+Installer/bootstrap behavior remains noninteractive and never invokes init.
+Native LaunchAgent execution is still a manual review/acceptance gate.
 
 ## Build / examine locally
 
@@ -171,7 +175,8 @@ rename failure; it is not executable state. Catchable signals are ignored during
 the single commit rename. SIGKILL/power loss can leave an owned staging file;
 atomic replacement means the old OR complete new executable, not a partial file.
 This is not an fsync/power-loss durability guarantee. Other users' scratch is
-never removed. PATH instructions are printed, not applied. No auth login,
+never removed. PATH instructions are printed, not applied. Users may separately choose the
+reviewed `atuin-ai-server init` workflow; it is never run by the installer. No auth login,
 credentials, configuration, profiles, autostart, sudo, TLS weakening or Gatekeeper
 bypass is performed.
 

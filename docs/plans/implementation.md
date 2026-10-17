@@ -5,6 +5,55 @@
 > Earlier phase steps/results remain historical, not retroactive proof. Both-model
 > native proof, current Mac and production live gates still block release.
 
+## Native attended init follow-up (2026-10-17)
+
+DEVELOPMENT delivery authorized after all three final reviews and independent
+full acceptance cleared exact258-file sourcee742 (checks/race20/CLI20/oracle14,
+both-target/two-path package36+32/shipping init smoke/full resource446gen0catalog
+with real60s/300s defaults). [Receipt, immutable artifact hashes and live-proof
+boundaries](init-status.md). This doc-only delivery receipt changes holistic
+identity; old packages are not relabeled. ALL FOUR exact-delivery CI families and
+native LaunchAgent/user-systemd execution are PENDING, not implied by synthetic
+acceptance or cross-build. Normal main commit/push only; no tag/release/publication,
+actual services, real credential/provider access or installer auto-init.
+
+The correction sequence below is historical, not a current review block:
+
+Narrow native-contract checkpoint: auth/FS re-reviews and independent fast checks
+cleared402, but service review blocked normal v258 empty-array printing and
+loaded/runtime dollar semantics. The follow-up normalizes only documented empty
+struct arrays on successful complete responses, separates executable/loaded argv/
+runtime argv using a source-backed `@` template, and uses real raw-show/string-array
+fixtures plus missing-field/error negatives. No new command/property interface or
+budgets. [Exact v258 references](../provenance/systemd-init.md). Requested FS test/
+non-CAS wording improvements do not change cleared auth/FS production behavior.
+Focused service re-review precedes a fresh package/full resource freeze; old402/
+5e49 artifacts remain immutable, not relabeled as this source.
+
+Historical critical-review correction checkpoint: the independently validated frozen5e49
+source was BLOCKED by all three reviews, not accepted. Current corrections cover
+applied-but-failed rename journals/shared guarded rollback, potentially applied
+stop reconciliation, typed absence/foreign/indeterminate supervisor observations,
+effective Linux command/environment/drop-in/reload/PID/UID/executable validation,
+pinned default XDG and separate systemd environment/argument encoding, active
+Atuin path evidence/UTF8/scalar-type/comment/NaN preservation, and real PTY EOF/
+hangup/poll-cancel/overflow tests. [Full correction status](init-status.md).
+No budgets, runtime SDK/modules or service CLI features are expanded. Three
+focused re-reviews precede any new package/full resource freeze; old artifacts
+remain immutable and cannot be relabeled as corrected-source evidence.
+
+Implementation adds canonical `init` only: line-oriented controlling-terminal
+consent, existing application auth/status (no refresh/catalog/inference), optional
+stable-binary macOS LaunchAgent/Linux USER service, then conservative three-key
+Atuin TOML editing. No new runtime SDK/UI dependencies, install alias or provider
+contract changes. Runtime shutdown is a barrier before supervisor activation;
+only genuine store-lock contention can offer a recognized service stop. Default-No
+prompts, independent partial-success summaries, bounded allowlisted commands,
+atomic file rollback/backups, version-aware conservative Atuin path selection and
+synthetic IO/command tests form the review boundary. Full behavior, limitations
+and native manual acceptance: [init checkpoint](../init.md). No commits, publication,
+live login or host-supervisor execution are authorized by this implementation.
+
 ## 1. Goal
 
 Build a small, personal, localhost-only Go server for a developer machine,

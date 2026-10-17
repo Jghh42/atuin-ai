@@ -1,5 +1,59 @@
 # Autonomous implementation progress
 
+## Native init DEVELOPMENT delivery — 2026-10-17
+
+All three reviews CLEARED (auth/FS402 unchanged behavior; final v258 servicee742).
+Independent full final acceptance PASSED exact258-file source
+`e74200ad62df2dbc5e6b16ed4834130cd6b6b1d0d1d8bae25ed37584998927d4`:
+checks/build/race20, CLI20/oracle14, fresh BOTH-target/TWO-path package36+32 before/
+after resources, actual shipping wizard no-TTY zero-state/PTy missing-login No
+empty-lock, full resources446gen0catalog4peak23clean with real60s/300s defaults.
+[Exact immutable package/report hashes, gate labels and live-proof distinctions](init-status.md).
+Normal main DEVELOPMENT commit/push is authorized; minimal doc receipts change
+holistic identity, so e742 artifacts remain immutable prior inputs, not relabeled
+as delivery artifacts. ALL FOUR exact-delivery CI families are PENDING; coordinator
+owns monitoring and fresh Mac artifact handoff only after packaging CI is green.
+Native LaunchAgent/user-systemd execution remains PENDING, with explicit user
+service/config/backup consent required. Installer stays noninteractive. No new
+real credentials/provider calls, tag/release/PR/branch-protection change/publication.
+
+## Native init earlier checkpoints (historical; superseded by receipt above)
+
+Source402 auth/TUI and FS/config re-reviews CLEARED, and independent fast
+checks/build/race20/plain crossbuild/PTY smoke PASSED. Service review BLOCKED
+normal v258 specialized empty-array omissions and executable/loaded/runtime dollar
+semantics. The narrow follow-up fixes those native contracts with exact public
+source-backed fixtures; adds the requested FS negative controls and best-effort
+(non-CAS) wording. [Status/failures](init-status.md), [v258 references](../provenance/systemd-init.md).
+402/5e49 artifacts remain immutable, not relabeled. No new full package/resource
+freeze until focused service clearance; no host services, real user state/provider
+access, commit/push or publishing.
+
+All three initial reviews BLOCKED frozen source `5e49a108a050a85e3013bad5d4c6024bf86d8b59072e2eef8c2631b42b7ef1ac`
+despite independent full checks/race20/CLI20/oracle14/package36+32/shipping/full-
+resource446gen0catalog PASS on that exact247-file source. Those artifacts and
+receipts remain immutable prior-input evidence, not defect clearance. Sole-writer
+corrections now add applied/durable write outcomes + shared guarded rollback,
+stop-attempt reconciliation, typed fail-closed supervisor observations, effective
+Linux unit/process identity, explicit default XDG/context-specific dollar encoding,
+active Atuin path evidence/UTF8/scalar-comment/NaN guards and real PTY boundary
+regressions. [Correction detail, failures and scope](init-status.md). That correction then received auth/FS clearance but a service block as recorded
+above; old THREE-review requests below are historical, not current clearance. No
+commit/push, actual user services/config/credentials/provider access or publication.
+
+From clean `630ea5087fc1f9e6a17b963e55a29df9f50bf5cf`, sole-writer native
+`init` implementation adds terminal-only default-No auth/service/Atuin setup,
+normal credential-manager reuse with no saved-session refresh/remote validation,
+CGO0 user-service files/allowlisted supervisors, conservative path resolution and
+surgical TOML edits/private backups. Installer remains a noninteractive bootstrap.
+No actual provider request, credential import/read by the agent, host systemctl/
+launchctl, commit, push, tag or public release. [Behavior and native manual
+acceptance](../init.md). Validation receipts/failures are recorded in the separate
+[implementation status](init-status.md); prior-source artifacts remain immutable
+and do not establish identity for this patch. Native service execution is NOT
+PASSED by cross-compilation/synthetic tests. Independent review is required before
+delivery; no extra live provider/auth checks are requested for this task.
+
 ## Current bundled catalog correction — 2026-10-17
 
 User-approved [bundled native Sol/Luna policy](bundled-catalog-policy.md) replaces
