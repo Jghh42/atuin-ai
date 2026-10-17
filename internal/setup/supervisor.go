@@ -55,6 +55,9 @@ func (s *UserService) mutate(ctx context.Context, verb string) error {
 	return nil
 }
 func (s *UserService) inspect(ctx context.Context, local bool) (serviceState, error) {
+	if err := s.processCertainty(); err != nil {
+		return stateUnknown, err
+	}
 	r, err := s.command(ctx, "inspect")
 	if !r.complete() {
 		return stateUnknown, commandFailure(r)
@@ -341,8 +344,25 @@ func (s *UserService) inspectLaunchd(r CommandResult, commandErr error, local bo
 		if err != nil || pid <= 0 {
 			return stateForeign, launchdStateFailure(r.Stdout, fields)
 		}
-		s.lastPID = pid
+		if !s.observeLaunchdPID(pid) {
+			failure := launchdStateFailure(r.Stdout, fields)
+			failure.category = categoryPriorProcess
+			return stateUnknown, failure
+		}
 		return stateRunning, nil
+	}
+	// Observed native startup state, not readiness or lifecycle authority.
+	// Canonical positive PID is mandatory; every other shape still refuses.
+	if fields["state"] == "xpcproxy" {
+		pid, err := strconv.Atoi(fields["pid"])
+		if err == nil && pid > 0 && strconv.Itoa(pid) == fields["pid"] {
+			failure := launchdStateFailure(r.Stdout, fields)
+			if !s.observeLaunchdPID(pid) {
+				failure.category = categoryPriorProcess
+				return stateUnknown, failure
+			}
+			return stateUnknown, &launchdStarting{failure}
+		}
 	}
 	// This is an owned registration, not a live process. In particular,
 	// spawn scheduled must be polled within waitActive's existing budget.
@@ -351,6 +371,26 @@ func (s *UserService) inspectLaunchd(r CommandResult, commandErr error, local bo
 	}
 	return stateUnknown, launchdStateFailure(r.Stdout, fields)
 }
+
+// A strictly owned observed PID is a shutdown veto, never permission to kill.
+// Do not overwrite an older unresolved PID obligation when a job changes PID.
+func (s *UserService) observeLaunchdPID(pid int) bool {
+	if s.processCertainty() != nil || pid <= 0 {
+		return false
+	}
+	if s.lastPID > 0 && s.lastPID != pid {
+		gone, err := s.processGone(s.lastPID)
+		if err != nil || !gone {
+			// The newly observed owned PID cannot be forgotten merely because
+			// the older one later exits. No later observation clears this latch.
+			s.pidUncertain = true
+			return false
+		}
+	}
+	s.lastPID = pid
+	return true
+}
+
 func launchFields(data []byte, target string) (map[string]string, map[string][]string, error) {
 	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
 	if len(lines) < 2 || strings.TrimSpace(lines[0]) != target+" = {" {

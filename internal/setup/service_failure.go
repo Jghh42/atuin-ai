@@ -56,10 +56,11 @@ const (
 	categoryActivationTimeout
 	categoryWrite
 	categoryRollback
+	categoryPriorProcess
 )
 
 func (c serviceCategory) String() string {
-	names := [...]string{"unavailable", "unsafe_input", "identity_mismatch", "snapshot_changed", "command_not_started", "canceled", "overflow", "incomplete", "command_exit", "unknown_format", "registration_mismatch", "environment_mismatch", "unknown_state", "activation_timeout", "write_failed", "rollback_uncertain"}
+	names := [...]string{"unavailable", "unsafe_input", "identity_mismatch", "snapshot_changed", "command_not_started", "canceled", "overflow", "incomplete", "command_exit", "unknown_format", "registration_mismatch", "environment_mismatch", "unknown_state", "activation_timeout", "write_failed", "rollback_uncertain", "prior_process_unresolved"}
 	if int(c) >= len(names) {
 		return names[0]
 	}
@@ -82,7 +83,7 @@ func (e *serviceFailure) Format(s fmt.State, _ rune) {
 	_, _ = s.Write([]byte(e.Error()))
 }
 
-func serviceCause(category serviceCategory, cause error) error {
+func serviceCause(category serviceCategory, cause error) *serviceFailure {
 	return &serviceFailure{category: category, cause: errors.Join(ErrService, cause)}
 }
 func serviceAt(stage serviceStage, err error) error {

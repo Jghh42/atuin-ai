@@ -117,9 +117,16 @@ type launchdStateSnapshot struct {
 	pid   launchdPIDClass
 }
 
+// Only waitActive may retry this strictly owned, observed native starting
+// condition. It remains an error to every status/control/restoration caller.
+// The embedded diagnostic snapshot is immutable and confers no ready state.
+type launchdStarting struct{ *serviceFailure }
+
+func (e *launchdStarting) Unwrap() error { return e.serviceFailure }
+
 // Called ONLY at a state/PID rejection after the existing parser and ownership
 // checks passed. Store closed enum values, never raw output or field strings.
-func launchdStateFailure(data []byte, fields map[string]string) error {
+func launchdStateFailure(data []byte, fields map[string]string) *serviceFailure {
 	state, statePresent := fields["state"]
 	pid, pidPresent := fields["pid"]
 	// launchFields intentionally trims lines before parsing scalars, so a bare

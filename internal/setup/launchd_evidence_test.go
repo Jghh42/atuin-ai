@@ -45,8 +45,12 @@ func TestLaunchdFailureEvidenceRootClassesWithoutAcceptanceChanges(t *testing.T)
 		s, _, _ := serviceTestFixture("darwin")
 		r := launchdContractPrint(s, test.state, test.pid, []string{"OSLogRateLimit => 64"})
 		state, err := s.inspectLaunchd(r, nil, true)
-		if state == stateRunning || state == stateInactive || s.lastPID != 0 {
-			t.Fatal("diagnostic classification changed rejected-state/PID authority")
+		wantVetoPID := 0
+		if test.state == "xpcproxy" && test.pid == "42" {
+			wantVetoPID = 42 // Still rejected outside waitActive; shutdown veto only.
+		}
+		if state == stateRunning || state == stateInactive || s.lastPID != wantVetoPID {
+			t.Fatal("rejected state acquired readiness authority or lost its PID veto")
 		}
 		requireLaunchdEvidence(t, err, test.stateKind, test.pidClass)
 		if strings.Contains(err.Error(), "PRIVATE") {

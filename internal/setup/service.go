@@ -36,6 +36,7 @@ type UserService struct {
 	processCheck func(context.Context, int, string, []string, int) error
 	processGone  func(int) (bool, error)
 	lastPID      int
+	pidUncertain bool // Sticky for this invocation after an unresolved PID conflict.
 	opts         ServiceOptions
 	binary, unit string
 	content      []byte
@@ -184,13 +185,7 @@ func (s *UserService) confirmStopped(state serviceState) error {
 	if state != stateAbsent && !(s.opts.OS == "linux" && state == stateInactive) {
 		return serviceCause(categoryState, ErrService)
 	}
-	if s.lastPID > 0 {
-		gone, e := s.processGone(s.lastPID)
-		if e != nil || !gone {
-			return serviceCause(categoryState, ErrService)
-		}
-	}
-	return nil
+	return s.knownProcessGone()
 }
 func (s *UserService) Restore(ctx context.Context) error {
 	// Also used after a stop command that applied THEN failed/canceled. Reobserve
@@ -204,11 +199,8 @@ func (s *UserService) Restore(ctx context.Context) error {
 	}
 	// A deregistered job can still be shutting down. Do not bootstrap another
 	// process until the previously verified PID is definitively gone.
-	if s.lastPID > 0 {
-		gone, e := s.processGone(s.lastPID)
-		if e != nil || !gone {
-			return ErrService
-		}
+	if err := s.knownProcessGone(); err != nil {
+		return err
 	}
 	old, err := s.recognized()
 	if err != nil || !old.Exists {
@@ -226,28 +218,46 @@ func (s *UserService) Restore(ctx context.Context) error {
 func (s *UserService) waitActive(ctx context.Context) error {
 	deadline, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
+	var pending launchdStateSnapshot
+	hasPending := false
+	waitFailure := func() error {
+		category, cause := categoryActivationTimeout, ErrService
+		if ctx.Err() != nil {
+			category, cause = categoryCanceled, ErrCanceled
+		}
+		failure := serviceCause(category, cause)
+		failure.hasSnapshot, failure.snapshot = hasPending, pending
+		return failure
+	}
 	for i := 0; i < 50; i++ {
 		if deadline.Err() != nil {
-			if ctx.Err() != nil {
-				return serviceCause(categoryCanceled, ErrCanceled)
-			}
-			return serviceCause(categoryActivationTimeout, ErrService)
+			return waitFailure()
 		}
 		state, err := s.observed(deadline)
 		if err != nil {
-			return err
+			var starting *launchdStarting
+			if !errors.As(err, &starting) {
+				if hasPending && errors.Is(err, ErrCanceled) && deadline.Err() != nil {
+					return waitFailure()
+				}
+				return err
+			}
+			// Preserve the first strictly owned startup observation by value.
+			if !hasPending {
+				hasPending, pending = starting.hasSnapshot, starting.snapshot
+			}
 		}
-		if state == stateRunning {
+		if err == nil && state == stateRunning {
 			return nil
 		}
+		if deadline.Err() != nil {
+			return waitFailure()
+		}
 		if s.wait(deadline, 100*time.Millisecond) != nil {
-			if ctx.Err() != nil {
-				return serviceCause(categoryCanceled, ErrCanceled)
-			}
-			return serviceCause(categoryActivationTimeout, ErrService)
+			return waitFailure()
 		}
 	}
-	return serviceCause(categoryActivationTimeout, ErrService)
+	return waitFailure()
 }
 func serverBinary(data []byte) bool {
 	info, err := buildinfo.Read(bytes.NewReader(data))
@@ -261,6 +271,9 @@ func (s *UserService) Install(ctx context.Context) (result error) {
 			result = serviceAt(stage, result)
 		}
 	}()
+	if err := s.processCertainty(); err != nil {
+		return err
+	}
 	unit, err := s.recognized()
 	if err != nil {
 		return serviceCause(categoryUnsafeInput, err)
@@ -316,19 +329,18 @@ func (s *UserService) Install(ctx context.Context) (result error) {
 		}
 		cleanup, cancel := context.WithTimeout(context.Background(), supervisorTimeout)
 		defer cancel()
-		failed := false
-		retainInputs := false
+		failed := s.processCertainty() != nil
+		retainInputs := failed
 		// An attempted bootstrap/start does NOT confer ownership. Reinspect before
 		// bootout/stop/disable; unknown or foreign registration is never touched.
-		if startAttempted || enableAttempted {
+		if !retainInputs && (startAttempted || enableAttempted) {
 			state, e := s.observed(cleanup)
 			if e != nil {
 				failed = true
 				retainInputs = startAttempted
 			} else {
-				if startAttempted && state == stateAbsent && s.lastPID > 0 {
-					gone, e := s.processGone(s.lastPID)
-					if e != nil || !gone {
+				if startAttempted && state == stateAbsent {
+					if s.knownProcessGone() != nil {
 						failed = true
 						retainInputs = true
 					}
@@ -358,7 +370,7 @@ func (s *UserService) Install(ctx context.Context) (result error) {
 				}
 			}
 		}
-		if s.opts.OS == "linux" && reloadAttempted {
+		if s.opts.OS == "linux" && reloadAttempted && s.processCertainty() == nil {
 			if s.mutate(cleanup, "daemon-reload") != nil {
 				failed = true
 			}
