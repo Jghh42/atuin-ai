@@ -30,8 +30,9 @@ type Storage interface {
 // never resolves paths again after acquiring that capability. Same-UID hostile
 // processes and a hostile root are outside the local-filesystem trust boundary.
 type DiskStore struct {
-	dir  *os.File
-	lock *os.File
+	dir      *os.File
+	lock     *os.File
+	readOnly bool
 	// fault is a deterministic test seam, invoked before each mutating syscall.
 	fault func(string) error
 }
@@ -43,6 +44,18 @@ func (s *DiskStore) GoString() string { return "[private credential store]" }
 // Root-owned sticky directories (e.g. /tmp) may contain isolated test roots;
 // the final application directory itself must be euid-owned, exactly 0700.
 func OpenStore(path string) (*DiskStore, error) {
+	return openStore(path, false)
+}
+
+// OpenDiagnosticStore takes the SAME validated lifetime lock, but only opens
+// existing directories/files: no mkdir, lock creation, orphan cleanup, or sync.
+// Load remains strict, including pending-intent precedence. This is not a token
+// import path; callers use only this application's normal state directory.
+func OpenDiagnosticStore(path string) (*DiskStore, error) {
+	return openStore(path, true)
+}
+
+func openStore(path string, diagnostic bool) (*DiskStore, error) {
 	if !filepath.IsAbs(path) || filepath.Clean(path) != path || path == "/" {
 		return nil, ErrStore
 	}
@@ -53,7 +66,7 @@ func OpenStore(path string) (*DiskStore, error) {
 	parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
 	for i, part := range parts {
 		next, e := unix.Openat(fd, part, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
-		if errors.Is(e, unix.ENOENT) {
+		if errors.Is(e, unix.ENOENT) && !diagnostic {
 			if e = unix.Mkdirat(fd, part, 0700); e == nil {
 				// Make newly created ancestry durable before relying on child state.
 				if unix.Fsync(fd) != nil {
@@ -81,8 +94,12 @@ func OpenStore(path string) (*DiskStore, error) {
 			return nil, ErrStore
 		}
 	}
-	s := &DiskStore{dir: os.NewFile(uintptr(fd), "credential directory")}
-	lock, e := s.open("lock", unix.O_RDWR|unix.O_CREAT, 0600)
+	s := &DiskStore{dir: os.NewFile(uintptr(fd), "credential directory"), readOnly: diagnostic}
+	flags := unix.O_RDWR | unix.O_CREAT
+	if diagnostic {
+		flags = unix.O_RDONLY
+	}
+	lock, e := s.open("lock", flags, 0600)
 	if e != nil {
 		s.dir.Close()
 		return nil, ErrStore
@@ -93,7 +110,11 @@ func OpenStore(path string) (*DiskStore, error) {
 		return nil, ErrStore
 	}
 	s.lock = lock
-	if s.dir.Sync() != nil || s.cleanOrphans() != nil {
+	if !diagnostic && s.dir.Sync() != nil {
+		s.Close()
+		return nil, ErrStore
+	}
+	if s.checkOrphans(!diagnostic) != nil {
 		s.Close()
 		return nil, ErrStore
 	}
@@ -125,7 +146,7 @@ func (s *DiskStore) Close() error {
 	}
 	return nil
 }
-func (s *DiskStore) cleanOrphans() error {
+func (s *DiskStore) checkOrphans(clean bool) error {
 	names, e := s.dir.Readdirnames(-1)
 	if e != nil {
 		return ErrStore
@@ -140,6 +161,9 @@ func (s *DiskStore) cleanOrphans() error {
 			return ErrStore
 		}
 		f.Close()
+		if !clean {
+			continue
+		}
 		if unix.Unlinkat(int(s.dir.Fd()), n, 0) != nil {
 			return ErrStore
 		}
@@ -245,6 +269,9 @@ func (s *DiskStore) atomic(ctx context.Context, name string, r Record) error {
 	return nil
 }
 func (s *DiskStore) Begin(ctx context.Context, r Record) error {
+	if s.readOnly {
+		return ErrStore
+	}
 	old, e := s.Load()
 	// Gaps are permitted after an in-memory reservation whose Begin failed
 	// before durability; counters must never go backwards or wrap. Each epoch
@@ -258,6 +285,9 @@ func (s *DiskStore) Begin(ctx context.Context, r Record) error {
 	return s.atomic(ctx, "intent.json", r)
 }
 func (s *DiskStore) Commit(ctx context.Context, r Record) error {
+	if s.readOnly {
+		return ErrStore
+	}
 	intent, ok, e := s.read("intent.json")
 	if e != nil || !ok || intent.State != "unusable" || r.Generation != intent.Generation || r.AuthEpoch != intent.AuthEpoch || (r.State != "active" && r.State != "logged_out") {
 		return ErrStore

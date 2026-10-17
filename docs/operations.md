@@ -17,6 +17,8 @@ filter/retry wrapper. Build with `make build`, then run:
 # Attended live login only after explicit opt-in; production live gate NOT PASSED:
 ./bin/atuin-ai-server auth login
 ./bin/atuin-ai-server auth status
+# If saved login reports models unavailable, with serve STOPPED, run ONCE:
+./bin/atuin-ai-server auth diagnose # sanitized stderr JSON; NO refresh/inference
 ./bin/atuin-ai-server serve # config is optional
 curl http://127.0.0.1:17391/api/cli/models # 503 unless login AND eligible discovery succeed
 # Stop serve before auth status/login/logout in a separate process:
@@ -95,6 +97,18 @@ becoming unavailable is not itself completion of shutdown.
 
 `auth status` reports local login/unusable state and safe generation/auth_epoch/
 expiry only; it does not prove upstream acceptance or refresh the session.
+`auth diagnose` opens only EXISTING application state with the same lifetime
+lock and strict validation, without directory/lock creation, orphan cleanup or
+record/counter changes. It uses only already-usable access: near/expired access
+returns `refresh_required` without network; pending/unusable/locked state is
+unavailable. Otherwise at most one bounded native metadata GET uses the unchanged
+request/validation/selection contract. No OAuth, inference, retry, cache mutation
+or eligibility change. One stderr JSON report distinguishes HTTP/transport/body/
+schema/metadata/empty/missing-or-hidden-proven/override outcomes with enums,
+nullable counters/booleans only. Null means unknown, not zero. Diagnosis completion
+exits zero even on a non-success result. Share only the report, never raw responses,
+headers, URLs, state, account IDs, tokens or model metadata. See the exact
+[field and result contract](authentication.md#saved-login-model-diagnostics-native-no-refresh).
 `auth logout` durably replaces secrets with a counter-only tombstone; it does
 not revoke remotely or securely erase disk history. A durable secret-free intent
 precedes external token rotation. Ambiguous refresh/timeout/invalid_grant or

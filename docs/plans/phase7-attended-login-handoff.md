@@ -115,6 +115,52 @@ Do not run logout or delete this isolated state until the coordinator decides
 whether to retain it for the remaining authorized production lifecycle proof.
 Remote revocation is not supported or claimed.
 
+## Native Mac saved-login diagnostic — retain the existing session
+
+2026-10-17 user report on the actual reviewed darwin/arm64 build at
+`76e5b7a6082b1d91923ae24964c53f9208528c13`: version identity correct, fresh
+`auth login` saved successfully but reported models unavailable; local status
+Logged in, generation 1, auth_epoch 1, expiry date 2026-10-27. These are user
+reports, not agent-run live checks. No catalog HTTP status/schema/eligible count
+or native inference outcome is established. Historical isolated probe results
+must not be attributed to this Mac or its account/session.
+
+That older binary remains valid for its source but does not contain the new
+`auth diagnose`; obtain the separately reviewed updated DEVELOPMENT build and
+verify its supplied archive hash/version before using the new command. No Go
+SDK or Rust/oracle rebuild is needed. Do not guess a download URL or promote an
+old artifact by editing its metadata.
+
+STOP `serve` and wait for exit. In the SAME user/environment/HOME used for the
+saved login, run ONCE:
+
+```sh
+./atuin-ai-server auth diagnose
+```
+
+Do not change HOME now or redo login to run this check. We do not assume the
+reported login used isolated state. On macOS `XDG_CONFIG_HOME` does NOT isolate
+`os.UserConfigDir`: state follows HOME under Library/Application Support.
+`CHAT_CONFIG` selects configuration only, not credentials. Necessary context is
+only whether HOME was normal/changed, whether the same environment is retained,
+and whether default_model or proxy/VPN/custom CA is configured (yes/no; no paths,
+config/environment dumps or endpoint values).
+
+The command never calls normal refreshing `Current`: usable existing access
+allows one bounded native metadata GET; `refresh_required`, pending/unusable
+state, store/lock failure produce NO network. It does not create state/locks,
+clean orphan records, change lifecycle counters, log in/out, infer, retry or
+change eligibility. Share only the fixed-schema JSON (stderr); unknown fields
+are null. A completed diagnosis exits zero even when `result` is not `success`.
+See the [field/result semantics](../authentication.md#saved-login-model-diagnostics-native-no-refresh).
+No raw body/error/header, account ID, device code, model name/description or
+history is printed. No private files or third-party/proof state should be opened
+or copied. If metadata is valid but the proven model is absent/hidden, retain
+the session and report that blocker; never configure unproven models or poll.
+Any follow-up request-contract repair requires source-backed review, not header
+or client-version guesses. No native eligible-catalog/inference pass is claimed
+until an actual safe result is reported.
+
 ## Outcomes still requiring evidence
 
 A saved fresh production login alone does not clear eligible discovery. A 200

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -18,6 +19,7 @@ import (
 	"github.com/Jghh42/atuin-ai/internal/config"
 	"github.com/Jghh42/atuin-ai/internal/credentials"
 	"github.com/Jghh42/atuin-ai/internal/httpserver"
+	"github.com/Jghh42/atuin-ai/internal/provider/codex"
 )
 
 func main() {
@@ -55,7 +57,7 @@ func runWith(ctx context.Context, args []string, stderr io.Writer, deps commandD
 		return runAuth(ctx, args[1:], stderr, deps)
 	}
 	if len(args) == 0 || args[0] != "serve" {
-		return errors.New("usage: atuin-ai-server serve [--config PATH] | auth login|status|logout | version | --version")
+		return errors.New("usage: atuin-ai-server serve [--config PATH] | auth login|status|logout|diagnose | version | --version")
 	}
 	flags := flag.NewFlagSet("serve", flag.ContinueOnError)
 	// Do not echo arbitrary command line values into logs.
@@ -72,7 +74,7 @@ func runWith(ctx context.Context, args []string, stderr io.Writer, deps commandD
 		return err
 	}
 	logger := slog.New(slog.NewJSONHandler(stderr, nil))
-	runtime, err := openRuntime(cfg, deps)
+	runtime, err := openRuntime(cfg, deps, false)
 	if err != nil {
 		return err
 	}
@@ -88,7 +90,7 @@ func runWith(ctx context.Context, args []string, stderr io.Writer, deps commandD
 	return server.Serve(ctx, listener)
 }
 
-func openRuntime(cfg config.Config, deps commandDeps) (*application.Runtime, error) {
+func openRuntime(cfg config.Config, deps commandDeps, diagnostic bool) (*application.Runtime, error) {
 	path := deps.state
 	if path == "" {
 		var err error
@@ -97,11 +99,14 @@ func openRuntime(cfg config.Config, deps commandDeps) (*application.Runtime, err
 			return nil, err
 		}
 	}
+	if diagnostic {
+		return application.NewDiagnostic(path, cfg, deps.transport)
+	}
 	return application.New(path, cfg, deps.transport)
 }
 func runAuth(ctx context.Context, args []string, out io.Writer, deps commandDeps) error {
-	if len(args) != 1 || (args[0] != "login" && args[0] != "status" && args[0] != "logout") {
-		return errors.New("usage: atuin-ai-server auth login|status|logout; stop server before auth commands")
+	if len(args) != 1 || (args[0] != "login" && args[0] != "status" && args[0] != "logout" && args[0] != "diagnose") {
+		return errors.New("usage: atuin-ai-server auth login|status|logout|diagnose; stop server before auth commands")
 	}
 	display := deps.display
 	if args[0] == "login" && display == nil {
@@ -117,19 +122,28 @@ func runAuth(ctx context.Context, args []string, out io.Writer, deps commandDeps
 		}
 	}
 	cfg := config.Default()
-	if args[0] == "login" {
+	if args[0] == "login" || args[0] == "diagnose" {
 		var err error
 		cfg, err = loadConfiguration("")
 		if err != nil {
+			if args[0] == "diagnose" {
+				return writeDiagnostic(out, codex.DiagnosticReport{Stage: codex.StageConfiguration, Result: codex.ResultConfigurationUnavailable})
+			}
 			return err
 		}
 	}
-	runtime, err := openRuntime(cfg, deps)
+	runtime, err := openRuntime(cfg, deps, args[0] == "diagnose")
 	if err != nil {
+		if args[0] == "diagnose" {
+			configured := cfg.DefaultModel != ""
+			return writeDiagnostic(out, codex.DiagnosticReport{Stage: codex.StageCredentials, Result: codex.ResultCredentialUnavailable, DefaultOverrideConfigured: &configured})
+		}
 		return err
 	}
 	defer runtime.Close()
 	switch args[0] {
+	case "diagnose":
+		return writeDiagnostic(out, runtime.Diagnose(ctx))
 	case "status":
 		status := runtime.Manager.Status()
 		switch {
@@ -164,6 +178,15 @@ func runAuth(ctx context.Context, args []string, out io.Writer, deps commandDeps
 		default:
 			return errors.New("authentication command failed")
 		}
+	}
+	return nil
+}
+
+// Diagnostic failures are report outcomes, not arbitrary errors in command logs.
+// Like the other auth commands, output goes to stderr. Writer failures stay safe.
+func writeDiagnostic(out io.Writer, report codex.DiagnosticReport) error {
+	if json.NewEncoder(out).Encode(report) != nil {
+		return errors.New("cannot write diagnostic report")
 	}
 	return nil
 }

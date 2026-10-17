@@ -12,6 +12,59 @@ own-hash assertion inside this checkpoint.
 Started from clean main `14648ff9ab610dc4a5bae915f5b2a2e469ba2e18`; prior exact-HEAD
 Go checks run `38959509541` was green (coordinator-verified handoff).
 
+## 2026-10-17 native Mac report and narrow diagnostic follow-up
+
+User reports actual reviewed Mac ARM64 binary identity at `76e5b7a`, successful
+fresh OAuth/save with generic models unavailable, and local Logged in status,
+generation 1/auth_epoch 1, expiry date 2026-10-27. This advances attended native
+startup/login-save evidence only; catalog HTTP/schema/eligibility, inference and
+full production lifecycle remain NOT PASSED. No agent inspected credentials or
+made live calls. Normal versus isolated Mac HOME is not assumed.
+
+Coordinator authorized the sole-writer `auth diagnose` patch, not a new live
+probe or eligibility change. It opens existing application state only, retains
+the same lifetime lock/strict validation, and borrows current usable access
+without Current/refresh, state/counter writes, directory/lock creation or orphan
+cleanup. At most one unchanged bounded native catalog GET yields fixed-schema
+JSON enum/status/nullable-counter/boolean diagnostics; no raw responses/errors,
+URLs/headers, identities/tokens, model metadata or history. Missing/expired/
+pending/closing/contended access fails locally; shutdown cancels and invalidates
+measurements. No inference, retries, guessed headers/models, fallback or import.
+See [operator/Mac instructions](phase7-attended-login-handoff.md#native-mac-saved-login-diagnostic--retain-the-existing-session)
+and [report contract](../authentication.md#saved-login-model-diagnostics-native-no-refresh).
+Both independent credential/concurrency and protocol/privacy reviews CLEARED
+with no blockers. Independent verification PASS: full checks/build/diff, five-
+package race x20, fresh both-target/two-path DEVELOPMENT packaging and36 tests/
+32 artifact mutations/shipping empty-HOME diagnostic contract. Coordinator
+now authorizes focused normal main commit/push; all FOUR exact-delivery CI
+families remain PENDING. No publication or native catalog/inference pass.
+
+First focused synthetic test run found an invalid test fixture: it attempted
+Commit of an unusable record, which the existing store correctly forbids.
+The corrected fixture uses the real durable Begin intent path; no production
+validation or assertion was weakened. First failure is retained externally at
+`/tmp/atuin-ai-diagnose-focused-first.log`. Current validation/artifact receipts
+are reported separately against their actual immutable source inputs.
+
+Sole-writer validation after that fixture correction: focused credentials/native
+provider/catalog/application/CLI race x20 PASS; full `make check` (format parity,
+all unit/race/vet/staticcheck/nilness/vulnerability/four unchanged 5s fuzz gates,
+36 packaging tests and 10 fast resource fixture tests), `make build` and
+`git diff --check` PASS. Only synthetic credentials/transports were used; opt-in
+real-CLI/oracle/resource hard gates were not rerun or claimed. Independent review
+and fresh both-target/two-path DEVELOPMENT consumer verification subsequently
+PASSED at immutable source inventory `2e038937578cb541218a234c65bd6767cb6678a42280afea11da25316ee5d048`.
+This delivery receipt changes holistic source identity: those development
+packages remain evidence only for their original dirty snapshot, never the
+future commit. Fresh exact-commit packaging CI must identify its own source;
+resulting artifact identity belongs in the external report, not an impossible
+own-hash assertion in these source files. Independent verifier setup mistakes
+(existing output directory, explicit missing CHAT_CONFIG, nullable-false contract)
+were preserved/dispositioned as setup issues, not product failures or weakened
+assertions. Root coordinator owns all-four exact-SHA CI monitoring and any
+conditional updated Mac archive handoff after packaging succeeds; packaging
+alone does not clear overall CI or native catalog/inference gates.
+
 ## Implemented design
 
 - `internal/credentials`: native fixed-registration device usercode/poll/token

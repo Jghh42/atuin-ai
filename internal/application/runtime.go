@@ -17,10 +17,12 @@ import (
 )
 
 type Runtime struct {
-	Manager   *credentials.Manager
-	Catalog   *catalog.Cache
-	HTTP      httpserver.Runtime
-	transport *http.Transport
+	Manager      *credentials.Manager
+	Catalog      *catalog.Cache
+	HTTP         httpserver.Runtime
+	transport    *http.Transport
+	discovery    codex.Discovery
+	defaultModel string
 }
 
 func StateDirectory() (string, error) {
@@ -44,13 +46,27 @@ type Options struct {
 }
 
 func NewWithOptions(path string, cfg config.Config, opts Options) (*Runtime, error) {
+	return newWithOptions(path, cfg, opts, false)
+}
+
+// NewDiagnostic opens only existing application state without filesystem cleanup
+// or creation. Its manager's diagnostic accessor never rotates/saves credentials.
+func NewDiagnostic(path string, cfg config.Config, transport http.RoundTripper) (*Runtime, error) {
+	return newWithOptions(path, cfg, Options{Transport: transport}, true)
+}
+
+func newWithOptions(path string, cfg config.Config, opts Options, diagnostic bool) (*Runtime, error) {
 	transport := opts.Transport
 	var owned *http.Transport
 	if transport == nil {
 		owned = credentials.NewTransport()
 		transport = owned
 	}
-	store, e := credentials.OpenStore(path)
+	open := credentials.OpenStore
+	if diagnostic {
+		open = credentials.OpenDiagnosticStore
+	}
+	store, e := open(path)
 	if e != nil {
 		if owned != nil {
 			owned.CloseIdleConnections()
@@ -67,9 +83,10 @@ func NewWithOptions(path string, cfg config.Config, opts Options) (*Runtime, err
 		return nil, e
 	}
 	// Bind once, before exposing either source. No dynamic cache/source rebind.
-	cache = catalog.New(manager, codex.Discovery{Transport: transport}, cfg.DefaultModel, opts.Now)
+	discovery := codex.Discovery{Transport: transport}
+	cache = catalog.New(manager, discovery, cfg.DefaultModel, opts.Now)
 	native := codex.RequestClient{Credentials: manager, Transport: transport, Now: opts.Now}
-	return &Runtime{Manager: manager, Catalog: cache, HTTP: httpserver.Runtime{Credentials: manager, Catalog: cache, Provider: native}, transport: owned}, nil
+	return &Runtime{Manager: manager, Catalog: cache, HTTP: httpserver.Runtime{Credentials: manager, Catalog: cache, Provider: native}, transport: owned, discovery: discovery, defaultModel: cfg.DefaultModel}, nil
 }
 func (r *Runtime) Close() error {
 	e := r.Manager.Close()

@@ -71,7 +71,34 @@ func (s Snapshot) Resolve(id string) string {
 
 // Build validates a bounded immutable snapshot using the internal proof allowlist.
 func Build(entries []Entry, override string) (Snapshot, error) {
-	return selectSnapshot(entries, override, func(id string) bool { return id == "gpt-6.1-sol" })
+	return selectSnapshot(entries, override, replayProven)
+}
+
+func replayProven(id string) bool { return id == "gpt-6.1-sol" }
+
+// Eligibility contains only sanitized counters/booleans, never model metadata.
+type Eligibility struct {
+	ListedCount, EligibleCount  int
+	ProvenPresent, ProvenListed bool
+}
+
+// InspectEligibility examines already-validated metadata using the SAME proof
+// predicate as Build. It does not select or enable additional models.
+func InspectEligibility(entries []Entry) Eligibility {
+	var result Eligibility
+	for _, m := range entries {
+		if m.Visibility == "list" {
+			result.ListedCount++
+		}
+		if replayProven(m.ID) {
+			result.ProvenPresent = true
+			if m.Visibility == "list" {
+				result.ProvenListed = true
+				result.EligibleCount++
+			}
+		}
+	}
+	return result
 }
 
 // Validate checks metadata independently of replay eligibility/default selection.

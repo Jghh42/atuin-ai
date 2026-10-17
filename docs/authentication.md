@@ -25,7 +25,9 @@ fixed registration `app_EMoamEEZ73f0CkXaXp7hrann`. It displays only the fixed
 `https://auth.openai.com/codex/device` URL and the user code on the controlling
 terminal (`/dev/tty`), not stdout/stderr logs. Noninteractive login is refused.
 Approval may occur in a browser on another machine; no callback listener/tunnel
-is used. `auth status` reports local state only, without refreshing; `auth logout`
+is used. `auth diagnose` performs one bounded metadata-only check with already
+usable access, never refreshing (see below). `auth status` reports local state
+only, without refreshing; `auth logout`
 deletes local secrets durably. Stop `serve` before any separate auth command:
 they all share one nonblocking lifetime Unix file lock.
 
@@ -124,6 +126,74 @@ and the Codex account header. This is **not** independent SIWC or the public
 `api.openai.com/v1/responses` route. Reference availability does not establish
 OpenAI support for our integration; policy and protocol changes remain risks.
 Atuin still owns all local-tool execution; no Codex/Pi subprocess is selected.
+
+## Saved-login model diagnostics (native; no refresh)
+
+After a saved login reports models unavailable, do not repeat login, import
+credentials, edit state, guess models or relax replay eligibility. That generic
+message collapses credential/transport/HTTP/schema/metadata/selection/override
+errors; it does NOT establish HTTP 200 or an absent proven model on that machine.
+
+With a reviewed build containing this command, STOP `serve`, retain the SAME
+user/HOME/environment as login, then run ONCE in your own terminal:
+
+```sh
+./atuin-ai-server auth diagnose
+```
+
+It prints one fixed-schema JSON report to stderr (like the other auth commands).
+A completed diagnosis exits zero even when its `result` is not `success`; inspect
+that field, not just the exit code. Writer/argument failures remain generic.
+There is no `--refresh`, token, endpoint or model-list option. The command opens
+only the application's EXISTING state under the same lifetime lock, with the
+same descriptor/permission/strict-record checks; it does not create directories
+or a lock, clean orphan records, change records/counters or populate the catalog
+cache. Lock/store failures are `credential_unavailable`, not a reason to remove
+locks or repair private records by hand.
+
+A local atomic no-refresh access check refuses pending/unusable/logged-out state,
+refresh contention and closing state. Access at or inside expiry-minus-60-seconds
+(or with a clock before issue time) yields `refresh_required` with NO network.
+Otherwise it sends at most ONE normal native models GET, bounded by the existing
+eight-second timeout, 2 MiB body and 256-entry limit. No OAuth, login, inference,
+retry, redirect following, alternate headers/version/model, fallback or automatic
+eligibility expansion occurs. Lifecycle operations cannot rebind its account/
+epoch; shutdown cancels the request and discards the invalidated measurements.
+
+Report fields (all are fixed enums, numbers, nullable booleans):
+
+- `stage`, `result`: closed enums; unexpected enum values encode as `unknown`.
+- `http_status`: null until an HTTP response exists.
+- `schema_validated`, `metadata_validated`: null until evaluated, false on
+  that validation's failure, true on its success.
+- `model_count`: null until metadata validates, except a parsed empty array is
+  explicitly 0 (`empty_catalog`, metadata false under existing nonempty policy).
+- `listed_count`, `proven_model_present`, `proven_model_listed`, `eligible_count`:
+  null until ALL metadata validates. Malformed unrelated entries invalidate the
+  whole catalog and never produce a claim of zero eligible models.
+- `default_override_configured`: known after configuration loads, otherwise null.
+- `default_override_valid`: null unless a configured override can be evaluated
+  against a nonempty eligible catalog; then true/false.
+
+Results distinguish local `credential_unavailable`, `refresh_required`,
+`lifecycle_invalidated`, `canceled`; request `transport_error`/`timeout`;
+`http_unauthorized` (401), `http_forbidden` (403), `http_rate_limited` (429),
+`http_server_error` (5xx), other `http_rejected`; body read/size/UTF-8;
+`invalid_json`, `invalid_schema`, `invalid_metadata`, `empty_catalog`;
+`proven_model_absent`, `proven_model_hidden`, `invalid_default_override`, and
+`success`. Configuration failures are `configuration_unavailable`. Neither
+401/403 nor local Logged in alone identifies account policy or upstream token
+acceptance. Diagnose never marks a saved session unusable because discovery fails.
+
+The report NEVER contains raw errors/responses/headers/URLs, tokens, account IDs,
+device codes, model IDs/names/descriptions or history. Share only this JSON and
+safe local status, not terminal recordings, environment/config dumps or private
+files. `success` establishes only eligible metadata/selection at that instant,
+NOT native text/tool replay, refresh/restart or a production lifecycle pass.
+If valid metadata omits/hides the proven model, the live catalog gate remains
+blocked; do not advertise unproven entries. Other failures need a targeted fix,
+not a message-only change. Private-backend contract changes require authoritative
+source review before any request/validation change, never guessed header probes.
 
 ## Selected-backend Phase 0 validation
 

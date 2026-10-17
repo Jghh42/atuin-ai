@@ -17,6 +17,38 @@ and delivery before moving on. This file distinguishes code from live gates.
 | 9a | Packaging/installer IMPLEMENTED; original 27-test/two-path checkpoint independently reproduced but review found curlrc/unknown-length caps, Unicode legal omission, hidden-index and self-described-verifier gaps. Sole-writer fixes add first-argument curl-q/min8.4, real loopback TLS/cap tests, complete Unicode15/17 grants, full-HEAD source truth and exact independent consumer contract (36 default +32 artifact-mutation tests). BOTH focused re-reviews CLEARED all blocking findings/warnings; independent corrected verification PASS36/32, full checks/build, both-target two-path reproduction, 24 legal entries and installer/relocated Linux smoke. Delivered CLEAN main `edfa90452922cc2792e6e001277821bfcad6da3d`; ALL exact-HEAD CI GREEN: packaging39004040516, Go39004040656, compatibility/aggregate39004040576 (coordinator receipt). Older e76 artifacts SUPERSEDED; reviewed142 development artifacts valid only for their immutable prior inputs, not the later documentation/delivery commit. No tag/publication authorized. [Checkpoint](phase9a-status.md), [contract/native Mac handoff](../packaging.md). Native Mac pending; live/catalog/release blocked. |
 | 9b | IMPLEMENTED and BOTH focused independent reviews CLEARED measurement/isolation fixes. Independent current085 source both-target/two-path package, ENTIRE resource suite and postrun36 tests/32 mutations/shipping smoke/consumer contract PASS. HWM KiB idle12416 (hard64MiB/soft32 PASS), four-normal15788 (soft128 PASS), four-near109884 (hard256 PASS);100+100 shipping cycles and separately labeled companion retention/default TCP timeout witness, real60s/300s defaults, signals/restart/hard rejects PASS;446 generations/15 catalogs/23 processes cleaned. Earlier whole-checkout snapshots remain superseded; intentional aborted verifier RUNNING is not a full PASS. Delivered `a5ec69f`; first exact-HEAD Go39009816461 FAILED Formatting (helper test only). Mechanical gofmt + minimal make-check/CI-format parity correction locally validated, awaiting quick independent review before another commit/push. Other three workflow outcomes not recorded here; all-four acceptance NOT PASSED. No production changes/publication/Phase9c; Mac/live/catalog gates stay open. [Acceptance/first failures](phase9b-status.md), [reproduce/trust limits](../provenance/resource-lifecycle.md). |
 
+## Current native Mac saved-login diagnostic boundary (2026-10-17)
+
+Coordinator baseline is clean main `76e5b7a6082b1d91923ae24964c53f9208528c13`,
+ALL FOUR exact-HEAD CI families green (coordinator report). User executed the
+reviewed native darwin/arm64 binary with correct version identity, completed
+fresh application OAuth/save, then reported models unavailable. Local status
+is Logged in, generation 1/auth_epoch 1, expiry date 2026-10-27. These user
+reports do NOT establish catalog HTTP 200/schema/eligibility, native inference,
+refresh/restart/logout lifecycle or a public release pass. No session/account
+or private state was inspected by an agent; normal Mac HOME is not assumed.
+
+Sole-writer narrow `auth diagnose` implementation is authorized: EXISTING own
+application store, same lock/strict validation, atomic no-refresh access, one
+unchanged bounded native metadata request maximum, fixed enums/status/nullable
+counters/booleans only. No OAuth, inference, retry, state/counter write, directory/
+lock creation, orphan cleanup, cache mutation, private credential import, header/
+version/model guess, static fallback or expanded replay eligibility. BOTH
+independent credential/concurrency and protocol/privacy reviews CLEARED with
+no blockers; independent full-check/build/diff/five-package-race20 and fresh
+both-target/two-path DEVELOPMENT36/32/shipping-diagnose verification PASS at
+immutable source inventory `2e038937578cb541218a234c65bd6767cb6678a42280afea11da25316ee5d048`.
+Coordinator authorizes focused normal main commit/push. This receipt changes
+holistic source identity; old development packages are immutable prior-input
+evidence, not future-commit artifacts. ALL FOUR exact-delivery CI families are
+PENDING; root coordinator owns monitoring and conditional fresh exact-commit
+Mac artifact handoff after packaging succeeds (not overall CI clearance).
+The user's older76 binary remains valid for76, not diagnostic-capable.
+See [Phase7 follow-up/first failure](phase7-status.md#2026-10-17-native-mac-report-and-narrow-diagnostic-follow-up)
+and [safe Mac commands/report](phase7-attended-login-handoff.md#native-mac-saved-login-diagnostic--retain-the-existing-session).
+Historical pending delivery text below is immutable checkpoint context, not a
+claim that current76 CI is pending or that the Mac catalog blocker is solved.
+
 ## Current Phase 9b boundary
 
 Coordinator authorized Phase9b from CLEAN main
