@@ -339,7 +339,7 @@ func (s *UserService) inspectLaunchd(r CommandResult, commandErr error, local bo
 	if fields["state"] == "running" {
 		pid, err := strconv.Atoi(fields["pid"])
 		if err != nil || pid <= 0 {
-			return stateForeign, serviceCause(categoryState, ErrService)
+			return stateForeign, launchdStateFailure(r.Stdout, fields)
 		}
 		s.lastPID = pid
 		return stateRunning, nil
@@ -349,7 +349,7 @@ func (s *UserService) inspectLaunchd(r CommandResult, commandErr error, local bo
 	if (fields["state"] == "not running" || fields["state"] == "waiting" || fields["state"] == "spawn scheduled") && (fields["pid"] == "" || fields["pid"] == "0") {
 		return stateInactive, nil
 	}
-	return stateUnknown, serviceCause(categoryState, ErrService)
+	return stateUnknown, launchdStateFailure(r.Stdout, fields)
 }
 func launchFields(data []byte, target string) (map[string]string, map[string][]string, error) {
 	lines := strings.Split(strings.TrimSpace(string(data)), "\n")

@@ -67,9 +67,11 @@ func (c serviceCategory) String() string {
 }
 
 type serviceFailure struct {
-	stage    serviceStage
-	category serviceCategory
-	cause    error
+	stage       serviceStage
+	category    serviceCategory
+	cause       error
+	hasSnapshot bool
+	snapshot    launchdStateSnapshot
 }
 
 func (e *serviceFailure) Error() string {
@@ -88,11 +90,16 @@ func serviceAt(stage serviceStage, err error) error {
 	if errors.Is(err, ErrCanceled) {
 		category = categoryCanceled
 	}
+	wrapped := &serviceFailure{stage: stage, category: category, cause: err}
 	var failure *serviceFailure
 	if errors.As(err, &failure) {
-		category = failure.category
+		wrapped.category = failure.category
+		// Copy by value from the primary error. Later cleanup inspections must
+		// never replace the snapshot from the exact failing activation query.
+		wrapped.hasSnapshot = failure.hasSnapshot
+		wrapped.snapshot = failure.snapshot
 	}
-	return &serviceFailure{stage: stage, category: category, cause: err}
+	return wrapped
 }
 func commandFailure(r CommandResult) error {
 	switch {

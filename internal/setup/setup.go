@@ -178,6 +178,9 @@ func (w Wizard) Run(ctx context.Context) (result error) {
 			var failure *serviceFailure
 			if errors.As(installErr, &failure) {
 				fmt.Fprintf(t, "Service failure: stage=%s category=%s.\n", failure.stage, failure.category)
+				if failure.hasSnapshot {
+					fmt.Fprintf(t, "Service state evidence: state_kind=%s pid_class=%s.\n", failure.snapshot.state, failure.snapshot.pid)
+				}
 			}
 			if errors.Is(installErr, errServiceInputsRetained) {
 				fmt.Fprintln(t, "Journaled service inputs were not rolled back because registration or stop is unverified; do not start or remove files until investigated.")
