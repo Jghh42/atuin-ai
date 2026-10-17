@@ -14,10 +14,38 @@ and delivery before moving on. This file distinguishes code from live gates.
 | 6 | Implemented behind injectable credentials/catalog/provider; one-generation runner, atomic CLI gate, bounded SSE writes and real TCP tests. Independent final review cleared runtime and all three focused test-strengthening follow-ups; authorized direct-main delivery checkpoint. Standalone remains safe 503. [Checkpoint](phase6-status.md). |
 | 7 | Production native OAuth/isolated descriptor-rooted store, durable pre-refresh intent, serialized rotation, explicit auth CLI and shared catalog/SSE composition implemented. Deterministic fake lifecycle tests; two initial reviews found no criticals but required concurrent-Close and Unicode-fold fixes plus formatter strengthening. Both independent fix re-reviews CLEARED with no new blockers; independent post-fix verification passed. Reviewed code checkpoint cleared for authorized direct-main delivery, not a live phase exit. Fresh production login/live lifecycle and live eligible catalog **NOT PASSED**. [Checkpoint](phase7-status.md). |
 | 8 | Implemented source-pinned unmodified Atuin PTY and original reference-source differential suites, synthetic OAuth/discovery/Responses only. All seven local tools include real isolated daemon output retrieval; default offline deterministic corpus plus opt-in hard gates/CI. Local validation/provenance and preserved harness failures: [Phase 8](phase8-status.md). All final independent re-reviews CLEARED corrected confinement/build/buffering/cleanup, oracle projection/session/policy/text normalization and exact-path hosted-CI setup. Independent current-artifact 20 CLI/14 oracle plus CLI race x2 (40 cases), oracle race x2 (28), unfiltered integration race x2 and integration race x10 PASSED. Delivered `6d023fe`; first exact-HEAD Go checks passed and hosted namespace/build/20-CLI steps passed, but differential Docker machine-output handling failed and aggregate is RED. Reviewed Docker fix delivered `57bec1b`; ALL compatibility jobs/20 CLI/14 oracle/cleanup/aggregate PASSED, but separate Go Checks failed the offline watchdog fixture. Atomic fixture-state/handshake/exit-status correction CLEARED review and was delivered as `a50af9a`; BOTH exact-HEAD compatibility `38999649689` (20 CLI/14 oracle, source-prefix/AppArmor/kernel probe, cleanup/aggregate) and Go checks `38999649761` are GREEN. [All CI receipts](phase8-ci-receipt.md). Historical unconfined passes are NOT isolation proof. Production live/catalog gates remain NOT PASSED. |
-| 9a | Packaging/installer IMPLEMENTED; original 27-test/two-path checkpoint independently reproduced but review found curlrc/unknown-length caps, Unicode legal omission, hidden-index and self-described-verifier gaps. Sole-writer fixes add first-argument curl-q/min8.4, real loopback TLS/cap tests, complete Unicode15/17 grants, full-HEAD source truth and exact independent consumer contract (36 default +32 artifact-mutation tests). BOTH focused re-reviews CLEARED all blocking findings/warnings; independent corrected verification PASS36/32, full checks/build, both-target two-path reproduction, 24 legal entries and installer/relocated Linux smoke. Code/local gates cleared for authorized main commit/push; ALL exact-HEAD hosted CI PENDING. Older e76 artifacts SUPERSEDED; reviewed142 development artifacts valid only for their immutable prior inputs, not the later documentation/delivery commit. No tag/publication authorized. [Checkpoint](phase9a-status.md), [contract/native Mac handoff](../packaging.md). Native Mac pending; live/catalog/release blocked. |
-| 9b | Resource/load/memory/leak/profiling work NOT IMPLEMENTED; release gates remain. |
+| 9a | Packaging/installer IMPLEMENTED; original 27-test/two-path checkpoint independently reproduced but review found curlrc/unknown-length caps, Unicode legal omission, hidden-index and self-described-verifier gaps. Sole-writer fixes add first-argument curl-q/min8.4, real loopback TLS/cap tests, complete Unicode15/17 grants, full-HEAD source truth and exact independent consumer contract (36 default +32 artifact-mutation tests). BOTH focused re-reviews CLEARED all blocking findings/warnings; independent corrected verification PASS36/32, full checks/build, both-target two-path reproduction, 24 legal entries and installer/relocated Linux smoke. Delivered CLEAN main `edfa90452922cc2792e6e001277821bfcad6da3d`; ALL exact-HEAD CI GREEN: packaging39004040516, Go39004040656, compatibility/aggregate39004040576 (coordinator receipt). Older e76 artifacts SUPERSEDED; reviewed142 development artifacts valid only for their immutable prior inputs, not the later documentation/delivery commit. No tag/publication authorized. [Checkpoint](phase9a-status.md), [contract/native Mac handoff](../packaging.md). Native Mac pending; live/catalog/release blocked. |
+| 9b | IMPLEMENTED and BOTH focused independent reviews CLEARED measurement/isolation fixes. Independent current085 source both-target/two-path package, ENTIRE resource suite and postrun36 tests/32 mutations/shipping smoke/consumer contract PASS. HWM KiB idle12416 (hard64MiB/soft32 PASS), four-normal15788 (soft128 PASS), four-near109884 (hard256 PASS);100+100 shipping cycles and separately labeled companion retention/default TCP timeout witness, real60s/300s defaults, signals/restart/hard rejects PASS;446 generations/15 catalogs/23 processes cleaned. Earlier whole-checkout snapshots remain superseded; intentional aborted verifier RUNNING is not a full PASS. Normal focused commit/push authorized, ALL FOUR exact-HEAD CI families PENDING. No production changes/publication/Phase9c; Mac/live/catalog gates stay open. [Acceptance/first failures](phase9b-status.md), [reproduce/trust limits](../provenance/resource-lifecycle.md). |
 
-## Current Phase 9a boundary
+## Current Phase 9b boundary
+
+Coordinator authorized Phase9b from CLEAN main
+`edfa90452922cc2792e6e001277821bfcad6da3d` after ALL exact-HEAD Phase9a
+workflows GREEN: packaging39004040516, Go39004040656 and compatibility/aggregate
+39004040576. The user has the development Mac download/hash/checklist; native
+outcomes remain PENDING. BOTH focused Phase9b reviews now CLEARED finite-bound
+measurement and corrected isolation/cleanup. Independent fast make-check/build/
+diff,10+10 tests and helper/http race20 PASS, followed by fresh BOTH-target/
+TWO-path packaging, ENTIRE resource FULL PASS and postrun36 tests/32 mutations/
+shipping smoke/current consumer verification on immutable source08573867.
+Normal focused main commit/push is authorized; no production policy/code changes,
+Phase9c, release/tag/public publication. Prior unsafe5fb snapshot remains
+superseded; the intentionally safety-aborted independent RUNNING report is NOT
+retroactively a full PASS. Later fresh085 independent report is separate.
+
+This documentation receipt changes holistic source identity. Preserve measured
+085 package/report ONLY as immutable prior inputs, never relabel as the future
+delivery SHA. Fresh CI DEVELOPMENT artifacts must identify/measure their own
+actual commit/source. ALL FOUR exact-HEAD CI families (Go, packaging,
+compatibility aggregate, resource aggregate) are PENDING and must independently
+succeed; compatibility alone is not overall clearance. Root coordinator owns
+post-push monitoring; no further phase begins before that checkpoint.
+Final exact-source artifact hashes/counts belong in the generated external report;
+[resource checkpoint](phase9b-status.md) preserves initial harness failures and
+separates companion stats from shipping measurements. Production live/catalog
+and native Mac release gates stay open.
+
+## Historical Phase 9a boundary (superseded by exact-HEAD receipt above)
 
 Phase 8 corrected exact-HEAD delivery is now fully green at clean main
 `a50af9a16ca08e9898077ad52a0b2551d5fa0a56`; coordinator authorized Phase 9a,

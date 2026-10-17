@@ -1,5 +1,18 @@
 # Phase 9a — packaging / installer review checkpoint
 
+## Exact-HEAD delivery receipt — supersedes historical PENDING language
+
+Delivered CLEAN main `edfa90452922cc2792e6e001277821bfcad6da3d`.
+Coordinator verified ALL exact-HEAD hosted workflows GREEN:
+[packaging39004040516](https://github.com/Jghh42/atuin-ai/actions/runs/39004040516),
+[Go39004040656](https://github.com/Jghh42/atuin-ai/actions/runs/39004040656), and
+[compatibility/aggregate39004040576](https://github.com/Jghh42/atuin-ai/actions/runs/39004040576).
+The user has the DEVELOPMENT Mac artifact/hash/checklist and volunteered native
+execution; outcomes remain PENDING, not inferred from CI/crossbuild. Phase9b was
+then separately authorized; [resource review checkpoint](phase9b-status.md).
+No release/tag/public publishing is authorized. Production live/catalog and
+native Mac release gates remain NOT PASSED/PENDING.
+
 ## Final independent acceptance / authorized code delivery
 
 Coordinator reported BOTH focused independent reviews **CLEARED** all blocking

@@ -724,9 +724,16 @@ or 400—must be replaced with an explicit project decision, not copied.
 ### Phase 9 — local binary and resource hardening
 
 Split checkpoint: **9a packaging/installer** code/local gates are independently
-CLEARED for authorized delivery; ALL exact-HEAD hosted CI remains PENDING
-([status](phase9a-status.md), [contract/native binary handoff](../packaging.md));
-**9b resource/load/leak/profiling** remains unimplemented. No public release,
+CLEARED and delivered at `edfa904`; ALL exact-HEAD hosted CI GREEN
+([receipt](phase9a-status.md), [contract/native binary handoff](../packaging.md));
+**9b resource/load/leak/lifecycle** BOTH focused reviews CLEARED measurement and
+corrected isolation/cleanup; independent085 source both-target/two-path package,
+ENTIRE resource suite and postrun artifact verification PASSED, with shipping/
+companion evidence kept separate ([acceptance](phase9b-status.md),
+[reproduction/trust limits](../provenance/resource-lifecycle.md)). Focused main
+commit/push authorized; ALL FOUR exact-HEAD hosted CI families remain PENDING.
+The receipt changes source identity:085 artifacts remain immutable prior-input
+DEVELOPMENT evidence, never relabeled as the delivery commit. No public release,
 paid signing/notarization, Gatekeeper bypass, service packaging or config-loader
 permission enforcement is added by 9a. Native macOS and production live/catalog
 remain separate unpassed gates; packaging alone does not satisfy this phase exit.
@@ -756,7 +763,10 @@ Initial measurable targets on a documented Linux amd64 environment:
 Use `GOMEMLIMIT` as a GC target, not as an RSS guarantee.
 
 **Exit:** local-binary smoke tests, load tests, leak tests, and memory reports
-pass.
+pass. Phase9b independent local finite-bound gates now PASS; exact-HEAD Go,
+packaging, compatibility aggregate AND resource aggregate still must all succeed.
+Native Mac/live/catalog and publication approval remain separate release gates;
+finite retention bounds do not establish zero leakage or a heap plateau.
 
 ## 8. Reusing upstream tests
 

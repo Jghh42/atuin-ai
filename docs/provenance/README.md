@@ -49,6 +49,14 @@ legal sets independently of manifest claims and exercises rehashed mutations.
 No release is published. Dirty development output remains RELEASE BLOCKED;
 production live/catalog, native macOS and Phase 9b gates remain separate.
 
+## Offline resource evidence (Phase9b)
+
+[Resource/lifecycle provenance](resource-lifecycle.md) records independently
+authored offline external TLS/load/sampling programs, actual shipping binary
+identity, mandatory network namespace, synthetic fresh-state setup and separately
+labeled companion diagnostics. The existing packaging source/legal/two-path
+contract is preserved. No runtime dependency or third-party source import.
+
 ## Required import process
 
 Before copying or adapting code, prompts, tool descriptions, tests or fixtures:

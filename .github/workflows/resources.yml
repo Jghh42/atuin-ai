@@ -1,0 +1,80 @@
+name: Offline shipping resource gates
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  resources:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: false
+          cache: true
+      - name: Verify exact toolchain
+        run: |
+          toolchain="$(awk '$1 == "go" { print "go" $2; exit }' go.mod)"
+          test "$(GOTOOLCHAIN=local go env GOVERSION)" = "$toolchain"
+          printf 'GOTOOLCHAIN=%s\n' "$toolchain" >> "$GITHUB_ENV"
+      - name: Bounded build prerequisites (ephemeral hosted runner only)
+        timeout-minutes: 8
+        run: |
+          set -euo pipefail
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          sudo -n timeout 180 apt-get -o Acquire::Retries=0 update
+          sudo -n timeout 240 apt-get -o Acquire::Retries=0 -o DPkg::Lock::Timeout=30 install -y --no-install-recommends build-essential meson ninja-build pkg-config libcap-dev apparmor openssl
+      - name: Verified non-setuid Bubblewrap in private job prefix
+        run: |
+          PATH=/usr/bin:/bin python3 -B tests/build-bwrap.py "$RUNNER_TEMP/bwrap-build"
+          echo "ATUIN_TEST_BWRAP_MANIFEST=$RUNNER_TEMP/bwrap-build/manifest.json" >> "$GITHUB_ENV"
+      - name: Exact-path job-only userns permission if restricted
+        run: python3 -B tests/ci_bwrap_profile.py install
+      - name: Mandatory namespace prerequisite probe
+        run: python3 -B tests/build-bwrap.py probe "$ATUIN_TEST_BWRAP_MANIFEST"
+      - name: Both shipping targets, two build paths (DEVELOPMENT only)
+        run: make package-dev VERSION="v0.0.0-dev.resources.${GITHUB_SHA}" OUT="$GITHUB_WORKSPACE/dist/resource-package"
+      - name: Actual shipping RSS, cycles, retention, signals and REAL default durations
+        run: make resource ARTIFACTS="$GITHUB_WORKSPACE/dist/resource-package" OUT="$GITHUB_WORKSPACE/dist/resource-evidence"
+      - name: Require COMPLETE successful resource receipt (never partial/missing)
+        run: |
+          python3 -B - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('dist/resource-evidence/report.json').read_text())
+          provenance = json.loads(Path('dist/resource-evidence/provenance.json').read_text())
+          assert report['status'] == 'PASS' and not report['failures']
+          assert report['fixture']['generations'] == 446 and report['fixture']['catalogs'] == 15
+          assert report['fixture']['active_after_cleanup'] == 0 and report['fixture']['handlers_joined']
+          assert all(report['cleanup'][key] for key in ('all_wrappers_reaped', 'all_server_pids_gone', 'all_samplers_joined'))
+          assert provenance['scratch_removed'] and provenance['source_snapshot_removed']
+          assert provenance['namespace_inputs']['whole_checkout_mounted'] is False
+          PY
+      - name: Always unload ONLY this job's exact-path profile
+        if: always()
+        run: python3 -B tests/ci_bwrap_profile.py remove
+      - name: Preserve numeric evidence and development artifacts only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resource-development-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            dist/resource-evidence/report.json
+            dist/resource-evidence/provenance.json
+            dist/resource-package/
+          if-no-files-found: error
+          retention-days: 14
+  validation:
+    name: Phase9b resource validation aggregate
+    if: always()
+    needs: [resources]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resource execution AND cleanup must succeed, never skip/cancel
+        run: test '${{ needs.resources.result }}' = success

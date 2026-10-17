@@ -169,6 +169,32 @@ binary. Run longer fuzzing by selecting `FuzzDecode` in `./internal/atuin`,
 The nightly workflow runs each target for two minutes. No live OAuth checks
 are run in CI.
 
+## Offline shipping resource / lifecycle gate (Phase 9b)
+
+`make resource-test` runs fast fixture invariants. `make resource-isolation-test`
+requires actual narrow-mount network/PID namespaces and runs synthetic repository
+confidentiality, spawn rollback and CONNECT/TLS wire regressions (no real private
+files or provider calls). The whole working checkout is NEVER mounted; only
+required public inputs checked against the verified package inventory are copied
+to a private read-only snapshot. `make resource
+ARTIFACTS=/absolute/development-package OUT=/absolute/fresh-evidence` is the
+explicit HARD Linux gate (~7minutes, including real60s/300s defaults). Build the
+package with the existing `make package-dev` two-path flow first. Missing GNU
+time/OpenSSL/Bubblewrap0.11.1 or unusable mandatory network namespaces FAIL,
+never skip. No live provider/real credentials, host policy changes, production
+knobs or profiling endpoint. The measured shipping binary has default GC and no
+race instrumentation/forced GC; numeric companion heap/goroutine/write-error
+witnesses are separately labeled. [Exact workloads, bounds, cleanup, reporting
+and finite retention resolution](provenance/resource-lifecycle.md),
+[review checkpoint and preserved first failures](plans/phase9b-status.md).
+Only development package/numeric reports are uploaded by separate resource CI;
+synthetic resource success does not clear native Mac/live/catalog/release gates.
+Delivery/release MUST independently require ALL FOUR exact-HEAD families: Go
+checks, Packaging consistency, Phase8 validation aggregate AND Phase9b resource
+validation aggregate. Resource failure/skip/cancellation or a missing/partial
+receipt blocks acceptance even if compatibility aggregate is green. Actual
+branch required-check settings are external and have not been changed/claimed.
+
 ## Synthetic pinned-CLI and differential gates (Phase 8)
 
 These local artifact-gated checks use synthetic accounts/backends. Initial
