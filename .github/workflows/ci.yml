@@ -21,6 +21,6 @@ jobs:
           printf 'GOTOOLCHAIN=%s\n' "$toolchain" >> "$GITHUB_ENV"
           go version
       - name: Formatting
-        run: test -z "$(gofmt -l cmd internal)"
+        run: test -z "$(gofmt -l cmd internal tests)"
       - run: make check
       - run: make build

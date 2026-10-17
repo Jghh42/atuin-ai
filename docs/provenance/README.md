@@ -21,6 +21,8 @@ catalog or credential material is retained.
 | OpenAI SIWC public documentation | Summarized/linked research in auth ADR/checklist, not vendored | No redistribution license inferred; not covered by the Apache/MIT source records |
 | Phase 2 decoder tests/fixtures | Independently recreated request/config/capability behavior, plus original boundary tests; no upstream implementation copied | Apache-2.0; per-case [fixture manifest](../../testdata/compat/manifest.json), attribution in `NOTICE` |
 | Phase 3 prompts, descriptions, schemas and safety | Original prose and implementation; source-informed schemas/behavior and independently recreated baseline cases | Apache-2.0; [Phase 3 checkpoint](../plans/phase3-status.md), per-case manifest, attribution in `NOTICE` |
+| Bubblewrap 0.11.1 | External test/build filesystem/PID namespace prerequisite; no source/binary vendored or server linkage | LGPL-2.0-or-later; [package/source/checksum and scope](phase8-tooling.md); historical HOME/XDG-only runs are not isolation evidence |
+| Phase 8 real CLI/oracle fixtures and build recipe | Independently recreated synthetic behavior; transformed oracle-only Dockerfile, no app source changes | [Per-case manifest](../../testdata/compat/phase8-manifest.json), [exact tooling/artifact provenance](phase8-tooling.md), MIT/Apache attribution in `NOTICE`; no new Go dependency |
 | Installed `@earendil-works/pi-ai` 1.1.0 | Source-only research for native Codex auth/inference decision; no implementation copied by the decision | MIT; artifact paths/hashes and future import requirements in [ADR 0004](../decisions/0004-pi-style-codex-authentication.md) |
 
 This is a reference-source inventory, not a dependency SBOM. The Go module's

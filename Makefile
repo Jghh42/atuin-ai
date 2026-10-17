@@ -1,4 +1,4 @@
-.PHONY: build test race vet lint vuln fuzz check fmt toolchain
+.PHONY: build test race vet lint vuln fuzz check fmt toolchain e2e differential compatibility
 
 # go.mod is the single exact toolchain pin. Force that release even when the
 # launcher is newer; normal Go toolchain download is allowed when it is absent.
@@ -34,7 +34,19 @@ fuzz: toolchain
 check: toolchain test race vet lint vuln fuzz
 
 fmt: toolchain
-	go fmt ./cmd/... ./internal/...
+	go fmt ./cmd/... ./internal/... ./tests/...
+
+# Opt-in release gates: missing prerequisites FAIL rather than green skip.
+e2e: toolchain
+	@test -n "$$ATUIN_E2E_MANIFEST" || { echo 'BLOCKED: build pinned Atuin with tests/e2e/build-atuin.py; set ATUIN_E2E_MANIFEST'; exit 1; }
+	python3 -B -I tests/harness_test.py Confinement
+	go test -v ./tests/e2e -run '^TestPinnedCLI$$' -count=1 -timeout=10m
+
+differential: toolchain
+	@test -n "$$ATUIN_ORACLE_MANIFEST" || { echo 'BLOCKED: build pinned oracle with tests/differential/build-oracle.py; set ATUIN_ORACLE_MANIFEST'; exit 1; }
+	go test -v ./tests/differential -run '^TestOriginalReferenceOracle$$' -count=1 -timeout=5m
+
+compatibility: e2e differential
 
 toolchain:
 	@test "$$(go env GOVERSION)" = "$(GO_TOOLCHAIN)"

@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "scope": "Synthetic Phase 8 cases only; no live account, device code, credential artifact or normal Atuin database",
+  "reuse": "independently_recreated",
+  "notice": "NOTICE; LICENSES/Atuin-MIT.txt and retained reference Apache-2.0 licenses (see upstream-sources.json)",
+  "sources": {
+    "cli": {"upstream_repository":"https://github.com/atuinsh/atuin","upstream_commit":"4ca8b77c8a526b8c294eb864a2b74c95c685c983","license_spdx":"MIT","copyright":"Copyright (c) 2021 Ellie Huxtable"},
+    "server": {"upstream_repository":"https://github.com/atuinsh/atuin-ai-server","upstream_commit":"4d582bc5ceea5b5edfdcf3abb49dc850400cda7c","license_spdx":"Apache-2.0"},
+    "core": {"upstream_repository":"https://github.com/atuinsh/atuin-ai-core","upstream_commit":"565877e97ed3ff4840481b8d47e12eb2f9854039","license_spdx":"Apache-2.0"}
+  },
+  "differential_destination":"testdata/compat/phase8.json; tests/integration/compat_test.go; tests/differential/oracle_test.go",
+  "differential_cases":[
+    {"id":"text","source":"core","original_file":"src/atuin_ai_core/engine/loop.gleam","original_test":"No copied named test; source lifecycle behavior","intentional_behavior_differences":[]},
+    {"id":"suggestion","source":"core","original_file":"src/atuin_ai_core/engine/turn.gleam","original_test":"No copied named test; terminal suggestion behavior","intentional_behavior_differences":[]},
+    {"id":"read_file","source":"core","original_file":"src/atuin_ai_core/domain/tools.gleam","original_test":"No copied named test; schema/capability behavior","intentional_behavior_differences":[]},
+    {"id":"edit_file","source":"core","original_file":"src/atuin_ai_core/domain/tools.gleam","original_test":"No copied named test; schema/capability behavior","intentional_behavior_differences":[]},
+    {"id":"write_file","source":"core","original_file":"src/atuin_ai_core/domain/tools.gleam","original_test":"No copied named test; schema/capability behavior","intentional_behavior_differences":[]},
+    {"id":"atuin_history","source":"core","original_file":"src/atuin_ai_core/domain/tools.gleam","original_test":"No copied named test; v1 schema/capability behavior","intentional_behavior_differences":[]},
+    {"id":"atuin_output","source":"core","original_file":"src/atuin_ai_core/domain/tools.gleam","original_test":"No copied named test; explicit range behavior","intentional_behavior_differences":[]},
+    {"id":"execute_shell_command","source":"core","original_file":"src/atuin_ai_core/domain/tools.gleam","original_test":"No copied named test; schema/capability behavior","intentional_behavior_differences":[]},
+    {"id":"load_skill","source":"core","original_file":"src/atuin_ai_core/domain/tools.gleam","original_test":"No copied named test; advertised skill behavior","intentional_behavior_differences":[]},
+    {"id":"parallel","source":"core","original_file":"src/atuin_ai_core/engine/turn.gleam","original_test":"No copied named test; ordered client tools","intentional_behavior_differences":[]},
+    {"id":"continuation","source":"core","original_file":"src/atuin_ai_core/http/driver.gleam","original_test":"No copied named test; complete transcript behavior","intentional_behavior_differences":[]},
+    {"id":"mixed-terminal","source":"core","original_file":"src/atuin_ai_core/engine/turn.gleam","original_test":"No copied named test; classification behavior","intentional_behavior_differences":["Native atomically rejects suggestion mixed with local call; reference emits both"]},
+    {"id":"enhanced-risk","source":"core","original_file":"src/atuin_ai_core/domain/safety.gleam","original_test":"No copied named test; original keyword-prefilter blind spot","intentional_behavior_differences":["Native raises sudo true from low to high; reference retains low"]},
+    {"id":"unknown-usage","source":"core","original_file":"src/atuin_ai_core/domain/usage.gleam; src/atuin_ai_core/http/streaming.gleam; src/atuin_ai_core/ffi/atuin_ai_json_ffi.erl","original_test":"No copied named test; missing usage and pinned OTP nil codec behavior","intentional_behavior_differences":["Native unknown token counts/costs remain JSON null; reference token counts default to zero and absent costs become the string nil through Gleam Nil / OTP json:encode/1"]}
+  ],
+  "pty_destination":"tests/e2e/cli_test.go; tests/e2e/pty_driver.py; tests/e2e/confinement.py",
+  "review_regressions": {
+    "historical_limitation":"Prior HOME/XDG-only passes were not ancestor-context isolation evidence; no incident is inferred and no private ancestor content inspected.",
+    "isolation":{"source":"cli","original_file":"crates/atuin-ai/src/user_context/{walker,interpolate}.rs; crates/atuin-ai/src/skills/walker.rs","destination":"tests/e2e/confinement.py; tests/e2e/cli_test.go; tests/harness_test.py","reuse":"original","basis":"Synthetic ancestor context/embedded command/project/skills, symlink denial, FD-pinned replaced ancestor, namespace parent-death and interrupted preparation/PTY regressions"},
+    "projection":{"source":"core","original_file":"src/atuin_ai_core/domain/tools.gleam; src/atuin_ai_core/llm/openai_compat.gleam; src/atuin_ai_core/llm/openai_endpoint.gleam","destination":"tests/projection/validate.go; tests/projection/validate_test.go","reuse":"independently_recreated","basis":"Independent dialect-specific model/tools/schema/full ordered history expectations, not production projector calls; annotations-only prose exclusion preserves the real description parameter"},
+    "integrity_cleanup":{"destination":"tests/build_support.py; tests/harness_test.py; tests/differential/docker_watchdog.py; tests/differential/lease_test.go","reuse":"original","basis":"No upstream implementation copied; corrupt archive/marker/Cargo config, complete source inventory/extra .ex, stale-manifest and killed-parent partial/late-create scoped-cleanup regressions"},
+    "session_policy":{"destination":"tests/integration/session_test.go; tests/differential/policy_test.go; tests/testutil/barrier_test.go","reuse":"original","basis":"Raw UUID/header/continuation validation before normalization, complete intentional-policy payload mutation rejection, and downstream executable-frame barrier regression"}
+  },
+  "pty_cases":[
+    {"id":"text-model-default-and-selection","source":"cli","original_file":"crates/atuin-ai/src/{tui/app.rs,fsm/mod.rs,stream.rs}","original_test":"No copied named test; real /model Enter picker and full-history session behavior","intentional_behavior_differences":[]},
+    {"id":"session-resume-new-process","source":"cli","original_file":"crates/atuin-ai/src/commands/inline.rs; crates/atuin-ai/src/session.rs","original_test":"No copied named test; real persisted history replay across two isolated CLI invocations","intentional_behavior_differences":[]},
+    {"id":"suggestion-insert-not-execute","source":"cli","original_file":"crates/atuin-ai/src/tui/app.rs","original_test":"No copied named test; Tab insertion behavior","intentional_behavior_differences":[]},
+    {"id":"read_file","source":"cli","original_file":"crates/atuin-ai/src/tools/mod.rs; crates/atuin-ai/src/tools/descriptor.rs","original_test":"No copied named test; actual tool and permission behavior","intentional_behavior_differences":[]},
+    {"id":"write_file","source":"cli","original_file":"crates/atuin-ai/src/tools/mod.rs; crates/atuin-ai/src/tui/app.rs","original_test":"No copied named test; actual tool and permission behavior","intentional_behavior_differences":[]},
+    {"id":"edit_file-after-read","source":"cli","original_file":"crates/atuin-ai/src/tools/mod.rs; crates/atuin-ai/src/file_tracker.rs","original_test":"No copied named test; read-before-edit behavior","intentional_behavior_differences":[]},
+    {"id":"execute_shell_command","source":"cli","original_file":"crates/atuin-ai/src/tui/tools_exec.rs","original_test":"No copied named test; real harmless Bash command","intentional_behavior_differences":[]},
+    {"id":"atuin_history","source":"cli","original_file":"crates/atuin-ai/src/tools/mod.rs; crates/atuin/src/command/client/history.rs","original_test":"No copied named test; CLI-seeded isolated history","intentional_behavior_differences":[]},
+    {"id":"atuin_output","source":"cli","original_file":"crates/atuin-ai/src/tools/output/get.rs; crates/atuin-pty-proxy/src/{markers,capture}.rs","original_test":"No copied named test; synthetic OSC fixture through actual PTY capture sink/daemon","intentional_behavior_differences":[]},
+    {"id":"load_skill","source":"cli","original_file":"crates/atuin-ai/src/skills/{walker,mod}.rs","original_test":"No copied named test; isolated synthetic registry","intentional_behavior_differences":[]},
+    {"id":"permission-denial","source":"cli","original_file":"crates/atuin-ai/src/tui/{app.rs,view/mod.rs}","original_test":"No copied named test; Up wraps to Deny, Enter confirms","intentional_behavior_differences":[]},
+    {"id":"execution-failure","source":"cli","original_file":"crates/atuin-ai/src/tui/tools_exec.rs","original_test":"No copied named test; actual Bash exit 7","intentional_behavior_differences":[]},
+    {"id":"parallel-tools","source":"cli","original_file":"crates/atuin-ai/src/fsm/mod.rs","original_test":"No copied named test; per-call IDs and result correlation","intentional_behavior_differences":[]},
+    {"id":"buffered-tool-until-completion","reuse":"original","source":"cli","original_file":"crates/atuin-ai/src/fsm/mod.rs","original_test":"Not applicable; new Responses safety gate across real CLI","intentional_behavior_differences":["Native buffers function calls until completed"]},
+    {"id":"provider-error-after-text","reuse":"original","source":"cli","original_file":"crates/atuin-ai/src/tui/bridge.rs","original_test":"Not applicable; new failure-with-buffered-call gate","intentional_behavior_differences":["Native never emits callable snapshots from failed Responses"]},
+    {"id":"mixed-batch-never-executes","reuse":"original","source":"core","original_file":"src/atuin_ai_core/engine/turn.gleam","original_test":"Not applicable; stricter native atomic gate","intentional_behavior_differences":["Native rejects mixed suggestion/local batches"]},
+    {"id":"disconnect-cancels-upstream","source":"cli","original_file":"crates/atuin-ai/src/tui/app.rs","original_test":"No copied named test; Ctrl+C drops live HTTP task","intentional_behavior_differences":[]},
+    {"id":"oauth-missing","reuse":"original","specification_basis":"implementation.md Phase 8; no upstream OAuth fixture","intentional_behavior_differences":["Native preflight 503; no generation"]},
+    {"id":"oauth-expired","reuse":"original","specification_basis":"implementation.md Phase 8; no upstream OAuth fixture","intentional_behavior_differences":["Native exactly one synthetic refresh before inference"]},
+    {"id":"oauth-revoked","reuse":"original","specification_basis":"implementation.md Phase 8; no upstream OAuth fixture","intentional_behavior_differences":["Native invalid_grant blocks generation; explicit login required"]}
+  ],
+  "oracle_build":{"destination":"tests/differential/Dockerfile.oracle","source":"server","original_file":"Dockerfile","reuse":"transformed","modifications":"Pinned amd64 base digests and signed historical Debian snapshot; verified Gleam archive checksum; Erlang threads bounded; core clean HEAD and server source hash assertions; source labels; no application source changes"},
+  "normalization":"JSON property order, session UUIDs, usage only outside explicit usage-policy case, adjacent text segmentation. Tool IDs, arguments, danger, errors, lifecycle events and ordering are not erased.",
+  "verification":"Final independent reviews CLEARED all corrected isolation/build/cleanup/projection/session/policy/normalization and hosted-CI setup seams. Independent current-artifact 20 CLI/14 oracle and repeated race verification PASSED. Historical failures and exact-HEAD CI remain separately recorded in docs/plans/phase8-status.md"
+}

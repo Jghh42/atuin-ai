@@ -147,3 +147,45 @@ Before claiming model support, complete the selected-backend
 model/transcript documented in [its report](proofs/codex-phase0.md), not real
 Atuin CLI compatibility or independent SIWC.
 No live data or credential artifacts may become compatibility fixtures.
+
+## Phase 8 actual pinned CLI / original-source oracle
+
+[Phase 8 status and exact commands](plans/phase8-status.md) distinguish local
+synthetic passes from production/live/release gates. The unmodified pinned
+Atuin now runs under stdlib PTY automation against the composed native Go
+application with fake OAuth/discovery/Responses. Initial review was NOT CLEARED:
+HOME/XDG alone did not confine ancestor context discovery/embedded commands.
+No retrospective absence of reads/execution or incident is inferred. Corrected
+invocations run in an fd-pinned Bubblewrap filesystem/PID namespace (host
+ancestors/HOME not mounted), with fixture metadata/symlink checks before EACH
+launch, isolated HOME/ATUIN_HOME/XDG/database/sandbox paths; OSS and no client
+authentication are asserted. All seven tools are exercised by the actual CLI,
+including positive captured-output retrieval through an isolated real daemon.
+Permissions, shell-hook insert versus execute, parallel correlation, full
+history/session reuse and process restart, revoked/expired credentials,
+failed/unfinished tool calls and cancellation have client-observable assertions.
+These are synthetic backend proofs, never live account or catalog evidence.
+
+The source-built original reference server/core and fake Chat Completions
+sidecar run only on an internal Docker bridge, with **no published ports**.
+Identical fixture requests are compared with native Go/fake Responses. Both
+fakes first validate outbound model, exact ordered schema declarations and
+complete ordered history/call/result correlation using an independent test
+oracle, so canned answers cannot hide dropped projection data. UUID shape,
+header/done consistency and explicit continuation identity are validated BEFORE
+normalizing valid session UUIDs, usage, JSON order and adjacent text segments. Mixed-batch rejection, enhanced sudo risk and unknown-null versus
+reference-zero token usage (and reference `"nil"` cost strings) are explicitly
+asserted differences, not silently erased.
+Exact positive events and one-generation counts compare. Per-case source,
+license and derivation: [`phase8-manifest.json`](../testdata/compat/phase8-manifest.json);
+[toolchain/image/artifact provenance](provenance/phase8-tooling.md).
+
+Default `make check` includes deterministic corpus/manifest tests but skips
+external gates when artifact manifests are absent. `make compatibility` fails
+without them; a default skip or a green Go-only CI is NOT an external-gate pass.
+The required-capability PR/push/manual workflow (NOT pull_request_target) has
+not yet run for these changes. Its aggregate depends on both Go and actual
+compatibility; administrators must require that check externally. Interrupted
+creation / global Go timeout cleanup uses a preregistered run/lease watchdog
+and workflow-always cleanup, scoped only to owned labels.
+No production runtime compatibility policy was relaxed or changed in Phase 8.

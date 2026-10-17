@@ -1,6 +1,6 @@
 # Autonomous implementation progress
 
-Updated 2026-10-16. User-authorized sequential work; checkpoints require review
+Updated 2026-10-17. User-authorized sequential work; checkpoints require review
 and delivery before moving on. This file distinguishes code from live gates.
 
 | Phase | Status / evidence |
@@ -13,7 +13,49 @@ and delivery before moving on. This file distinguishes code from live gates.
 | 5 | Native bounded Responses SSE provider implemented behind injection; six initial findings/shared helper and lifecycle-output follow-up independently reviewed and cleared for authorized direct-main delivery. No live calls. [Checkpoint](phase5-status.md). |
 | 6 | Implemented behind injectable credentials/catalog/provider; one-generation runner, atomic CLI gate, bounded SSE writes and real TCP tests. Independent final review cleared runtime and all three focused test-strengthening follow-ups; authorized direct-main delivery checkpoint. Standalone remains safe 503. [Checkpoint](phase6-status.md). |
 | 7 | Production native OAuth/isolated descriptor-rooted store, durable pre-refresh intent, serialized rotation, explicit auth CLI and shared catalog/SSE composition implemented. Deterministic fake lifecycle tests; two initial reviews found no criticals but required concurrent-Close and Unicode-fold fixes plus formatter strengthening. Both independent fix re-reviews CLEARED with no new blockers; independent post-fix verification passed. Reviewed code checkpoint cleared for authorized direct-main delivery, not a live phase exit. Fresh production login/live lifecycle and live eligible catalog **NOT PASSED**. [Checkpoint](phase7-status.md). |
-| 8–9 | Not implemented; real CLI, resource hardening and release gates remain. |
+| 8 | Implemented source-pinned unmodified Atuin PTY and original reference-source differential suites, synthetic OAuth/discovery/Responses only. All seven local tools include real isolated daemon output retrieval; default offline deterministic corpus plus opt-in hard gates/CI. Local validation/provenance and preserved harness failures: [Phase 8](phase8-status.md). All final independent re-reviews CLEARED corrected confinement/build/buffering/cleanup, oracle projection/session/policy/text normalization and exact-path hosted-CI setup. Independent current-artifact 20 CLI/14 oracle plus CLI race x2 (40 cases), oracle race x2 (28), unfiltered integration race x2 and integration race x10 PASSED. Authorized direct-main delivery; exact-HEAD ALL-workflow CI is the next gate. Historical unconfined passes are NOT isolation proof. Production live/catalog gates remain NOT PASSED. |
+| 9 | Not implemented; packaging/resource and release gates remain. |
+
+## Phase 7 delivered baseline / Phase 8 boundary
+
+Phase 8 began from clean main `b990c404e4582246a8c2ff0a067b33f14b148ca0`.
+Coordinator-verified exact-HEAD Go checks run `38974738689`: **success**.
+This is prior-SHA evidence, not CI for Phase 8's delivery SHA. The user
+explicitly authorized continued Phase 8 implementation, with deterministic fake
+accounts/backends and no new live probes. No fresh production login outcome was
+reported. Existing production lifecycle/catalog gates stay **NOT PASSED**;
+retained probe generation 3 is separate and never imported. Phase 8 adds no
+runtime configuration, source fork, credentials or Phase 9 packaging/resource
+claim. Independent review precedes any commit/push.
+
+## Phase 8 review follow-up — final reviews CLEARED; delivery CI separate
+
+Actual CLI runs paused on the critical ancestor discovery/interpolation finding.
+Corrected runs now require an fd-pinned Bubblewrap filesystem/PID boundary,
+without mounted host ancestors/HOME, plus metadata/symlink rejection before each
+child launch. Synthetic ancestor/project/skill and command-execution regressions
+were added; no private ancestor contents inspected and no incident inferred.
+Fresh source/toolchain/Cargo/target builds replace markers/overlays; both fake
+backends reject semantic projection mutations, sessions validate before UUID
+normalization, intentional policy payloads compare completely, and an independent
+owned-label lease watchdog handles failed/late creates and killed parents.
+Secret-free PR/push/manual CI now has a failure-propagating validation aggregate;
+admin branch rules and actual CI execution remain external/unproven. CLI seams
+subsequently CLEARED re-review. Oracle's remaining P2 text-metadata normalization
+loss is fixed with direct and positive/policy mutation regressions. CI now builds
+checksum-pinned Bubblewrap into a private prefix, requires a real namespace probe,
+and implements exact-path hosted-job-only AppArmor userns permission plus always-
+cleanup (final narrow review CLEARED; actual hosted-kernel CI execution remains
+unverified until that exact-HEAD run passes). Local
+prefix source build/version/inventory succeeded but its namespace probe is
+BLOCKED by developer AppArmor; no developer-host policy change forced a pass.
+The reviewed system-bwrap path remains unchanged unless explicitly configured. No runtime
+policy, real login, eligibility or Phase 9 changes. See [corrected evidence and
+preserved failures](phase8-status.md). All independent reviews and final local
+compatibility verification have now passed; normal main delivery is authorized.
+Do not start Phase 9 until ALL exact-HEAD push workflows, actual compatibility,
+validation aggregate and scoped cleanup succeed. Existing branch protection
+is external and was not changed. No real-provider/live eligibility claim follows.
 
 ## Fuzz toolchain and cancellation-harness follow-ups — CLEARED
 
@@ -293,7 +335,12 @@ Follow-up `make check`, `make build`, and `git diff --check`: PASS.
   (`ProveDiscovered`, `proveDiscovered`, `selectReplayCandidate`), its tests and
   the `prove-discovered` branch of `cmd/codex-proof/main.go`.
 
-## Later-phase provisioning readiness (read-only inspection)
+## Historical pre-Phase 8 readiness (superseded)
+
+This retained inventory described the Phase 7 handoff, not current availability.
+Phase 8 subsequently provisioned isolated pinned artifacts and ran the actual
+CLI/oracle suites; [current evidence](phase8-status.md) supersedes the initial
+missing-toolchain/build observations below.
 
 - Pinned Atuin source is available at `/tmp/atuin-src`, exact HEAD
   `4ca8b77c8a526b8c294eb864a2b74c95c685c983` (verified).

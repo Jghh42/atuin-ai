@@ -1,0 +1,99 @@
+name: Pinned compatibility validation
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  go-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: false
+      - run: make check
+      - run: make build
+  pinned-compatibility:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      ATUIN_COMPAT_RUN_LABEL: atuin-phase8-ci-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: false
+      - name: Bounded signed-OS build prerequisites (ephemeral hosted runner only)
+        timeout-minutes: 8
+        run: |
+          set -euo pipefail
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          sudo -n timeout 180 apt-get -o Acquire::Retries=0 update
+          sudo -n timeout 240 apt-get -o Acquire::Retries=0 -o DPkg::Lock::Timeout=30 install -y --no-install-recommends build-essential meson ninja-build pkg-config libcap-dev libssl-dev apparmor
+          dpkg-query -W build-essential gcc meson ninja-build pkg-config libcap-dev libcap2 libssl-dev apparmor > "$RUNNER_TEMP/bwrap-dependencies.txt"
+      - name: Checksum-pinned official Bubblewrap into private prefix (never setuid)
+        timeout-minutes: 8
+        run: |
+          PATH=/usr/bin:/bin python3 -B tests/build-bwrap.py "$RUNNER_TEMP/bwrap-build"
+          echo "ATUIN_TEST_BWRAP_MANIFEST=$RUNNER_TEMP/bwrap-build/manifest.json" >> "$GITHUB_ENV"
+      - name: Exact-path job-only AppArmor userns permission when restricted
+        run: python3 -B tests/ci_bwrap_profile.py install
+      - name: Required usable filesystem/PID namespace probe and regressions
+        run: |
+          python3 -B tests/build-bwrap.py probe "$ATUIN_TEST_BWRAP_MANIFEST"
+          python3 -B -I tests/harness_test.py
+      - name: Verify exact source checkouts (no production/account secrets)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none --no-checkout https://github.com/atuinsh/atuin.git "$RUNNER_TEMP/atuin"
+          git -C "$RUNNER_TEMP/atuin" checkout --detach 4ca8b77c8a526b8c294eb864a2b74c95c685c983
+          git clone --filter=blob:none --no-checkout https://github.com/atuinsh/atuin-ai-server.git "$RUNNER_TEMP/reference"
+          git -C "$RUNNER_TEMP/reference" checkout --detach 4d582bc5ceea5b5edfdcf3abb49dc850400cda7c
+      - name: Fresh default-feature Atuin build (bounded jobs/time)
+        run: python3 tests/e2e/build-atuin.py "$RUNNER_TEMP/atuin" "$RUNNER_TEMP/cli-build"
+      - name: Actual pinned CLI gate (not skip)
+        run: ATUIN_E2E_MANIFEST="$RUNNER_TEMP/cli-build/manifest.json" make e2e
+      - name: Fresh original pinned reference/core oracle
+        run: python3 tests/differential/build-oracle.py "$RUNNER_TEMP/reference" "$RUNNER_TEMP/oracle-build"
+      - name: Differential gate (internal bridge, no publications)
+        run: ATUIN_ORACLE_MANIFEST="$RUNNER_TEMP/oracle-build/manifest.json" make differential
+      - name: Always remove ONLY this run's labeled containers/networks
+        if: always()
+        run: |
+          mkdir -m 700 -p "$RUNNER_TEMP/cleanup-home" "$RUNNER_TEMP/cleanup-docker"
+          HOME="$RUNNER_TEMP/cleanup-home" DOCKER_CONFIG="$RUNNER_TEMP/cleanup-docker" python3 -I tests/differential/docker_watchdog.py cleanup "$ATUIN_COMPAT_RUN_LABEL"
+      - name: Always unload ONLY this job's exact-path AppArmor profile
+        if: always()
+        run: python3 -B tests/ci_bwrap_profile.py remove
+      - name: Preserve synthetic build provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compatibility-build-provenance
+          path: |
+            ${{ runner.temp }}/cli-build/manifest.json
+            ${{ runner.temp }}/oracle-build/manifest.json
+            ${{ runner.temp }}/bwrap-build/manifest.json
+            ${{ runner.temp }}/bwrap-dependencies.txt
+            ${{ runner.temp }}/atuin_phase8_bwrap_*.json
+            ${{ runner.temp }}/atuin_phase8_bwrap_*.profile
+          if-no-files-found: warn
+  validation:
+    name: Phase8 validation aggregate
+    if: always()
+    needs: [go-check, pinned-compatibility]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every required job must actually succeed
+        run: |
+          test '${{ needs.go-check.result }}' = success
+          test '${{ needs.pinned-compatibility.result }}' = success

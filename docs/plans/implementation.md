@@ -674,6 +674,19 @@ must not be recorded as successful SIWC authorization, inference, or refresh.
 
 ### Phase 8 — real CLI and differential compatibility
 
+Implemented as a synthetic-only source-pinned local checkpoint. Initial review
+was NOT CLEARED: HOME/XDG-only ancestors, cache/overlay proofs and assertions/
+cleanup/CI required fixes. Fresh builds, filesystem/PID confinement and tightened
+semantic/session/policy gates and hosted-CI prerequisite setup subsequently
+CLEARED all independent re-reviews. Independent current-artifact verification
+passed 20 CLI / 14 oracle cases, CLI race x2 (40 cases), oracle race x2 (28 cases)
+and unfiltered integration race x2; integration race x10 also passed. Actual
+exact-HEAD CI remains a separate delivery gate. The actual default-feature Atuin build and
+original source/core oracle have run, including all seven tools with an isolated
+daemon. [Phase 8 evidence, commands and retained failures](phase8-status.md).
+Production live/catalog and Phase 9 gates remain NOT PASSED; the checklist
+below is not an authorization to use real credentials or infer release readiness.
+
 Build an unmodified Atuin binary from the pinned revision and test it with:
 
 - isolated `HOME`/XDG paths;

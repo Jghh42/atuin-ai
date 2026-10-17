@@ -148,3 +148,46 @@ binary. Run longer fuzzing by selecting `FuzzDecode` in `./internal/atuin`,
 `go test ./internal/tools -run='^$' -fuzz=FuzzValidateBatch -fuzztime=1m -parallel=2`.
 The nightly workflow runs each target for two minutes. No live OAuth checks
 are run in CI.
+
+## Synthetic pinned-CLI and differential gates (Phase 8)
+
+These local artifact-gated checks use synthetic accounts/backends. Initial
+HOME/XDG-only runs were not ancestor-isolation evidence; see the review record.
+Corrected runs require Bubblewrap 0.11.1 with usable unprivileged Linux
+user/PID/mount namespaces; missing/restricted prerequisites FAIL, not skip:
+
+```sh
+python3 tests/e2e/build-atuin.py /path/to/pinned-atuin /scratch/atuin-build
+python3 tests/differential/build-oracle.py /path/to/pinned-server /scratch/oracle
+ATUIN_E2E_MANIFEST=/scratch/atuin-build/manifest.json \
+ATUIN_ORACLE_MANIFEST=/scratch/oracle/manifest.json make compatibility
+```
+
+Use dedicated writable scratch outside the upstream source trees. Provisioning
+requires network and Linux amd64 build tooling; the test runs themselves use
+synthetic credentials/backends and isolated HOME/XDG/database/sandbox paths.
+Python stdlib supplies the actual PTY INSIDE a Bubblewrap filesystem/PID
+boundary. Host HOME, /tmp and ancestor context/project/skill files are not
+mounted; fixture metadata rejects symlinks/unapproved context before each
+launch. Build scripts use fresh complete source/toolchain/Cargo/target inputs,
+verify official cached archive checksums on every use and invalidate stale
+manifests; local consistency is not independent producer attestation.
+Default Atuin features/AI are preserved;
+no source patches or private stores are imported. Docker is an oracle-only test
+prerequisite; the Go deployment still has no container or new backend/bind knob.
+The oracle/fake CC service use an internal bridge with **no published ports**.
+
+`make e2e` and `make differential` run the gates separately and fail without
+artifact manifests. Ordinary `go test -v ./tests/...` prints explicit BLOCKED
+skips without them; neither a skip nor Go-only CI clears these gates. A separate
+PR/push/manual compatibility workflow runs both without live account secrets;
+its `Phase8 validation aggregate` depends on Go and actual compatibility jobs,
+rejecting failures, cancellations and skips. Administrators must require that
+check in branch/release policy; this repository change does not modify GitHub
+branch protection. CI has not run on these changes and runner namespace/tool
+availability is not inferred. Owned-label watchdog and workflow-always cleanup
+remove only the exact run's containers/networks, never global prune.
+Keep the manifests/binary/source-built image for independent reproduction, not
+as production credentials or packaging. [Full evidence, known differences,
+retained initial failures and cleanup policy](plans/phase8-status.md).
+Production live/catalog and Phase 9 resource/release blockers remain in force.

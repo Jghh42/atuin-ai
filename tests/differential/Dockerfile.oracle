@@ -1,0 +1,42 @@
+# ORACLE ONLY. Derived from the pinned reference Dockerfile (Apache-2.0).
+# Application sources and dependency lockfiles are copied without modification.
+FROM hexpm/elixir:1.18.3-erlang-27.3.4.13-debian-bullseye-20260610-slim@sha256:6ad4d47ccde7f947adf598ef57acec9381df7fb4d73f996a0442f49be6615590 AS builder
+ENV ERL_FLAGS="+S 2:2 +A 2" MIX_ENV=prod
+# Historical signed Debian snapshot avoids mutable/EOL security-pool 404s.
+RUN printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/20260610T000000Z bullseye main\ndeb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/20260610T000000Z bullseye-security main\n' > /etc/apt/sources.list \
+ && apt-get update -y && apt-get install -y --no-install-recommends build-essential git curl ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN curl -fsSL --max-time 120 https://github.com/gleam-lang/gleam/releases/download/v1.16.0/gleam-v1.16.0-x86_64-unknown-linux-musl.tar.gz -o /tmp/gleam.tar.gz \
+ && echo '1ca1183719a32c2cfb15a845ff6192bd2cb4eaf4d8913bfad9662349f8d9a7ff  /tmp/gleam.tar.gz' | sha256sum -c - \
+ && tar -xzf /tmp/gleam.tar.gz -C /usr/local/bin gleam && rm /tmp/gleam.tar.gz
+# Checksums from official repo.hex.pm/installs/{hex,rebar3}-1.x.csv.
+RUN curl -fsSL --max-time 120 https://repo.hex.pm/installs/1.16.0/hex-2.5.3.ez -o /tmp/hex.ez \
+ && echo 'bbaa68a4e2321eb1f930854ee8a4c5d4058e6bf4e1c9f4cc54083a456a325e36319fac423e93528ccc23341db0e86e9c3102c3ec6b78e7d6251805b5203c9033  /tmp/hex.ez' | sha512sum -c - \
+ && mix archive.install /tmp/hex.ez --force && rm /tmp/hex.ez \
+ && mix local.rebar rebar3 https://repo.hex.pm/installs/1.15.0-rc.0/rebar3-3.22.0 \
+    --sha512 7e000ef1ba7f827e6dbae120aa3a19cf25d277d00fc280a142ff19e9b11f378423122cba475a2b6735ffbf80d011e9b5dbccb720afb0dc07c5ad5cd5d20cdb8b --force
+WORKDIR /app
+COPY mix.exs mix.lock ./
+RUN sha256sum mix.exs mix.lock > /tmp/pinned-mix-hashes \
+ && mix deps.get --only prod \
+ && test "$(git -C deps/atuin_ai_core rev-parse HEAD)" = 565877e97ed3ff4840481b8d47e12eb2f9854039
+COPY config config
+RUN mix deps.compile
+COPY lib lib
+RUN find lib config -type f -exec sha256sum '{}' + > /tmp/source-hashes \
+ && mix compile && mix release \
+ && sha256sum -c /tmp/source-hashes && sha256sum -c /tmp/pinned-mix-hashes \
+ && test -z "$(git -C deps/atuin_ai_core status --porcelain)" \
+ && test "$(git -C deps/atuin_ai_core rev-parse HEAD)" = 565877e97ed3ff4840481b8d47e12eb2f9854039
+FROM debian:bullseye-20260610-slim@sha256:a975c02d3f80b0ee78991b9191209709efb6f641c0d9bebe18c443a4d3de32c9
+RUN printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/20260610T000000Z bullseye main\ndeb [check-valid-until=no] http://snapshot.debian.org/archive/debian-security/20260610T000000Z bullseye-security main\n' > /etc/apt/sources.list \
+ && apt-get update -y && apt-get install -y --no-install-recommends libstdc++6 openssl libncurses5 locales ca-certificates && rm -rf /var/lib/apt/lists/* \
+ && sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
+ENV LANG=en_US.UTF-8 LANGUAGE=en_US:en LC_ALL=en_US.UTF-8 ERL_FLAGS="+S 2:2 +A 2" CHAT_CONFIG=/etc/atuin-ai/config.toml
+WORKDIR /app
+RUN chown nobody /app
+USER nobody
+COPY --from=builder --chown=nobody:root /app/_build/prod/rel/atuin_ai_server ./
+LABEL org.opencontainers.image.revision=4d582bc5ceea5b5edfdcf3abb49dc850400cda7c \
+      ai.atuin.core.revision=565877e97ed3ff4840481b8d47e12eb2f9854039 \
+      ai.atuin.purpose=compatibility-oracle-only
+CMD ["/app/bin/atuin_ai_server", "start"]

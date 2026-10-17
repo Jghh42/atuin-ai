@@ -79,5 +79,17 @@ PATENTS are retained as LICENSES/Go-x-sys-BSD.txt and Go-x-sys-PATENTS.txt;
 include them with redistributed binaries. Integrity/provenance:
 docs/provenance/dependencies.md.
 
+Phase 8 independently recreates synthetic compatibility fixtures and PTY
+workflows from the same pinned MIT Atuin client and Apache-2.0 server/core.
+The oracle-only tests/differential/Dockerfile.oracle is adapted from the pinned
+reference-server Dockerfile: immutable tooling/checksums, historical signed
+Debian snapshot, bounded Erlang threads and source verification were added;
+application sources are unchanged. Per-case source paths and intentional
+policy differences: testdata/compat/phase8-manifest.json. External Python stdlib,
+Bubblewrap 0.11.1 (LGPL-2.0-or-later; Alexander Larsson, Simon McVittie,
+Collabora Ltd.), Rust/Elixir/Erlang/Gleam/Docker/base images are test/build
+tooling, not linked or vendored server dependencies; docs/provenance/phase8-tooling.md records their
+pins, terms and artifacts. No new Go runtime/test dependency was added.
+
 The user explicitly approved Apache-2.0 for project-owned material; see
 docs/decisions/0003-project-license-proposal.md.

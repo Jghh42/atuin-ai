@@ -19,8 +19,14 @@ with ChatGPT (SIWC) and public Responses inference are deferred for later.
 > Fresh production login/live lifecycle and the live eligible-catalog gate are
 > **NOT PASSED**. Historical discovery omitted the only replay-proven model;
 > no model eligibility is expanded. Missing login or eligible discovery returns
-> safe 503, never a fabricated model. Phases 8–9 remain unimplemented.
-> See [Phase 7](docs/plans/phase7-status.md) and
+> safe 503, never a fabricated model. Phase 8 adds source-pinned real-CLI PTY
+> and reference-oracle suites using **synthetic accounts/backends only**;
+> final independent reviews **CLEARED** confinement, build integrity,
+> semantic/session/policy/normalization assertions and hosted-CI setup. Independent
+> current-artifact CLI/oracle and repeated race gates passed. Historical
+> unconfined passes are not isolation proof. Exact-HEAD CI is a separate delivery
+> gate; Phase 9 remains unimplemented.
+> See [Phase 8](docs/plans/phase8-status.md), [Phase 7](docs/plans/phase7-status.md) and
 > [progress / remaining gates](docs/plans/autonomous-progress.md).
 
 ## Goals
@@ -109,6 +115,18 @@ limits, shutdown, private state and the single-process credential lifecycle.
 [Authentication](docs/authentication.md) records the security boundary and
 unpassed, opt-in live validation steps. The
 remaining phased work is in the [implementation plan](docs/plans/implementation.md).
+
+Real-CLI and differential tests are separate local artifact-gated checks:
+default checks explicitly skip them without fresh build manifests; a skip is
+**not** a gate pass. `make compatibility` fails without prerequisites, including
+Bubblewrap 0.11.1 with usable Linux user/PID/mount namespaces. Secret-free
+PR/push/manual CI runs actual compatibility and exposes a failure-propagating
+`Phase8 validation aggregate` check (admin branch rules must require it).
+CI now builds checksum-pinned Bubblewrap into an owned prefix and probes the
+actual namespace operations; its exact-path hosted-job AppArmor setup is code-review cleared but still needs
+actual hosted CI execution at this delivery snapshot. No developer-host policy change is performed. See the [Phase 8 commands,
+source/toolchain pins and isolated fake-only setup](docs/plans/phase8-status.md).
+No production/live or resource gate is cleared by these synthetic tests.
 
 OAuth credentials, API keys, local configuration, and runtime state must never
 be committed to this repository.
