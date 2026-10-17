@@ -165,23 +165,29 @@ func (s *UserService) Stop(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if state == stateAbsent {
-		return nil
+	if state == stateAbsent || (state == stateInactive && s.opts.OS == "linux") {
+		return s.confirmStopped(state)
 	}
-	if state == stateInactive && s.opts.OS == "linux" {
-		return nil
-	}
-	if s.mutate(ctx, "stop") != nil {
-		return ErrService
+	if err := s.mutate(ctx, "stop"); err != nil {
+		return err
 	}
 	state, err = s.observed(ctx)
-	if err != nil || state == stateRunning {
-		return ErrService
+	if err != nil {
+		return err
+	}
+	return s.confirmStopped(state)
+}
+
+// Every successful Stop path needs both supervisor shutdown and known-PID
+// shutdown proof. A nonrunning launchd job is still registered and may spawn.
+func (s *UserService) confirmStopped(state serviceState) error {
+	if state != stateAbsent && !(s.opts.OS == "linux" && state == stateInactive) {
+		return serviceCause(categoryState, ErrService)
 	}
 	if s.lastPID > 0 {
 		gone, e := s.processGone(s.lastPID)
 		if e != nil || !gone {
-			return ErrService
+			return serviceCause(categoryState, ErrService)
 		}
 	}
 	return nil
@@ -222,7 +228,10 @@ func (s *UserService) waitActive(ctx context.Context) error {
 	defer cancel()
 	for i := 0; i < 50; i++ {
 		if deadline.Err() != nil {
-			return ErrService
+			if ctx.Err() != nil {
+				return serviceCause(categoryCanceled, ErrCanceled)
+			}
+			return serviceCause(categoryActivationTimeout, ErrService)
 		}
 		state, err := s.observed(deadline)
 		if err != nil {
@@ -232,10 +241,13 @@ func (s *UserService) waitActive(ctx context.Context) error {
 			return nil
 		}
 		if s.wait(deadline, 100*time.Millisecond) != nil {
-			return ErrService
+			if ctx.Err() != nil {
+				return serviceCause(categoryCanceled, ErrCanceled)
+			}
+			return serviceCause(categoryActivationTimeout, ErrService)
 		}
 	}
-	return ErrService
+	return serviceCause(categoryActivationTimeout, ErrService)
 }
 func serverBinary(data []byte) bool {
 	info, err := buildinfo.Read(bytes.NewReader(data))
@@ -243,22 +255,38 @@ func serverBinary(data []byte) bool {
 }
 
 func (s *UserService) Install(ctx context.Context) (result error) {
+	stage := stagePreflight
+	defer func() {
+		if result != nil {
+			result = serviceAt(stage, result)
+		}
+	}()
 	unit, err := s.recognized()
 	if err != nil {
-		return err
+		return serviceCause(categoryUnsafeInput, err)
 	}
+	stage = stageSource
 	source, err := s.opts.Files.Read(s.opts.Source, maxFileBytes)
-	if err != nil || !source.Exists || source.Mode&0111 == 0 || !s.identify(source.Data) {
-		return ErrService
+	if err != nil || !source.Exists || source.Mode&0111 == 0 {
+		return serviceCause(categoryUnsafeInput, err)
 	}
+	if !s.identify(source.Data) {
+		return serviceCause(categoryIdentity, ErrService)
+	}
+	stage = stageBinary
 	binary, err := s.opts.Files.Read(s.binary, maxFileBytes)
-	if err != nil || (binary.Exists && (binary.Mode&0111 == 0 || (!bytes.Equal(binary.Data, source.Data) && !s.identify(binary.Data)))) {
-		return ErrService
+	if err != nil || (binary.Exists && binary.Mode&0111 == 0) {
+		return serviceCause(categoryUnsafeInput, err)
 	}
+	if binary.Exists && !bytes.Equal(binary.Data, source.Data) && !s.identify(binary.Data) {
+		return serviceCause(categoryIdentity, ErrService)
+	}
+	stage = stageConfig
 	cfg, err := s.opts.Files.Read(s.opts.ConfigPath, MaxAtuinBytes)
 	if err != nil || !same(cfg, s.opts.Config) {
-		return ErrService
+		return serviceCause(categoryChanged, err)
 	}
+	stage = stageInspect
 	prior, err := s.inspect(ctx, unit.Exists)
 	if err != nil {
 		return err
@@ -289,16 +317,26 @@ func (s *UserService) Install(ctx context.Context) (result error) {
 		cleanup, cancel := context.WithTimeout(context.Background(), supervisorTimeout)
 		defer cancel()
 		failed := false
+		retainInputs := false
 		// An attempted bootstrap/start does NOT confer ownership. Reinspect before
 		// bootout/stop/disable; unknown or foreign registration is never touched.
 		if startAttempted || enableAttempted {
 			state, e := s.observed(cleanup)
 			if e != nil {
 				failed = true
+				retainInputs = startAttempted
 			} else {
+				if startAttempted && state == stateAbsent && s.lastPID > 0 {
+					gone, e := s.processGone(s.lastPID)
+					if e != nil || !gone {
+						failed = true
+						retainInputs = true
+					}
+				}
 				if startAttempted && (state == stateRunning || (s.opts.OS == "darwin" && state == stateInactive)) {
 					if s.Stop(cleanup) != nil {
 						failed = true
+						retainInputs = true
 					}
 				}
 				if enableAttempted && !wasEnabled {
@@ -308,10 +346,16 @@ func (s *UserService) Install(ctx context.Context) (result error) {
 				}
 			}
 		}
-		for i := len(changes) - 1; i >= 0; i-- {
-			c := changes[i]
-			if rollbackWrite(s.opts.Files, c.path, c.before, c.write) != nil {
-				failed = true
+		// Never pull inputs out from under a possibly registered/running job.
+		// Retention performs no writes, including to externally replaced files.
+		if retainInputs {
+			result = errors.Join(result, errServiceInputsRetained)
+		} else {
+			for i := len(changes) - 1; i >= 0; i-- {
+				c := changes[i]
+				if rollbackWrite(s.opts.Files, c.path, c.before, c.write) != nil {
+					failed = true
+				}
 			}
 		}
 		if s.opts.OS == "linux" && reloadAttempted {
@@ -325,16 +369,17 @@ func (s *UserService) Install(ctx context.Context) (result error) {
 			}
 		}
 		if failed {
-			result = errors.Join(result, ErrRollback)
+			result = errors.Join(result, serviceAt(stageRollback, serviceCause(categoryRollback, ErrRollback)))
 		}
 	}()
 	// The defer already owns reconciliation BEFORE a potentially applied Stop.
 	if wasActivated {
-		if s.Stop(ctx) != nil {
+		stage = stageStop
+		if err := s.Stop(ctx); err != nil {
 			if ctx.Err() != nil {
-				return ErrCanceled
+				return serviceCause(categoryCanceled, ErrCanceled)
 			}
-			return ErrService
+			return err
 		}
 	}
 	replace := func(path string, old Snapshot, data []byte, mode os.FileMode) error {
@@ -350,20 +395,24 @@ func (s *UserService) Install(ctx context.Context) (result error) {
 		}
 		return e
 	}
+	stage = stageSourceRecheck
 	sourceNow, err := s.opts.Files.Read(s.opts.Source, maxFileBytes)
 	if err != nil || !same(source, sourceNow) {
-		return ErrService
+		return serviceCause(categoryChanged, err)
 	}
+	stage = stageWriteBinary
 	if err = replace(s.binary, binary, source.Data, 0755); err != nil {
-		return errors.Join(ErrService, err)
+		return serviceCause(categoryWrite, err)
 	}
 	if !cfg.Exists {
+		stage = stageWriteConfig
 		if err = replace(s.opts.ConfigPath, cfg, []byte(fmt.Sprintf("port = %d\n", s.opts.Port)), 0600); err != nil {
-			return errors.Join(ErrService, err)
+			return serviceCause(categoryWrite, err)
 		}
 	}
+	stage = stageWriteUnit
 	if err = replace(s.unit, unit, s.content, 0600); err != nil {
-		return errors.Join(ErrService, err)
+		return serviceCause(categoryWrite, err)
 	}
 	expected := func(path string, old Snapshot) Snapshot {
 		for i := len(changes) - 1; i >= 0; i-- {
@@ -373,13 +422,14 @@ func (s *UserService) Install(ctx context.Context) (result error) {
 		}
 		return old
 	}
+	stage = stageVerifyWrites
 	for _, input := range []struct {
 		path string
 		old  Snapshot
 	}{{s.binary, binary}, {s.unit, unit}, {s.opts.ConfigPath, cfg}} {
 		current, e := s.opts.Files.Read(input.path, maxFileBytes)
 		if e != nil || !same(current, expected(input.path, input.old)) {
-			return ErrService
+			return serviceCause(categoryChanged, e)
 		}
 	}
 	if ctx.Err() != nil {
@@ -400,12 +450,14 @@ func (s *UserService) Install(ctx context.Context) (result error) {
 			return ErrService
 		}
 	}
+	stage = stageBootstrap
 	startAttempted = true
-	if s.mutate(ctx, "start") != nil {
+	if err := s.mutate(ctx, "start"); err != nil {
 		if ctx.Err() != nil {
-			return ErrCanceled
+			return serviceCause(categoryCanceled, ErrCanceled)
 		}
-		return ErrService
+		return err
 	}
+	stage = stageActivation
 	return s.waitActive(ctx)
 }

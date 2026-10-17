@@ -10,6 +10,20 @@ import (
 	"github.com/Jghh42/atuin-ai/internal/setup"
 )
 
+func TestInitExecutableSpellingOnly(t *testing.T) {
+	for _, path := range []string{"/Users/synthetic//server", "/Users//synthetic/./server", "//Users/synthetic/server"} {
+		got, err := normalizeInitExecutable(path)
+		if err != nil || got != "/Users/synthetic/server" {
+			t.Fatal("native executable spelling was not normalized")
+		}
+	}
+	for _, path := range []string{"relative/server", "/Users/synthetic/../server", "/Users/synthetic/link/../server"} {
+		if _, err := normalizeInitExecutable(path); err == nil || strings.Contains(err.Error(), path) {
+			t.Fatal("unsafe executable traversal accepted or echoed")
+		}
+	}
+}
+
 func TestInitConfigurationRejectsUTF16BOMBeforeDecoder(t *testing.T) {
 	for _, prefix := range [][]byte{{0xff, 0xfe}, {0xfe, 0xff}} {
 		data := append(append([]byte(nil), prefix...), []byte("port=17391\n")...)

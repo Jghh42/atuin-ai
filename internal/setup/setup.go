@@ -175,6 +175,13 @@ func (w Wizard) Run(ctx context.Context) (result error) {
 	partial := false
 	if yes {
 		if installErr := w.Service.Install(ctx); installErr != nil {
+			var failure *serviceFailure
+			if errors.As(installErr, &failure) {
+				fmt.Fprintf(t, "Service failure: stage=%s category=%s.\n", failure.stage, failure.category)
+			}
+			if errors.Is(installErr, errServiceInputsRetained) {
+				fmt.Fprintln(t, "Journaled service inputs were not rolled back because registration or stop is unverified; do not start or remove files until investigated.")
+			}
 			if errors.Is(installErr, ErrRollback) {
 				safeRestore = false
 				fmt.Fprintln(t, "Service rollback/restoration failed; do not start until investigated manually.")

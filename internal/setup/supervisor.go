@@ -50,14 +50,14 @@ func (s *UserService) command(ctx context.Context, verb string) (CommandResult, 
 func (s *UserService) mutate(ctx context.Context, verb string) error {
 	r, err := s.command(ctx, verb)
 	if err != nil || !r.success() {
-		return ErrService
+		return commandFailure(r)
 	}
 	return nil
 }
 func (s *UserService) inspect(ctx context.Context, local bool) (serviceState, error) {
 	r, err := s.command(ctx, "inspect")
 	if !r.complete() {
-		return stateUnknown, ErrService
+		return stateUnknown, commandFailure(r)
 	}
 	if s.opts.OS == "darwin" {
 		return s.inspectLaunchd(r, err, local)
@@ -306,41 +306,50 @@ func (s *UserService) inspectLaunchd(r CommandResult, commandErr error, local bo
 		return stateAbsent, nil
 	}
 	if commandErr != nil || !r.success() {
-		return stateUnknown, ErrService
+		return stateUnknown, commandFailure(r)
 	}
 	fields, blocks, err := launchFields(r.Stdout, "gui/"+strconv.Itoa(s.opts.UID)+"/"+serviceLabel)
 	if err != nil {
-		return stateUnknown, err
+		return stateUnknown, serviceCause(categoryFormat, err)
 	}
 	if !local || fields["path"] != s.unit || fields["program"] != s.binary || !equalStrings(blocks["arguments"], s.arguments()) {
-		return stateForeign, ErrService
+		return stateForeign, serviceCause(categoryRegistration, ErrService)
 	}
 	env := []string{}
+	seen := map[string]bool{}
 	for _, line := range blocks["environment"] {
 		key, val, ok := strings.Cut(line, " => ")
-		if !ok {
-			return stateForeign, ErrService
+		if !ok || seen[key] {
+			return stateForeign, serviceCause(categoryEnvironment, ErrService)
 		}
+		seen[key] = true
 		if key == "XPC_SERVICE_NAME" && val == serviceLabel {
+			continue
+		}
+		// Native launchd adds this exact logging metadata even though our
+		// plist does not configure it. Only the observed value is accepted.
+		if key == "OSLogRateLimit" && val == "64" {
 			continue
 		}
 		env = append(env, key+"="+val)
 	}
 	if !s.environmentMatches(env) {
-		return stateForeign, ErrService
+		return stateForeign, serviceCause(categoryEnvironment, ErrService)
 	}
 	if fields["state"] == "running" {
 		pid, err := strconv.Atoi(fields["pid"])
 		if err != nil || pid <= 0 {
-			return stateForeign, ErrService
+			return stateForeign, serviceCause(categoryState, ErrService)
 		}
 		s.lastPID = pid
 		return stateRunning, nil
 	}
-	if (fields["state"] == "not running" || fields["state"] == "waiting") && (fields["pid"] == "" || fields["pid"] == "0") {
+	// This is an owned registration, not a live process. In particular,
+	// spawn scheduled must be polled within waitActive's existing budget.
+	if (fields["state"] == "not running" || fields["state"] == "waiting" || fields["state"] == "spawn scheduled") && (fields["pid"] == "" || fields["pid"] == "0") {
 		return stateInactive, nil
 	}
-	return stateUnknown, ErrService
+	return stateUnknown, serviceCause(categoryState, ErrService)
 }
 func launchFields(data []byte, target string) (map[string]string, map[string][]string, error) {
 	lines := strings.Split(strings.TrimSpace(string(data)), "\n")

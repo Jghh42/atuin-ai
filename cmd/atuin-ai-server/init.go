@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/BurntSushi/toml"
@@ -75,6 +76,10 @@ func runInit(ctx context.Context, args []string, deps commandDeps) error {
 	if e != nil {
 		return errors.New("cannot locate executable")
 	}
+	executable, e = normalizeInitExecutable(executable)
+	if e != nil {
+		return e
+	}
 	accountHome := ""
 	if account, err := user.LookupId(strconv.Itoa(os.Geteuid())); err == nil {
 		accountHome = account.HomeDir
@@ -110,6 +115,21 @@ func runInit(ctx context.Context, args []string, deps commandDeps) error {
 		Configure: func() error { return setup.ConfigureAtuin(files, target, cfg.Port) },
 	}
 	return wizard.Run(ctx)
+}
+
+// Normalize only the native executable's spelling, not arbitrary setup paths.
+// Reject .. before cleaning: collapsing it could change symlink traversal.
+// DiskFiles still enforces nofollow, ownership, inode and build identity checks.
+func normalizeInitExecutable(path string) (string, error) {
+	if !filepath.IsAbs(path) {
+		return "", errors.New("cannot use executable path for init")
+	}
+	for _, part := range strings.Split(path, string(filepath.Separator)) {
+		if part == ".." {
+			return "", errors.New("cannot use executable path for init")
+		}
+	}
+	return filepath.Clean(path), nil
 }
 
 func decodeInitConfiguration(snapshot setup.Snapshot) (config.Config, error) {

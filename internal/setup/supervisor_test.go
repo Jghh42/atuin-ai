@@ -112,8 +112,8 @@ func TestFailedBootstrapNeverBootsOutForeignOrUnknownRegistration(t *testing.T) 
 			if !e.active || !e.registered {
 				t.Fatal("foreign job stopped")
 			}
-			if m.files[s.unit].Exists {
-				t.Fatal("own failed installation file not rolled back")
+			if !errors.Is(err, errServiceInputsRetained) || !m.files[s.unit].Exists || !m.files[s.binary].Exists || !m.files[s.opts.ConfigPath].Exists {
+				t.Fatal("uncertain registration lost its journaled launch inputs")
 			}
 		})
 	}
