@@ -19,7 +19,11 @@
 The [production server](operations.md) now composes native OAuth, discovery and
 inference in the independently reviewed [Phase 7 code checkpoint](plans/phase7-status.md),
 cleared for authorized direct-main delivery. Fresh production login/live lifecycle and eligible discovery are
-**NOT PASSED**; phases 8–9 are unimplemented. An isolated SIWC probe exists but did
+**NOT PASSED**. [Phase 8 synthetic compatibility](plans/phase8-ci-receipt.md)
+is delivered with both exact-HEAD workflows green; [Phase 9a packaging](packaging.md)
+code/local gates are independently cleared for delivery (hosted exact-HEAD CI
+pending, no public release), native Mac validation pending,
+and Phase 9b resource work unimplemented. An isolated SIWC probe exists but did
 not complete authorization. The isolated Codex probe passed login, text/tool replay and refresh/restart;
 see [live evidence](proofs/codex-phase0.md) and
 [ADR 0004](decisions/0004-pi-style-codex-authentication.md).

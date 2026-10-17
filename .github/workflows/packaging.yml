@@ -1,0 +1,38 @@
+name: Packaging consistency (no publication)
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  packaging:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: false
+          cache: true
+      - name: Verify exact toolchain
+        run: |
+          toolchain="$(awk '$1 == "go" { print "go" $2; exit }' go.mod)"
+          test "$(GOTOOLCHAIN=local go env GOVERSION)" = "$toolchain"
+          printf 'GOTOOLCHAIN=%s\n' "$toolchain" >> "$GITHUB_ENV"
+      - name: Offline installer/source and real curl loopback TLS tests
+        run: make packaging-test
+      - name: Both targets, two different absolute build paths
+        run: |
+          sh scripts/package.sh --version "v0.0.0-dev.ci.${GITHUB_SHA}" --out "$GITHUB_WORKSPACE/dist/ci" --development
+      - name: Exact asset/legal/source inventories, 32 mutations and Linux binary
+        run: python3 -B -I tests/packaging_test.py --artifacts "$GITHUB_WORKSPACE/dist/ci"
+      - name: Upload development evidence only (not a release)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: development-packaging-${{ github.sha }}-${{ github.run_attempt }}
+          path: dist/ci/
+          if-no-files-found: error
+          retention-days: 14

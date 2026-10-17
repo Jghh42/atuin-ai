@@ -1,4 +1,8 @@
-# Local development server (reviewed Phase 7 code checkpoint)
+# Local server / Phase 9a packaging checkpoint
+
+[Binary packaging, installer policy, reproducibility and native Mac checklist](packaging.md).
+There is no public release/install endpoint yet. Packaging CI artifacts are
+DEVELOPMENT-only and release-blocked; cross-compilation is not native Mac proof.
 
 Requires Go **1.27.2** minimum. The exact `go.mod` patch is also the local
 Makefile and CI toolchain pin: Make exports `GOTOOLCHAIN=go1.27.2`, and CI verifies
@@ -18,6 +22,15 @@ curl http://127.0.0.1:17391/api/cli/models # 503 unless login AND eligible disco
 # Stop serve before auth status/login/logout in a separate process:
 ./bin/atuin-ai-server auth logout
 ```
+
+For identity without configuration, credentials, locks or network, run
+`./bin/atuin-ai-server version` (or `--version`). Only the packager injects
+reviewable source metadata; ordinary `make build` reports unidentified development.
+
+When manually creating configuration, use `umask 077`, create new directories
+0700 and files 0600. Do not chmod/rewrite existing files automatically. Phase 9a
+does NOT add config-loader permission enforcement; the credential store's existing
+strict checks remain unchanged. The installer never creates/edits either state.
 
 Configuration precedence: `serve --config PATH`, then `CHAT_CONFIG`, then
 `$XDG_CONFIG_HOME/atuin-ai/config.toml` (the platform's `os.UserConfigDir` on
@@ -139,6 +152,13 @@ uses HTTP/1 without connection pooling (six connections/host maximum), avoiding
 net/http raw unsolicited-idle-response/HTTP2 diagnostics; redirects are refused. Configuration failures
 are intentionally generic to avoid parser diagnostics exposing secret values.
 
+Packaging/installer tests within `make check` additionally require Python3.9+,
+OpenSSL and **curl >=8.4.0**. They use real curl only against an ephemeral-CA
+loopback fixture with an isolated synthetic HOME/rc/netrc, never provider or
+release endpoints. Installer/outer bootstrap commands use `curl -q` FIRST to
+ignore user rc settings, and old curl fails before any download because older
+max-filesize cannot bound unknown-length transfers. [Contract and rationale](packaging.md).
+
 Run `make check` for tests, race detector, vet, pinned staticcheck and
 vulnerability scanning plus five-second bounded fuzz smoke tests for the
 decoder, tool-batch validator, safety backstop and Responses SSE parser. `make build` creates the
@@ -187,8 +207,9 @@ check in branch/release policy; this repository change does not modify GitHub
 branch protection. First delivery CI demonstrated hosted namespace/tool and
 20-client success, but differential setup and aggregate failed; the focused
 Docker fix subsequently passed ALL compatibility jobs/cleanup/aggregate, but
-separate Go Checks failed the offline watchdog fixture. That focused fixture
-correction needs review/new CI ([receipt](plans/phase8-ci-receipt.md)). Owned-label watchdog and workflow-always cleanup
+separate Go Checks failed the offline watchdog fixture. The reviewed fixture-only
+correction then passed BOTH exact-HEAD workflows at `a50af9a`: 20 CLI / 14 oracle,
+namespace/AppArmor probe, cleanup/aggregate and Go make-check/build ([receipt](plans/phase8-ci-receipt.md)). Owned-label watchdog and workflow-always cleanup
 remove only the exact run's containers/networks, never global prune.
 Keep the manifests/binary/source-built image for independent reproduction, not
 as production credentials or packaging. [Full evidence, known differences,

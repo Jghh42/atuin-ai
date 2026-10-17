@@ -31,6 +31,14 @@ Its verbatim MIT license is retained at
 Copyright (c) 2019 Oliver Kuederle.
 SHA-256: `a59885f5f0f3b3c07cf9444db5fe399b6f0791eac82055f7b85cc65500551039`.
 Module integrity is pinned in `go.sum`; include the license with binaries.
+**The MIT text is not sufficient for its generated Unicode data.** All six
+Unicode15 table sources require the separately retained full historical Unicode
+data/software grant and table attribution. The actual Go1.27.2 shipping graph
+also selects Unicode17 stdlib/IDNA/bidi/normalization tables and requires its
+Unicode License V3 grant. Both complete grants and specific table attribution
+are bundled, independently pinned and checked; [immutable authoritative sources,
+applicability and hashes](unicode-data.md). Earlier 9a artifacts without them
+are superseded, despite the original tests passing.
 
 Phase 7 links [`golang.org/x/sys` v0.49.0](https://pkg.go.dev/golang.org/x/sys@v0.49.0)
 without modification for Linux/macOS descriptor-relative nofollow opens, metadata
@@ -70,5 +78,17 @@ version, app dependency graph or go.sum is widened by these `go run ...@version`
 commands. Toolchain selection/first failure evidence and validation are in the
 [sourced diagnosis](../plans/fuzz-toolchain-diagnosis.md). Go itself and its standard library carry
 their upstream BSD-style license in the installed toolchain's `LICENSE`.
+Phase 9a packaging includes the exact toolchain LICENSE/PATENTS, stdlib-vendor
+license/patent texts and notice-bearing comment blocks from selected stdlib
+Go/assembly/header files (including Sun fdlibm and Moshier/Cephes notices).
+The shipping graph is checked for both targets against exactly TOML v1.5.0,
+uniseg v0.4.7 and x/sys v0.49.0. Their retained license texts must equal the
+verified module cache files (`COPYING`, `LICENSE.txt`, and `LICENSE`/`PATENTS`
+respectively). JWT, development analyzers and external compatibility tooling
+are NOT shipping linkage. Root NOTICE's historical proof/tool references do not
+assert otherwise; JWT's proof-only license is not bundled.
+[Packaging/provenance contract](../packaging.md) and each generated manifest
+record complete legal/archive inventories and hashes; matching local hashes
+are not independent producer attestation.
 Project-owned material is licensed under Apache-2.0 as recorded in ADR 0003;
 this does not change dependency license terms.

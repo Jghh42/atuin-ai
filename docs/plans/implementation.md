@@ -723,6 +723,14 @@ or 400—must be replaced with an explicit project decision, not copied.
 
 ### Phase 9 — local binary and resource hardening
 
+Split checkpoint: **9a packaging/installer** code/local gates are independently
+CLEARED for authorized delivery; ALL exact-HEAD hosted CI remains PENDING
+([status](phase9a-status.md), [contract/native binary handoff](../packaging.md));
+**9b resource/load/leak/profiling** remains unimplemented. No public release,
+paid signing/notarization, Gatekeeper bypass, service packaging or config-loader
+permission enforcement is added by 9a. Native macOS and production live/catalog
+remain separate unpassed gates; packaging alone does not satisfy this phase exit.
+
 Ship:
 
 - a local Go executable for the developer's current OS/architecture;

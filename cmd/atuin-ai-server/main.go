@@ -23,7 +23,11 @@ import (
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if err := run(ctx, os.Args[1:], os.Stderr); err != nil {
+	out := io.Writer(os.Stderr)
+	if len(os.Args) == 2 && (os.Args[1] == "version" || os.Args[1] == "--version") {
+		out = os.Stdout
+	}
+	if err := run(ctx, os.Args[1:], out); err != nil {
 		// Configuration parsers and OS errors may include file contents or paths.
 		// Only deliberately generic errors reach logs.
 		slog.New(slog.NewJSONHandler(os.Stderr, nil)).Error("command failed", "reason", err.Error())
@@ -41,11 +45,17 @@ func run(ctx context.Context, args []string, stderr io.Writer) error {
 	return runWith(ctx, args, stderr, commandDeps{})
 }
 func runWith(ctx context.Context, args []string, stderr io.Writer, deps commandDeps) error {
+	if len(args) > 0 && (args[0] == "version" || args[0] == "--version") {
+		if len(args) != 1 {
+			return errors.New("version takes no arguments")
+		}
+		return printVersion(stderr)
+	}
 	if len(args) > 0 && args[0] == "auth" {
 		return runAuth(ctx, args[1:], stderr, deps)
 	}
 	if len(args) == 0 || args[0] != "serve" {
-		return errors.New("usage: atuin-ai-server serve [--config PATH] | auth login|status|logout")
+		return errors.New("usage: atuin-ai-server serve [--config PATH] | auth login|status|logout | version | --version")
 	}
 	flags := flag.NewFlagSet("serve", flag.ContinueOnError)
 	// Do not echo arbitrary command line values into logs.

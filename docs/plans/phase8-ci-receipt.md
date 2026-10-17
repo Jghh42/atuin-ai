@@ -1,5 +1,19 @@
 # Phase 8 CI receipts / focused test-harness fixes
 
+## Final corrected exact-HEAD delivery — BOTH GREEN
+
+Coordinator verified reviewed fixture correction at
+`a50af9a16ca08e9898077ad52a0b2551d5fa0a56` on clean main:
+
+- [Pinned compatibility 38999649689](https://github.com/Jghh42/atuin-ai/actions/runs/38999649689): **SUCCESS**, including 20 actual CLI / 14 original oracle,
+  source-prefix Bubblewrap/AppArmor setup and real kernel namespace probe,
+  owned Docker/profile cleanup and validation aggregate.
+- [Go checks 38999649761](https://github.com/Jghh42/atuin-ai/actions/runs/38999649761): **SUCCESS**, make-check/build.
+
+This supersedes the historical pending/RED snapshots below, not their failure
+evidence. Phase 9a was explicitly authorized after this exact-HEAD checkpoint.
+No live production/catalog, native macOS or resource/release pass follows.
+
 ## Observed exact-HEAD attempt — FAILED, never rerun
 
 Commit `6d023fef9779b13a8eb8cd745efab1a92995480b`

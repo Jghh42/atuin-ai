@@ -32,6 +32,23 @@ paths or transitive dependencies. Apache license boilerplate is not a basis
 for inventing an upstream copyright holder. Preserve any actual file headers
 and applicable attribution when importing material.
 
+## Shipping binary inventory (Phase 9a)
+
+[Packaging contract and native handoff](../packaging.md) describe deterministic
+Linux amd64/macOS ARM64 assets, complete source snapshots, two-path same-target
+reproduction, exact Go/module/license verification and local-only provenance.
+Generated manifests contain source revision/tree/inventory, honest dirty/diff
+flags, build settings/toolchain hashes, actual linked package/module graphs,
+legal/member inventories and asset SHA256s. They are NOT independent attestation.
+[Unicode data attribution](unicode-data.md) separately retains version-correct
+full grants for uniseg Unicode15 and actual Go stdlib/vendor Unicode17 tables;
+MIT/Go BSD notices alone are insufficient. Source comparison rejects hidden
+index/sparse states and independently compares the full HEAD tree with bytes/
+normalized modes. Consumer verification fixes expected output/checksum/target/
+legal sets independently of manifest claims and exercises rehashed mutations.
+No release is published. Dirty development output remains RELEASE BLOCKED;
+production live/catalog, native macOS and Phase 9b gates remain separate.
+
 ## Required import process
 
 Before copying or adapting code, prompts, tool descriptions, tests or fixtures:

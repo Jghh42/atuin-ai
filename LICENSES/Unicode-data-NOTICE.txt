@@ -1,0 +1,41 @@
+Unicode data attribution for the shipping atuin-ai-server
+
+Uniseg v0.4.7 generated Unicode 15.0.0 tables (generated September 5, 2023):
+- graphemeproperties.go: ucd/auxiliary/GraphemeBreakProperty.txt and ucd/emoji/emoji-data.txt
+- wordproperties.go: ucd/auxiliary/WordBreakProperty.txt and ucd/emoji/emoji-data.txt
+- sentenceproperties.go: ucd/auxiliary/SentenceBreakProperty.txt and ucd/emoji/emoji-data.txt
+- lineproperties.go: ucd/LineBreak.txt and ucd/emoji/emoji-data.txt
+- eastasianwidth.go: ucd/EastAsianWidth.txt and ucd/emoji/emoji-data.txt
+- emojipresentation.go: ucd/emoji/emoji-data.txt
+Data base URL: https://www.unicode.org/Public/15.0.0/
+Original module source: github.com/rivo/uniseg v0.4.7, verified by go.sum.
+The source headers refer to https://www.unicode.org/license.html; this bundle
+retains the historical full data-file grant, not today's moving license page.
+Unicode 15.0.0 UCD ReadMe and GraphemeBreakProperty headers: © 2022 Unicode®, Inc.
+Applicable full grant: Unicode-15-data-license.txt (Copyright © 1991-2022 Unicode, Inc.).
+
+Go 1.27.2 runtime/stdlib selected Unicode 17.0.0 tables:
+- src/unicode/tables.go
+- src/vendor/golang.org/x/net/idna/tables17.0.0.go
+- src/vendor/golang.org/x/text/unicode/bidi/tables17.0.0.go
+- src/vendor/golang.org/x/text/unicode/norm/tables17.0.0.go
+The selected Go 1.27 build constraints use tables17.0.0.go, NOT the retained
+!go1.27 tables15.0.0.go alternatives in the same vendor directories.
+Data base URL: https://www.unicode.org/Public/17.0.0/
+Unicode 17.0.0 UCD ReadMe: © 2025 Unicode®, Inc.
+Applicable full grant: Unicode-17-data-license.txt (Unicode-3.0,
+Copyright © 2016-2025 Unicode, Inc.). Existing Go/vendor BSD grants also remain.
+
+Unicode and the Unicode Logo are registered trademarks of Unicode, Inc.
+in the U.S. and other countries.
+
+Authoritative full grant sources (only the complete Unicode section is retained;
+ICU's unrelated third-party notices/runtime are not imported or linked):
+Unicode 15: unicode-org/icu commit ff3514f257ea10afe7e710e9f946f68d256704b1,
+icu4c/LICENSE, the release-72-1 Unicode-15-era data/software grant.
+https://raw.githubusercontent.com/unicode-org/icu/ff3514f257ea10afe7e710e9f946f68d256704b1/icu4c/LICENSE
+Unicode 17: unicode-org/icu commit 049e0d6a420629ac7db77256987d083a563287b5,
+LICENSE, the release-78.1 Unicode-17-era Unicode License V3 grant.
+https://raw.githubusercontent.com/unicode-org/icu/049e0d6a420629ac7db77256987d083a563287b5/LICENSE
+Specific source hashes, exact section equality and UCD evidence are documented
+in docs/provenance/unicode-data.md in the source repository.

@@ -91,5 +91,22 @@ Collabora Ltd.), Rust/Elixir/Erlang/Gleam/Docker/base images are test/build
 tooling, not linked or vendored server dependencies; docs/provenance/phase8-tooling.md records their
 pins, terms and artifacts. No new Go runtime/test dependency was added.
 
+Phase 9a shipping binaries link only TOML, uniseg and x/sys in addition to
+Go runtime/stdlib. Packaging retains project and applicable protocol notices,
+linked module license grants, exact Go LICENSE/PATENTS, stdlib-vendor grants
+and notice-bearing comments from selected stdlib sources (including Sun
+Microsystems fdlibm and Stephen L. Moshier/Cephes notices). These are legal
+texts, not bundled proof programs or compatibility tooling. Unicode data has
+separate terms: uniseg v0.4.7's six generated Unicode 15.0.0 tables require the
+full Unicode data/software grant (Copyright 1991-2022 Unicode, Inc.); Go1.27.2
+selects Unicode 17.0.0 stdlib/IDNA/bidi/normalization tables, with the full
+Unicode License V3 grant (Copyright 2016-2025 Unicode, Inc.). Both grants and
+specific data/table attribution are retained as LICENSES/Unicode-15-data-license.txt,
+Unicode-17-data-license.txt and Unicode-data-NOTICE.txt; immutable authoritative
+sources/applicability are in docs/provenance/unicode-data.md. MIT/Go BSD grants
+are not substitutes for Unicode data permission. JWT above is a
+separate SIWC proof dependency, NOT shipping linkage. Generated manifests
+record exact legal inventories/hashes; docs/packaging.md records the scope.
+
 The user explicitly approved Apache-2.0 for project-owned material; see
 docs/decisions/0003-project-license-proposal.md.

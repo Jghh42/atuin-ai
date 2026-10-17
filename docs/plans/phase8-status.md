@@ -1,5 +1,13 @@
 # Phase 8 — pinned real CLI and differential compatibility
 
+**Final delivery update:** reviewed fixture correction delivered on clean main
+`a50af9a16ca08e9898077ad52a0b2551d5fa0a56`; BOTH exact-HEAD workflows GREEN:
+[compatibility 38999649689](https://github.com/Jghh42/atuin-ai/actions/runs/38999649689)
+(20 CLI/14 oracle, source-prefix/AppArmor/kernel probe, cleanup/aggregate) and
+[Go checks 38999649761](https://github.com/Jghh42/atuin-ai/actions/runs/38999649761).
+Coordinator authorized Phase 9a only. The historical RED/pending snapshots below
+are retained, not the current delivery state. [Receipt](phase8-ci-receipt.md).
+
 2026-10-17 delivery checkpoint: **ALL final independent reviews CLEARED**;
 current-artifact local compatibility and independent race verification PASSED.
 Initial delivery `6d023fe` was authorized and pushed. Its first exact-HEAD CI
