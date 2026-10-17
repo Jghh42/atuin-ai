@@ -1,4 +1,4 @@
-.PHONY: build test race vet lint vuln fuzz check fmt fmt-check toolchain e2e differential compatibility packaging-test package package-dev resource resource-test resource-isolation-test
+.PHONY: build test race vet lint vuln fuzz check fmt fmt-check toolchain e2e differential compatibility packaging-test package package-dev resource resource-release resource-test resource-isolation-test
 
 # go.mod is the single exact toolchain pin. Force that release even when the
 # launcher is newer; normal Go toolchain download is allowed when it is absent.
@@ -56,17 +56,17 @@ compatibility: e2e differential
 packaging-test:
 	python3 -B -I tests/packaging_test.py
 
-# Explicit hard resource gate: a fresh DEVELOPMENT package and usable network
-# namespace are mandatory. Missing prerequisites FAIL; full suite takes ~7 min.
+# Explicit hard resource gates: default DEVELOPMENT only; resource-release opts
+# into independently verified CLEAN TAGGED artifacts. Same namespace/budgets.
 resource-test:
 	python3 -B -I tests/resources/resource_test.py
 
 resource-isolation-test:
 	python3 -B -I tests/resources/namespace_test.py
 
-resource: toolchain resource-test resource-isolation-test
-	@test -n "$(ARTIFACTS)" -a -n "$(OUT)" || { echo 'BLOCKED: set ARTIFACTS to a verified DEVELOPMENT package and OUT to fresh evidence directory'; exit 1; }
-	python3 -B -I tests/resources/run.py --artifacts "$(ARTIFACTS)" --out "$(OUT)"
+resource resource-release: toolchain resource-test resource-isolation-test
+	@test -n "$(ARTIFACTS)" -a -n "$(OUT)" || { echo 'BLOCKED: set ARTIFACTS to the target-selected verified package and OUT to fresh evidence directory'; exit 1; }
+	python3 -B -I tests/resources/run.py $(if $(filter resource-release,$@),--release) --artifacts "$(ARTIFACTS)" --out "$(OUT)"
 
 package: toolchain
 	sh scripts/package.sh --version "$(VERSION)" --out "$(OUT)"

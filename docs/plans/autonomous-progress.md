@@ -1,6 +1,35 @@
 # Autonomous implementation progress
 
-## Native init DEVELOPMENT delivery — 2026-10-17
+## Current experimental v0.1.0 preparation
+
+The user explicitly authorized an initial experimental release and volunteered
+an attended post-release Linux laptop installer test. **v0.1.0 is planned, not
+published at this checkpoint**. The [frozen release handoff](release-v0.1.0.md)
+is authoritative for current authorization/gates; historical no-publication and
+Mac-pending statements below remain receipts for their earlier checkpoints.
+
+Baseline `e27e1897b4469bf3cc190e630199283af82c1825` has all FOUR exact-HEAD CI
+families green, including native macOS terminal regressions and complete offline
+resources. The user confirmed native macOS LaunchAgent service active, init
+complete, background activity enabled and Atuin's test reaching ready on
+`gpt-6.1-sol`. **Real Linux systemd-user execution is still untested.** Neither
+this report nor cross-compilation proves release-stamped bytes or broader
+production/both-model lifecycle readiness.
+
+This work prepares docs plus a separately authorized narrow offline resource
+harness correction. It performs no commit/push/main or public tag/draft/upload/
+publication, real credential/provider access or native service operation; only
+disposable synthetic private Git test-fixture tags are authorized. Root review and
+independent validation precede further action. New exact-HEAD all-four CI and
+fresh clean tagged two-target/two-path release artifacts remain required.
+**Blocker correction pending review:** `--release`/`make resource-release` now
+explicitly selects CLEAN TAGGED artifacts only after the complete independent
+consumer succeeds. Default mode still requires DEVELOPMENT exactly. Both modes
+record selection/verified mode in outer and confined evidence and retain the same
+closed eight-input namespace and workload. Full actual v0.1.0 release acceptance
+is still mandatory after final clean source/tag freeze; no artifact relabeling.
+
+## Native init DEVELOPMENT delivery — historical 2026-10-17 checkpoint
 
 All three reviews CLEARED (auth/FS402 unchanged behavior; final v258 servicee742).
 Independent full final acceptance PASSED exact258-file source

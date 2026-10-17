@@ -1,15 +1,18 @@
-# Native attended setup (`init`) — implementation checkpoint
+# Native attended setup (`init`)
 
 `atuin-ai-server init [--config PATH] [--atuin-config PATH]` is the canonical
-setup command. There is no `install` alias or service-management CLI. This is
-a reviewed DEVELOPMENT delivery checkpoint, **not** a public release or native
-LaunchAgent execution receipt. All three final review areas cleared and independent
-full acceptance passed sourcee742…; [exact receipts, earlier failures, live-proof
-boundaries and pending exact-delivery CI](plans/init-status.md). Documentation
-receipt changes create a new holistic delivery identity; earlier artifacts remain
-immutable and are never relabeled. Native LaunchAgent/user-systemd execution is
-still PENDING and requires the user's own explicit service/config/backup consent. [Exact v258 contract references and
-fixture boundaries](provenance/systemd-init.md).
+setup command. There is no `install` alias or service-management CLI. The initial
+experimental **v0.1.0 is planned, not yet published at this checkpoint**;
+[release readiness and evidence](plans/release-v0.1.0.md) supersede earlier blanket
+release prohibitions. The user confirmed native macOS LaunchAgent startup,
+completed init and Atuin use on e27. **Real Linux systemd-user setup is still
+untested**, offered for an attended post-release laptop test. Synthetic service
+tests and cross-builds are not native Linux evidence.
+
+Earlier [review/acceptance receipts and failures](plans/init-status.md) remain
+historical, immutable evidence, not the identity of new release artifacts.
+Every new native attempt requires fresh explicit service/config/backup consent.
+[Exact v258 contract references and fixture boundaries](provenance/systemd-init.md).
 
 ## What happens
 
@@ -117,7 +120,12 @@ separately. Executable paths containing ASCII quotes/backslashes refuse before
 mutation because systemd's loader rejects them even when quoted; config arguments
 may contain them, and spaces/percent/dollars are supported. [Source-backed
 contract](provenance/systemd-init.md). macOS requires exact
-registration/program/argv/context and a positive running PID. Only a completed,
+registration/program/argv/context and a positive running PID. Activation alone
+retries verified-owned `xpcproxy` with a canonical positive PID within the
+existing five-second window; starting is neither readiness nor stop authority.
+An unresolved conflicting observed PID latches uncertainty for that setup
+instance: later absence/exit does not clear it, rollback retains launch inputs,
+and automatic restoration is blocked. Only a completed,
 nontruncated target-specific not-found result proves launchd absence; generic
 errors, missing GUI, timeout and overflow are indeterminate. Failed bootstrap
 never authorizes bootout unless the current registration is reverified as ours. Missing systemd user manager, missing GUI domain or tools is a recoverable
@@ -236,9 +244,13 @@ exclusions above still apply. Init never prints
 config contents, tokens, diffs, provider bodies or account identifiers. On uncertain
 post-rename durability, inspect only your own private backup locally; do not share it.
 
-## Manual native Mac acceptance (NOT executed by the writer)
+## Native acceptance checklist (not an instruction to repeat live tests)
 
-Use the reviewed development artifact/hash and a terminal without recording.
+User-reported Mac success on e27 covers service active, init complete, background
+activity enabled and Atuin's test reaching ready on `gpt-6.1-sol`; it does not
+claim every checklist case below passed. Linux user-manager execution is pending.
+Any additional actual attempt needs fresh consent. Use the independently verified
+artifact/hash and a terminal without recording.
 No automatic login/provider gate is implied by these steps. Retain an existing
 application login; do not import Pi, proof or another application's credentials.
 
@@ -267,4 +279,7 @@ application login; do not import Pi, proof or another application's credentials.
    setup test. Linux service execution is a separate native user-manager test.
 
 Synthetic tests and CGO0 cross-builds are **not native LaunchAgent/systemd
-execution evidence**. Publication, tags and release authorization remain absent.
+execution evidence**. Initial experimental release authorization now exists;
+publication still requires the [separate frozen release gates](plans/release-v0.1.0.md).
+Do not weaken service ownership checks, retry unknown states or use sudo to make
+an unsupported Linux manager/GUI session appear successful.

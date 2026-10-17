@@ -7,12 +7,54 @@ import pathlib
 import sys
 import threading
 import unittest
+from unittest import mock
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0,str(HERE))
 from run import (NEAR, NAMESPACE_INPUTS, body_for, maximum_sample_interval_ms,
                  namespace_command, near_plan, retention_checks, source_snapshot, verify_snapshot)
 from tls_fixture import ContractError, Fixture, MODELS, RESPONSES, Plan, compact
+import run as resource_driver
+
+
+class ArtifactAcceptance(unittest.TestCase):
+    def test_inside_release_flag_refuses_before_execution(self):
+        with mock.patch.object(sys,'argv',['run.py','--inside','--release','--out','not-created']):
+            with mock.patch.object(resource_driver,'inside') as inside:
+                with self.assertRaisesRegex(AssertionError,'outer-only'):
+                    resource_driver.main()
+                inside.assert_not_called()
+
+    def verify(self, mode, release=False):
+        manifest = {'mode':mode}
+        with mock.patch('packaging_contract.verify', return_value=manifest) as consumer:
+            result = resource_driver.verify_resource_artifacts('artifacts', 'source', release=release)
+            consumer.assert_called_once_with('artifacts', 'source')
+            self.assertIs(result, manifest)
+
+    def test_verified_development_default(self):
+        self.verify('DEVELOPMENT; RELEASE BLOCKED')
+
+    def test_verified_release_requires_explicit_selection(self):
+        self.verify('CLEAN TAGGED; publication requires separate approval', release=True)
+
+    def test_wrong_or_unknown_modes_refuse_after_consumer(self):
+        for mode, release in [('CLEAN TAGGED; publication requires separate approval',False),
+                              ('DEVELOPMENT; RELEASE BLOCKED',True),
+                              ('unknown',False),('unknown',True)]:
+            with self.subTest(mode=mode,release=release):
+                with mock.patch('packaging_contract.verify', return_value={'mode':mode}) as consumer:
+                    with self.assertRaisesRegex(AssertionError,'resource evidence requires'):
+                        resource_driver.verify_resource_artifacts('artifacts','source',release=release)
+                    consumer.assert_called_once_with('artifacts','source')
+
+    def test_consumer_failure_precedes_any_mode_access(self):
+        for release in (False,True):
+            with self.subTest(release=release):
+                with mock.patch('packaging_contract.verify',side_effect=ValueError('consumer rejected')) as consumer:
+                    with self.assertRaisesRegex(ValueError,'consumer rejected'):
+                        resource_driver.verify_resource_artifacts('artifacts','source',release=release)
+                    consumer.assert_called_once_with('artifacts','source')
 
 
 class Workload(unittest.TestCase):

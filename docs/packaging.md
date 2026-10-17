@@ -1,15 +1,21 @@
-# Phase 9a: local packaging and installer (not a release)
+# Packaging and installer contract
 
-No public release or install URL is available. Packaging is a code checkpoint,
-not production live/catalog validation or Phase 9b resource clearance. Minimum
-assets are **linux/amd64 (GOAMD64=v1)** and **darwin/arm64**, both pure Go
-(`CGO_ENABLED=0`). macOS execution is pending the user's native test. Go's initial
-ARM64 ad-hoc signature is acceptable; no Developer ID/notarization, Gatekeeper
-bypass, sudo, or shell/profile edits are provided by packaging/installation.
+**v0.1.0 is planned, not published at this preparation checkpoint.** The user
+authorized an initial experimental release, subject to the [release handoff and
+remaining gates](plans/release-v0.1.0.md). Historical development receipts remain
+unchanged. The separately authorized offline resource-harness correction adds
+explicit release selection after independent verification; review and full
+acceptance on the eventual release bytes remain mandatory.
+Minimum assets are **linux/amd64 (GOAMD64=v1)** and **darwin/arm64**, both pure Go
+(`CGO_ENABLED=0`). Native macOS setup/Atuin use was user-confirmed on e27;
+**real Linux systemd-user execution is untested**. Go's initial ARM64 ad-hoc
+signature is not Developer ID signing/notarization. No Gatekeeper bypass, sudo,
+or shell/profile edits are provided by packaging/installation.
 The separate attended [`init`](init.md) command now offers explicitly optional
 user-service autostart and Atuin configuration after local authentication.
 Installer/bootstrap behavior remains noninteractive and never invokes init.
-Native LaunchAgent execution is still a manual review/acceptance gate.
+Native success does not establish byte identity with fresh version-stamped
+release builds or production maturity.
 
 ## Build / examine locally
 
@@ -106,7 +112,7 @@ is same-source integrity, not a signature or authenticated provenance statement.
 Trust in source/toolchain/host and normal HTTPS/GitHub remains required. Reusing a
 compromised same-UID producer/cache cannot be detected by matching its own output.
 
-## Installer behavior and future publication
+## Installer behavior
 
 Installer requirement: **curl 8.4.0 or newer**. The installer checks this before
 any download/scratch and fails actionably on older/unparseable versions, without
@@ -133,19 +139,67 @@ No operator HOME/rc/netrc, public release, account or provider is accessed. The
 original 27 stub tests did NOT establish these real-client properties; their
 "unsafe redirect" was only a fake failure and oversize checked completed files.
 
-After separate publication approval ONLY, the intended POSIX pattern is:
+### Pinned installer (after publication)
+
+**Do not run these planned download commands until the complete v0.1.0 release
+is public.** Check the [Releases page](https://github.com/Jghh42/atuin-ai/releases)
+first. Install trusted **curl 8.4.0+ before the outer bootstrap download**, not
+only before the installer's own downloads. No sudo or unverified `curl | sh`.
+The following POSIX example downloads a version-pinned installer and checksums
+into owned scratch, checks the installer hash, then runs it. Review `install.sh`
+before the final `sh` line if you have not already reviewed that release.
 
 ```sh
-# UNAVAILABLE UNTIL PUBLISHED — do not treat this as an existing endpoint:
-# Requires curl >=8.4.0; check `curl -q --version` before the bootstrap too.
-curl -q --proto '=https' --proto-redir '=https' --tlsv1.2 --fail --show-error --silent \
-  --location --max-redirs 3 --connect-timeout 15 --max-time 120 --max-filesize 65536 \
-  https://github.com/Jghh42/atuin-ai/releases/latest/download/install.sh | sh
-# A downloaded/reviewed installer can pin an explicit immutable version/path:
-sh ./install.sh --version vX.Y.Z --bin-dir "$HOME/.local/bin"
+(
+  set -eu
+  umask 077
+  curl -q --version | awk '
+    NR == 1 {
+      if ($1 != "curl" || $2 !~ /^[0-9]+[.][0-9]+[.][0-9]+$/) exit 1
+      split($2, v, ".")
+      if (!(v[1] > 8 || (v[1] == 8 && v[2] >= 4))) exit 1
+      ok = 1
+    }
+    END { if (!ok) exit 1 }
+  ' || { printf '%s\n' 'curl 8.4.0+ is required before downloading.' >&2; exit 1; }
+  work=$(mktemp -d)
+  trap 'rm -rf -- "$work"' 0
+  cd "$work"
+  base=https://github.com/Jghh42/atuin-ai/releases/download/v0.1.0
+  for name in install.sh SHA256SUMS; do
+    curl -q --proto '=https' --proto-redir '=https' --tlsv1.2 \
+      --fail --show-error --silent --location --max-redirs 3 \
+      --connect-timeout 15 --max-time 120 --max-filesize 65536 \
+      --output "$name" "$base/$name"
+  done
+  expected=$(awk '
+    $2 == "install.sh" { n++; h = $1; if (NF != 2) bad = 1 }
+    END {
+      if (bad || n != 1 || length(h) != 64 || h ~ /[^0-9a-f]/) exit 1
+      print h
+    }
+  ' SHA256SUMS)
+  if command -v sha256sum >/dev/null 2>&1; then
+    actual=$(sha256sum install.sh | awk '{print $1}')
+  elif command -v shasum >/dev/null 2>&1; then
+    actual=$(shasum -a 256 install.sh | awk '{print $1}')
+  else
+    printf '%s\n' 'A SHA-256 tool is required.' >&2; exit 1
+  fi
+  [ "$actual" = "$expected" ] || { printf '%s\n' 'Installer checksum mismatch.' >&2; exit 1; }
+  # Review the downloaded script before proceeding if needed.
+  sh ./install.sh --version v0.1.0 --bin-dir "$HOME/.local/bin"
+)
 ```
 
-Inspect the bootstrap before running if desired. A source template without an
+Both checksum and installer come from the same HTTPS release: this detects
+corruption/mismatched files, not an independently signed publisher identity.
+Check `"$HOME/.local/bin/atuin-ai-server" version` afterward. The installer checks
+binary/legal hashes itself; keep the installed
+`atuin-ai-server.licenses-v0.1.0.txt` beside the binary. Manual raw/archive users
+must likewise verify hashes and retain legal notices. No Go SDK is needed.
+
+ A source template without an
 embedded release requires an explicit safe version. A generated latest bootstrap
 contains ONE tag: every checksum, raw binary and legal download uses
 `releases/download/TAG/...`, never resolves latest again. An explicit `--version`
@@ -180,7 +234,7 @@ reviewed `atuin-ai-server init` workflow; it is never run by the installer. No a
 credentials, configuration, profiles, autostart, sudo, TLS weakening or Gatekeeper
 bypass is performed.
 
-### Immutable publication policy (not yet exercised)
+### Immutable publication policy
 
 Release mode (`make package VERSION=EXISTING_TAG OUT=NEW_DIR`) requires reviewed
 **CLEAN** source and a pre-existing exact-HEAD tag. Review cannot be established
@@ -196,12 +250,20 @@ replace release assets/checksums in place. Corrections need a NEW version/tag.
 `latest` may select a newer complete release; publish all versioned assets and
 matching checksums before moving the channel, and never relabel a development
 snapshot as clean. A release/version pin is integrity policy, not cryptographic
-publisher authentication. Native Mac, production login/catalog and Phase 9b
-resource gates still block public-release readiness.
+publisher authentication. The experimental release has [explicit bounded
+acceptance gates](plans/release-v0.1.0.md), including full resource acceptance on
+the actual release package. `make resource` remains DEVELOPMENT-only;
+`make resource-release` explicitly requires independently verified CLEAN TAGGED
+artifacts, with the same isolation, workload and cleanup gates. Broader
+production lifecycle/both-model claims remain outside this initial release.
 
-## Native macOS ARM64 handoff — binary only, after independent review
+## Native macOS ARM64 handoff — historical development checklist
 
-Use ONLY an independently reviewed development artifact and its exact archive
+The user subsequently confirmed native LaunchAgent/init and Atuin use on e27;
+[evidence and limits](plans/release-v0.1.0.md#evidence-and-limitations). The retained
+checklist below is not a claim that native Mac execution is still wholly pending.
+Any fresh live/native attempt needs fresh explicit consent. Use ONLY an independently
+reviewed development artifact and its exact archive
 SHA256/manifest supplied outside the source snapshot. Cross-compilation and
 ad-hoc signing are **not native execution proof**. The user volunteered native
 validation; no Go SDK is required (optional `go version -m` only).

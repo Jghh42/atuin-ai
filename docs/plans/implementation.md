@@ -1,11 +1,17 @@
 # Go rewrite implementation plan
 
-> **2026-10-17 policy correction:** [bundled native Sol/Luna catalog](bundled-catalog-policy.md)
+> **Current release boundary:** the user authorized an initial experimental
+> **v0.1.0**, planned/unpublished pending the [frozen handoff and gates](release-v0.1.0.md).
+> e27 has all four exact-HEAD CI passes and user-reported native Mac init/Atuin
+> success; real Linux systemd-user execution remains untested. Broader production
+> lifecycle/both-model claims are not implied. Older phase receipts/prohibitions
+> below describe their historical checkpoints, not a current publication ban.
+>
+> **Catalog policy:** [bundled native Sol/Luna](bundled-catalog-policy.md)
 > supersedes historical remote availability/replay gating and TTL plans below.
-> Earlier phase steps/results remain historical, not retroactive proof. Both-model
-> native proof, current Mac and production live gates still block release.
+> Earlier phase steps/results remain historical, not retroactive proof.
 
-## Native attended init follow-up (2026-10-17)
+## Native attended init follow-up (historical 2026-10-17 checkpoint)
 
 DEVELOPMENT delivery authorized after all three final reviews and independent
 full acceptance cleared exact258-file sourcee742 (checks/race20/CLI20/oracle14,
@@ -187,7 +193,8 @@ gates.
 - Pi/Codex credential-file import, cookie collection, or credential scraping
 - configurable/non-loopback listening and allowed-host policies
 - client-facing Bearer authentication, TLS, and reverse-proxy deployment
-- containers, Kubernetes, systemd, and multireplica coordination
+- containers, Kubernetes, privileged system services, and multireplica coordination
+  (optional attended per-user LaunchAgent/systemd setup is now implemented)
 - arbitrary server-side tools
 - `web_search` and `web_scrape`
 - MCP execution
@@ -257,8 +264,9 @@ workflow is application login, `serve`, then Atuin configured with
   fixed-report historical replay-proof semantics independently of membership.
 - Known metadata is not account entitlement. Inference remains native Go, one
   generation/request; authentication failures never retry, fall back to another
-  model or emit executable partial batches. Both-model/current Mac/production
-  live gates remain release blockers.
+  model or emit executable partial batches. Listing is not both-model live or
+  production lifecycle proof; the initial experimental release uses the explicit
+  [current release gates](release-v0.1.0.md).
 - Preserve the 180000 estimated-input cap. Public Pi 1.1.0's 272000 context and
   128000 max-output metadata is not a simultaneous input-plus-output guarantee.
 
@@ -755,6 +763,13 @@ or 400—must be replaced with an explicit project decision, not copied.
 
 ### Phase 9 — local binary and resource hardening
 
+The historical 9a/9b receipts below are preserved, not pending-CI assertions for
+today's baseline. e27 subsequently passed all four CI families and native Mac
+setup/Atuin use. The [experimental v0.1.0 handoff](release-v0.1.0.md) now controls
+publication. A separately authorized narrow offline harness correction addresses
+the discovered development-only resource guard with explicit verified release
+selection; review/verification still precede any final tag/build freeze.
+
 Split checkpoint: **9a packaging/installer** code/local gates are independently
 CLEARED and delivered at `edfa904`; ALL exact-HEAD hosted CI GREEN
 ([receipt](phase9a-status.md), [contract/native binary handoff](../packaging.md));
@@ -780,8 +795,9 @@ Ship:
 - no non-loopback management or profiling endpoint; and
 - graceful signal handling with bounded final cancellation.
 
-Container, Kubernetes, systemd, TLS proxy, and remote-host packaging are
-explicitly deferred until there is a concrete need.
+Container, Kubernetes, privileged/system-wide service, TLS proxy, and remote-host
+packaging remain deferred. Optional attended per-user services are implemented;
+real Linux systemd-user execution remains untested.
 
 Initial measurable targets on a documented Linux amd64 environment:
 
@@ -914,6 +930,11 @@ Docker/PTY support is available. Containers are used only as a test oracle.
 Live OpenAI tests are opt-in and must never
 run for untrusted pull requests.
 
+The following correctness/security blockers still apply. Historical live-proof
+requirements are broader production-completion targets; they are not claimed
+satisfied by the user-authorized experimental release. Its exact artifact/CI/
+resource/publication requirements are frozen in the [v0.1.0 plan](release-v0.1.0.md).
+
 A release is blocked if:
 
 - any unsupported tool can reach the CLI;
@@ -925,8 +946,6 @@ A release is blocked if:
 - cancellation leaves upstream work or goroutines behind;
 - refresh rotation is not durably persisted;
 - memory gates fail; or
-- native device login, Codex text/tool continuation, or refresh gates remain
-  unproven for the intended model; or
 - existing Pi login, blocked SIWC consent, or optional separately billed API-key
   mode is being presented as completion of this application's ChatGPT OAuth
   feature.
@@ -951,6 +970,10 @@ Atuin types, provider-event types, and reducer invariants before parallel
 implementation begins.
 
 ## 11. Definition of done
+
+This is broader project completion, not a claim made for experimental v0.1.0.
+Live native login/text/tool/refresh and both-model lifecycle evidence must be
+tracked separately; listing or a successful setup is not proof of them all.
 
 The project is complete when:
 

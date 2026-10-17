@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Opt-in Linux offline resource gate; missing prerequisites are fatal, never skip.
 
-Outer coordinator verifies a DEVELOPMENT package then enters a no-egress network
-namespace. Everything measured, fixture, load and sampling runs inside it. No
+Outer coordinator independently verifies a DEVELOPMENT package (or explicitly
+selected clean tagged release package) then enters a no-egress network namespace. Everything measured, fixture, load and sampling runs inside it. No
 production instrumentation, custom upstream URL, forced GC or race RSS binary.
 """
 import argparse
@@ -35,6 +35,8 @@ from tls_fixture import Fixture, Plan, certificates, compact
 
 MIB = 1 << 20
 NEAR = 4*MIB-1024
+ARTIFACT_MODES = {'development':'DEVELOPMENT; RELEASE BLOCKED',
+                  'release':'CLEAN TAGGED; publication requires separate approval'}
 # The inner driver does not need Git or a checkout. Only these public, verified
 # package-inventory entries are materialized; ignored/private files are never
 # enumerated, copied or mounted. Update this closed set when imports change.
@@ -53,6 +55,16 @@ def digest(path):
 def require(value, message):
     if not value:
         raise AssertionError(message)
+
+
+def verify_resource_artifacts(artifacts, source_root, *, release=False):
+    # Always establish the complete independent source/tag/asset contract FIRST.
+    # A manifest's self-declared mode is not authority to accept release bytes.
+    import packaging_contract
+    manifest = packaging_contract.verify(artifacts,source_root)
+    expected = ARTIFACT_MODES['release' if release else 'development']
+    require(manifest['mode'] == expected,'resource evidence requires '+expected+' package')
+    return manifest
 
 
 def wait(event, timeout=10):
@@ -924,6 +936,12 @@ def inside(args):
                 'closed namespace input inventory')
         verify_snapshot(REPO,namespace_inputs['files'])
         require(not (REPO/'.git').exists(),'Git must not be mounted inside resource namespace')
+        acceptance = namespace_inputs['artifact_acceptance']
+        require(isinstance(acceptance,dict) and set(acceptance) == {'requested_mode','verified_mode'}
+                and acceptance['requested_mode'] in ARTIFACT_MODES
+                and acceptance['verified_mode'] == ARTIFACT_MODES[acceptance['requested_mode']],
+                'closed verified artifact acceptance evidence')
+        report['artifact_acceptance'] = acceptance
         report['namespace_inputs'] = namespace_inputs
         suite = Suite(args,pathlib.Path(args.scratch),report)
         cases = [('rss-idle',lambda:suite.rss(idle=True)),('rss-normal',suite.rss),
@@ -970,6 +988,8 @@ def inside(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--artifacts', type=pathlib.Path)
+    parser.add_argument('--release', action='store_true',
+                        help='require independently verified CLEAN TAGGED release artifacts (default: DEVELOPMENT only)')
     parser.add_argument('--out', type=pathlib.Path, required=True)
     parser.add_argument('--case', action='append', choices=['rss-idle','rss-normal','rss-near','shipping-cycles','companion-retention','over-limits','signals','default-timeouts'])
     parser.add_argument('--inside',action='store_true',help=argparse.SUPPRESS)
@@ -977,20 +997,17 @@ def main():
         parser.add_argument('--'+name,help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.inside:
+        require(not args.release,'--release is an outer-only artifact selection')
         return inside(args)
     require(platform.system() == 'Linux' and platform.machine() == 'x86_64', 'BLOCKED: Linux amd64 required')
-    require(args.artifacts is not None, 'BLOCKED: --artifacts DEVELOPMENT package required')
+    require(args.artifacts is not None, 'BLOCKED: --artifacts package required (default: DEVELOPMENT only; --release: CLEAN TAGGED only)')
     artifacts = args.artifacts.resolve(strict=True)
     out = args.out.absolute()
     require(not out.exists() and not out.is_symlink(),'fresh output required')
     out.mkdir(mode=0o700,parents=True)
     os.umask(0o077)
-    # Independent consumer, not self-described producer inventories. Mutations
-    # are separately required by packaging CI; here verify the real exact assets.
-    sys.path.insert(0,str(HERE.parent))
-    import packaging_contract
-    manifest = packaging_contract.verify(artifacts,REPO)
-    require(manifest['mode'] == 'DEVELOPMENT; RELEASE BLOCKED','resource evidence requires an honest DEVELOPMENT package')
+    # Mutations are separately required by packaging CI. No producer is invoked.
+    manifest = verify_resource_artifacts(artifacts,REPO,release=args.release)
     binaries = list(artifacts.glob('atuin-ai-server-*-linux-amd64'))
     require(len(binaries) == 1,'exact shipping Linux asset')
     binary = binaries[0]
@@ -1028,6 +1045,8 @@ def run_confined_snapshot(args,bwrap,binary,helper,out,manifest,artifacts,versio
     selected_digest = hashlib.sha256((json.dumps(selected,sort_keys=True,indent=2)+'\n').encode()).hexdigest()
     inputs = {'package_source_inventory_sha256':manifest['source']['inventory_sha256'],
               'selected_inventory_sha256':selected_digest,
+              'artifact_acceptance':{'requested_mode':'release' if args.release else 'development',
+                                     'verified_mode':manifest['mode']},
               'files':selected,'read_only_mount':True,'whole_checkout_mounted':False}
     (out/'namespace-inputs.json').write_text(json.dumps(inputs,indent=2)+'\n')
     own_cgroup = next((line[3:] for line in pathlib.Path('/proc/self/cgroup').read_text().splitlines() if line.startswith('0::')),None)
@@ -1058,6 +1077,7 @@ def run_confined_snapshot(args,bwrap,binary,helper,out,manifest,artifacts,versio
                'package_manifest_sha256':digest(artifacts/'manifest.json'),
                'artifact_path':str(binary),'helper_sha256':digest(helper),
                'source':manifest['source'],'namespace_inputs':inputs,
+               'artifact_acceptance':inputs['artifact_acceptance'],
                'package_environment':manifest['environment'],'package_toolchain':manifest['toolchain'],
                'package_target_build':[{k:v for k,v in t.items() if k not in ('archive_inventory','legal_inventory')} for t in manifest['targets']],
                'trust':'local same-host consistency, not independent producer attestation'}
