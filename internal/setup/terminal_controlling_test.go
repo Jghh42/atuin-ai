@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -23,6 +24,27 @@ type terminalTestMessage struct {
 	Phase  string
 	Answer string
 	Error  string
+}
+
+// Bounded, synchronized diagnostics from the synthetic helper only.
+// Cmd's stderr copier may still be running on a cleanup failure.
+type terminalTestStderr struct {
+	mu   sync.Mutex
+	data []byte
+}
+
+func (b *terminalTestStderr) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	remaining := 4096 - len(b.data)
+	b.data = append(b.data, p[:min(len(p), remaining)]...)
+	return len(p), nil
+}
+
+func (b *terminalTestStderr) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return string(b.data)
 }
 
 // This helper never runs init, opens application state, or invokes a supervisor.
@@ -66,14 +88,20 @@ func TestDeviceTerminalHelper(t *testing.T) {
 			cancel()
 		}
 	}()
+	if mode == "output" || mode == "failure-after-output" {
+		if _, err := io.WriteString(terminal, "synthetic PTY output before helper exit\n"); err != nil {
+			t.Fatal("synthetic terminal output failed")
+		}
+	}
 	send(terminalTestMessage{Phase: "ready"})
-	if mode == "wizard" {
-		w, _, _, events := fixture()
+	if mode == "wizard" || mode == "wizard-ready" {
+		w, auth, _, events := fixture()
+		auth.ready = mode == "wizard-ready"
 		w.TTY = terminal
 		if err := w.Run(ctx); err != nil {
 			t.Fatal(err)
 		}
-		if !hasEvent(*events, "login") || hasEvent(*events, "install") || hasEvent(*events, "config") {
+		if hasEvent(*events, "login") != (mode == "wizard") || hasEvent(*events, "install") || hasEvent(*events, "config") {
 			t.Fatal("synthetic wizard consent did not remain independent")
 		}
 		send(terminalTestMessage{Phase: "result"})
@@ -99,10 +127,14 @@ func TestDeviceTerminalHelper(t *testing.T) {
 		}
 		send(m)
 	}
+	if mode == "failure-after-output" {
+		fmt.Fprintln(os.Stderr, "synthetic expected helper failure")
+		t.Fatal("synthetic expected helper failure")
+	}
 }
 
 func TestDeviceTerminalControllingTTY(t *testing.T) {
-	for _, mode := range []string{"no-tty", "accept", "enter", "decline", "sequential", "cancel", "EOF", "hangup", "exact-limit", "oversized", "wizard"} {
+	for _, mode := range []string{"no-tty", "accept", "enter", "decline", "sequential", "cancel", "EOF", "hangup", "exact-limit", "oversized", "wizard", "wizard-ready", "output", "failure-after-output"} {
 		t.Run(mode, func(t *testing.T) {
 			var master, slave *os.File
 			if mode != "no-tty" {
@@ -125,37 +157,75 @@ func TestDeviceTerminalControllingTTY(t *testing.T) {
 				cmd.SysProcAttr.Ctty = 0
 			}
 			cmd.ExtraFiles = []*os.File{controlRead}
-			var stderr strings.Builder
+			var stderr terminalTestStderr
 			cmd.Stderr = &stderr
-			stdout, err := cmd.StdoutPipe()
+			cmd.WaitDelay = time.Second
+			// Own this pipe: Wait must not close StdoutPipe while the decoder
+			// is consuming the final buffered result from an exited helper.
+			stdout, stdoutWrite, err := os.Pipe()
 			if err != nil {
 				t.Fatal(err)
 			}
+			defer stdout.Close()
+			defer stdoutWrite.Close()
+			cmd.Stdout = stdoutWrite
 			if err := cmd.Start(); err != nil {
 				t.Fatal(err)
 			}
+			stdoutWrite.Close()
+			done := make(chan error, 1)
+			go func() { done <- cmd.Wait() }() // Exactly one Wait owner.
 			waited := false
-			defer func() {
-				if !waited {
-					_ = cmd.Process.Kill()
-					_ = cmd.Wait()
+			decoderStopped := make(chan struct{})
+			disconnect := func() {
+				if master != nil {
+					// Darwin session exit waits for queued terminal output.
+					// This private master has no emulator consuming its echo.
+					master.Close()
 				}
-			}()
-			finish := func() {
+				controlWrite.Close()
+			}
+			t.Cleanup(func() {
+				// Also disconnect BEFORE kill/reap on every assertion failure.
+				disconnect()
+				if !waited {
+					if err := cmd.Process.Kill(); err != nil && !errors.Is(err, os.ErrProcessDone) {
+						t.Error("synthetic helper kill failed", err)
+					}
+					select {
+					case <-done:
+						waited = true
+					case <-time.After(time.Second):
+						t.Error("synthetic helper could not be reaped after disconnect and kill")
+					}
+				}
+				stdout.Close()
+				select {
+				case <-decoderStopped:
+				case <-time.After(time.Second):
+					t.Error("synthetic helper decoder did not stop")
+				}
+				if t.Failed() {
+					t.Logf("bounded synthetic helper stderr: %q", stderr.String())
+				}
+			})
+			finish := func(expectFailure bool) {
 				t.Helper()
-				done := make(chan error, 1)
-				go func() { done <- cmd.Wait() }()
+				// Called only AFTER all expected answers have been validated.
+				// Disconnect output before waiting, never to manufacture input.
+				disconnect()
 				select {
 				case err := <-done:
 					waited = true
-					if err != nil {
+					if expectFailure {
+						if err == nil || cmd.ProcessState.ExitCode() != 1 || !strings.Contains(stderr.String(), "synthetic expected helper failure") {
+							t.Fatal("intentional helper failure was lost or replaced by termination")
+						}
+					} else if err != nil {
 						t.Fatal("synthetic terminal helper failed", err)
 					}
 				case <-time.After(5 * time.Second):
-					_ = cmd.Process.Kill()
-					<-done
-					waited = true
-					t.Fatal("synthetic terminal helper did not exit")
+					t.Fatal("synthetic terminal helper did not exit normally")
 				}
 			}
 			controlRead.Close()
@@ -165,6 +235,7 @@ func TestDeviceTerminalControllingTTY(t *testing.T) {
 			messages := make(chan terminalTestMessage, 8)
 			decodeDone := make(chan error, 1)
 			go func() {
+				defer close(decoderStopped)
 				decoder := json.NewDecoder(stdout)
 				count := 2
 				if mode == "no-tty" {
@@ -197,7 +268,7 @@ func TestDeviceTerminalControllingTTY(t *testing.T) {
 				if m := await(); m.Phase != "refused" {
 					t.Fatal("missing controlling-terminal refusal")
 				}
-				finish()
+				finish(false)
 				return
 			}
 			if m := await(); m.Phase != "ready" {
@@ -214,7 +285,7 @@ func TestDeviceTerminalControllingTTY(t *testing.T) {
 			input := ""
 			expected := []string{""}
 			switch mode {
-			case "accept":
+			case "accept", "output", "failure-after-output":
 				input, expected = "Y\n", []string{"Y"}
 			case "enter":
 				input = "\n"
@@ -237,6 +308,8 @@ func TestDeviceTerminalControllingTTY(t *testing.T) {
 				input = strings.Repeat("x", 129) + "\n"
 			case "wizard":
 				input = "y\nn\n\n"
+			case "wizard-ready":
+				input = "n\n\n"
 			}
 			if input != "" {
 				if _, err := io.WriteString(master, input); err != nil {
@@ -263,8 +336,22 @@ func TestDeviceTerminalControllingTTY(t *testing.T) {
 					}
 				}
 			}
-			finish()
+			finish(mode == "failure-after-output")
 		})
+	}
+}
+
+func TestDeviceTerminalFixtureStderrBound(t *testing.T) {
+	var b terminalTestStderr
+	input := strings.Repeat("synthetic", 1024)
+	if n, err := io.WriteString(&b, input); err != nil || n != len(input) {
+		t.Fatal("bounded diagnostic sink did not consume helper output")
+	}
+	if len(b.String()) != 4096 {
+		t.Fatal("fixture diagnostics exceeded their bound")
+	}
+	if _, err := io.WriteString(&b, "discarded synthetic tail"); err != nil || len(b.String()) != 4096 {
+		t.Fatal("full diagnostic sink grew or refused helper output")
 	}
 }
 
