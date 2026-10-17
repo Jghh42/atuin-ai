@@ -26,7 +26,9 @@ with ChatGPT (SIWC) and public Responses inference are deferred for later.
 > current-artifact CLI/oracle and repeated race gates passed. Historical
 > unconfined passes are not isolation proof. The first delivery CI passed hosted
 > namespace setup and all 20 CLI cases but failed differential Docker-ID handling;
-> its aggregate is red. A focused harness fix awaits review and corrected CI.
+> the reviewed Docker fix then passed ALL compatibility jobs and their aggregate.
+> Separate Go Checks still failed an offline watchdog fixture race; its focused
+> correction awaits review/new CI. Overall checkpoint remains RED.
 > [CI receipt](docs/plans/phase8-ci-receipt.md). Phase 9 remains paused.
 > See [Phase 8](docs/plans/phase8-status.md), [Phase 7](docs/plans/phase7-status.md) and
 > [progress / remaining gates](docs/plans/autonomous-progress.md).

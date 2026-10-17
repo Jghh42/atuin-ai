@@ -186,7 +186,10 @@ without them; a default skip or a green Go-only CI is NOT an external-gate pass.
 The required-capability PR/push/manual workflow (NOT pull_request_target) has
 run once for delivery `6d023fe`: hosted namespace/build/client steps passed,
 but differential setup and its aggregate failed ([receipt](plans/phase8-ci-receipt.md)).
-Its aggregate depends on both Go and actual compatibility; administrators must require that check externally. Interrupted
+The reviewed Docker fix at `57bec1b` then passed ALL compatibility jobs and its
+aggregate; separate Go Checks failed the offline watchdog fixture. Overall remains
+RED pending the fixture correction and ALL-workflow green. The compatibility
+aggregate depends on both its Go and actual compatibility jobs; administrators must require that check externally. Interrupted
 creation / global Go timeout cleanup uses a preregistered run/lease watchdog
 and workflow-always cleanup, scoped only to owned labels.
 No production runtime compatibility policy was relaxed or changed in Phase 8.

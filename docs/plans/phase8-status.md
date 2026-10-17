@@ -5,8 +5,11 @@ current-artifact local compatibility and independent race verification PASSED.
 Initial delivery `6d023fe` was authorized and pushed. Its first exact-HEAD CI
 PASSED hosted source-prefix namespace/AppArmor, fresh builds and all 20 actual
 CLI cases, but FAILED differential Docker machine-output handling; aggregate RED.
-A focused test-only stderr/stdout/ID fix now awaits independent review and a new
-commit/CI run. [First failure, evidence and patch receipt](phase8-ci-receipt.md).
+That Docker fix CLEARED review and was delivered as `57bec1b`: ALL compatibility
+jobs (hosted setup/builds/20 CLI/14 oracle/cleanup/aggregate) PASSED. Separate Go
+Checks then FAILED an offline watchdog fixture race; a fixture-only atomic-state /
+handshake / exit-status correction awaits narrow review and corrected CI.
+Overall checkpoint remains RED. [Both CI receipts and evidence](phase8-ci-receipt.md).
 Phase 9 remains paused. CI was not run at initial preparation time. Historical snapshots/failures below are retained,
 not current pending-review claims or retrospective isolation proof.
 Started from clean main

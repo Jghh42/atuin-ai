@@ -255,61 +255,127 @@ class Confinement(unittest.TestCase):
 
 
 class Watchdog(unittest.TestCase):
-    def test_partial_create_and_killed_parent_cleanup_only_owned_labels(self):
+    def parent_death_case(self, pending, remove_drain=False):
         with tempfile.TemporaryDirectory() as name:
             root = pathlib.Path(name)
-            state = root / 'state.json'
-            state.write_text(json.dumps({'container': True, 'network': False, 'unrelated': True}))
+            # Resource existence is represented by independent atomic filesystem
+            # entries, NOT concurrent whole-state JSON read/modify/write.
+            for resource in ('container', 'unrelated'):
+                (root / resource).touch()
+            if not pending:
+                (root / 'network').touch()
+            for channel in ('snapshot-ready', 'snapshot-resume'):
+                os.mkfifo(root / channel)
+            ready = os.open(root / 'snapshot-ready', os.O_RDWR | os.O_NONBLOCK)
+            resume = os.open(root / 'snapshot-resume', os.O_RDWR | os.O_NONBLOCK)
             fake = root / 'docker'
             fake.write_text('''#!/usr/bin/python3
-import json,os,pathlib,sys
-p=pathlib.Path(os.environ['STATE']);v=json.loads(p.read_text());a=sys.argv[1:]
+import os,pathlib,sys
+r=pathlib.Path(os.environ['ROOT']);a=sys.argv[1:]
 assert a[0]=='--host=unix:///var/run/docker.sock';a=a[1:]
+def audit(event):
+ with (r/'audit').open('a') as f: f.write(event+'\\n')
 if a[:2]==['ps','-aq'] or a[:3]==['network','ls','-q']:
  assert 'label=ai.atuin.phase8.run='+os.environ['RUN'] in a
  assert 'label=ai.atuin.phase8.lease='+os.environ['LEASE'] in a
- if a[0]=='ps' and v['container']: print('a'*64)
- if a[0]=='network' and v['network']: print('b'*64)
+ if a[0]=='ps':
+  if (r/'container').exists(): print('a'*64)
+ else:
+  snapshot=(r/'network').exists()
+  if not snapshot and not (r/'snapshot-taken').exists():
+   (r/'snapshot-taken').touch();audit('empty-network-snapshot')
+   with (r/'snapshot-ready').open('w') as f: f.write('EMPTY\\n')
+   with (r/'snapshot-resume').open('r') as f: assert f.readline()=='CONTINUE\\n'
+  if snapshot: print('b'*64)
 elif a[:2]==['rm','-f']:
- assert a[2]=='a'*64;v['container']=False
+ assert a[2:]==['a'*64];(r/'container').unlink();audit('remove-container')
 elif a[:2]==['network','rm']:
- assert a[2]=='b'*64;v['network']=False
+ assert a[2:]==['b'*64];(r/'network').unlink();audit('remove-network')
 else: raise AssertionError('unscoped deletion / global prune')
-if a[:2] in (['rm','-f'],['network','rm']):
- p.write_text(json.dumps(v))
- with p.with_suffix('.audit').open('a') as f: f.write(a[-1]+'\\n')
 ''')
             fake.chmod(0o755)
             watchdog = pathlib.Path(__file__).parent / 'differential' / 'docker_watchdog.py'
-            env = {'PATH': '/usr/bin:/bin', 'HOME': name, 'STATE': str(state),
+            if remove_drain:
+                # Counterfactual in OWNED scratch only: the late-create witness
+                # must reject a single-cleanup implementation, never pass merely
+                # because the creator happened to run before the first scan.
+                original = watchdog.read_text()
+                assert original.count('if pending:') == 1
+                watchdog = root / 'single-cleanup-watchdog.py'
+                watchdog.write_text(original.replace('if pending:', 'if False:'))
+            # An independent observer reaps the REAL watchdog and records its
+            # numeric OS exit status. pidfd readability alone also accepts a
+            # crashed watchdog (the old test silently discarded its stderr).
+            wrapper = root / 'run-watchdog.py'
+            wrapper.write_text('''import os,pathlib,subprocess,sys
+r=pathlib.Path(os.environ['ROOT'])
+with (r/'watchdog.stderr').open('w') as err:
+ result=subprocess.run(['/usr/bin/python3','-I',os.environ['WATCHDOG'],'watch',os.environ['RUN'],os.environ['LEASE']],stdin=sys.stdin,stderr=err)
+(r/'watchdog.exit').write_text(str(result.returncode))
+sys.exit(result.returncode)
+''')
+            env = {'PATH': '/usr/bin:/bin', 'HOME': name, 'ROOT': name,
                 'RUN': 'atuin-phase8-unit-fixture', 'LEASE': 'a'*24,
-                'ATUIN_PHASE8_DOCKER': str(fake), 'WATCHDOG': str(watchdog), 'ATUIN_PHASE8_TEST_GRACE': '2'}
-            # Simulate a remote create already succeeding before its CLI failed,
-            # followed by an abruptly killed Go-test-equivalent pipe owner.
+                'ATUIN_PHASE8_DOCKER': str(fake), 'WATCHDOG': str(watchdog.resolve()),
+                'WRAPPER': str(wrapper), 'ATUIN_PHASE8_TEST_GRACE': '2',
+                'PROTOCOL': 'begin\n' if pending else 'begin\nend\n'}
             supervisor = subprocess.Popen([sys.executable, '-I', '-c',
-                'import os,subprocess,time; p=subprocess.Popen(["/usr/bin/python3","-I",os.environ["WATCHDOG"],"watch",os.environ["RUN"],os.environ["LEASE"]],stdin=subprocess.PIPE); p.stdin.write(b"begin\\n"); p.stdin.flush(); print(p.pid,flush=True); time.sleep(60)' ],
+                'import os,subprocess,time; p=subprocess.Popen(["/usr/bin/python3","-I",os.environ["WRAPPER"]],stdin=subprocess.PIPE,start_new_session=True); p.stdin.write(os.environ["PROTOCOL"].encode()); p.stdin.flush(); print(p.pid,flush=True); time.sleep(60)'],
                 env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            pidfd = None
             try:
                 self.assertTrue(select.select([supervisor.stdout], [], [], 5)[0])
-                watchdog_pid = int(supervisor.stdout.readline())
-                pidfd = os.pidfd_open(watchdog_pid)
+                observer_pid = int(supervisor.stdout.readline())
+                pidfd = os.pidfd_open(observer_pid)
                 supervisor.kill()
                 supervisor.wait(timeout=5)
-                deadline = time.monotonic() + 3
-                while json.loads(state.read_text())['container'] and time.monotonic() < deadline:
-                    time.sleep(0.02)
-                late = json.loads(state.read_text())
-                self.assertFalse(late['container'])
-                late['network'] = True  # remotely completed AFTER first cleanup
-                state.write_text(json.dumps(late))
+                if pending:
+                    # The first network listing has ALREADY taken its empty
+                    # snapshot but is still in flight. Create after that witness,
+                    # then return the old empty result: ONLY a subsequent drain
+                    # pass can observe/delete this genuinely late resource.
+                    self.assertTrue(select.select([ready], [], [], 5)[0], 'no empty-snapshot witness')
+                    self.assertEqual(os.read(ready, 1024), b'EMPTY\n')
+                    self.assertFalse((root / 'container').exists())
+                    self.assertTrue((root / 'unrelated').exists())
+                    (root / 'network').touch()
+                    os.write(resume, b'CONTINUE\n')
                 self.assertTrue(select.select([pidfd], [], [], 8)[0], 'independent cleanup did not exit')
-                os.close(pidfd)
-                self.assertEqual(json.loads(state.read_text()), {'container': False, 'network': False, 'unrelated': True})
-                self.assertIn('b'*64, state.with_suffix('.audit').read_text())
+                diagnostics = (root / 'watchdog.stderr').read_text() + supervisor.stderr.read().decode()
+                self.assertEqual((root / 'watchdog.exit').read_text(), '0', diagnostics)
+                self.assertEqual(diagnostics, '', diagnostics)
+                self.assertFalse((root / 'container').exists())
+                self.assertFalse((root / 'network').exists(), 'late-created network survived')
+                self.assertTrue((root / 'unrelated').exists())
+                audit = (root / 'audit').read_text().splitlines()
+                self.assertIn('remove-container', audit)
+                self.assertIn('remove-network', audit)
+                if pending:
+                    self.assertLess(audit.index('empty-network-snapshot'), audit.index('remove-network'))
             finally:
+                # Release only our fake helper on assertion failure; never leave
+                # it blocked at its rendezvous. No unrelated processes are killed.
+                os.write(resume, b'ABORT\n')
                 if supervisor.poll() is None:
                     supervisor.kill(); supervisor.wait(timeout=5)
+                if pidfd is not None:
+                    if not select.select([pidfd], [], [], 8)[0]:
+                        # Still-live observer pins this test-owned session ID;
+                        # kill ONLY its own watchdog/fake-helper process group.
+                        os.killpg(observer_pid, signal.SIGKILL)
+                    os.close(pidfd)
+                os.close(ready); os.close(resume)
                 supervisor.stdout.close(); supervisor.stderr.close()
+
+    def test_partial_create_and_killed_parent_cleanup_only_owned_labels(self):
+        self.parent_death_case(pending=True)
+
+    def test_completed_create_and_killed_parent_cleanup_only_owned_labels(self):
+        self.parent_death_case(pending=False)
+
+    def test_late_create_witness_rejects_single_cleanup_mutation(self):
+        with self.assertRaisesRegex(AssertionError, 'late-created network survived'):
+            self.parent_death_case(pending=True, remove_drain=True)
 
 
 if __name__ == '__main__':
