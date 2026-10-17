@@ -1,4 +1,4 @@
-.PHONY: build test race vet lint vuln fuzz check fmt toolchain e2e differential compatibility packaging-test package package-dev resource resource-test resource-isolation-test
+.PHONY: build test race vet lint vuln fuzz check fmt fmt-check toolchain e2e differential compatibility packaging-test package package-dev resource resource-test resource-isolation-test
 
 # go.mod is the single exact toolchain pin. Force that release even when the
 # launcher is newer; normal Go toolchain download is allowed when it is absent.
@@ -31,10 +31,13 @@ fuzz: toolchain
 	go test ./internal/safety -run='^$$' -fuzz=FuzzEscalate -fuzztime=5s -parallel=2
 	go test ./internal/provider/codex -run='^$$' -fuzz=FuzzResponsesSSE -fuzztime=5s -parallel=2
 
-check: toolchain test race vet lint vuln fuzz packaging-test resource-test
+check: toolchain fmt-check test race vet lint vuln fuzz packaging-test resource-test
 
 fmt: toolchain
 	go fmt ./cmd/... ./internal/... ./tests/...
+
+fmt-check: toolchain
+	test -z "$$(gofmt -l cmd internal tests)"
 
 # Opt-in release gates: missing prerequisites FAIL rather than green skip.
 e2e: toolchain

@@ -20,18 +20,42 @@ import (
 )
 
 func TestObservedTCPPartialTimeoutWitness(t *testing.T) {
- base,e:=net.Listen("tcp4","127.0.0.1:0");if e!=nil{t.Fatal(e)}
- listener:=&observedListener{Listener:base};defer listener.Close()
- client,e:=net.DialTimeout("tcp4",base.Addr().String(),time.Second);if e!=nil{t.Fatal(e)};defer client.Close()
- if e:=client.(*net.TCPConn).SetReadBuffer(1024);e!=nil{t.Fatal(e)}
- server,e:=listener.Accept();if e!=nil{t.Fatal(e)}
- if e:=server.SetWriteDeadline(time.Now().Add(30*time.Millisecond));e!=nil{t.Fatal(e)}
- n,e:=server.Write(make([]byte,4<<20))
- if failure,ok:=e.(net.Error);!ok || !failure.Timeout(){t.Fatal("not an actual TCP timeout")}
- stats:=listener.stats();w:=stats["write_timeout"].(*writeWitness)
- if n>=4<<20 || w.Written!=n || w.EndNS<w.DeadlineNS || w.StartNS>=w.DeadlineNS {t.Fatal("invalid partial timeout witness")}
- if e:=server.Close();e!=nil{t.Fatal(e)}
- if listener.stats()["active_tcp"].(int)!=0{t.Fatal("observed connection not released")}
+	base, e := net.Listen("tcp4", "127.0.0.1:0")
+	if e != nil {
+		t.Fatal(e)
+	}
+	listener := &observedListener{Listener: base}
+	defer listener.Close()
+	client, e := net.DialTimeout("tcp4", base.Addr().String(), time.Second)
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer client.Close()
+	if e := client.(*net.TCPConn).SetReadBuffer(1024); e != nil {
+		t.Fatal(e)
+	}
+	server, e := listener.Accept()
+	if e != nil {
+		t.Fatal(e)
+	}
+	if e := server.SetWriteDeadline(time.Now().Add(30 * time.Millisecond)); e != nil {
+		t.Fatal(e)
+	}
+	n, e := server.Write(make([]byte, 4<<20))
+	if failure, ok := e.(net.Error); !ok || !failure.Timeout() {
+		t.Fatal("not an actual TCP timeout")
+	}
+	stats := listener.stats()
+	w := stats["write_timeout"].(*writeWitness)
+	if n >= 4<<20 || w.Written != n || w.EndNS < w.DeadlineNS || w.StartNS >= w.DeadlineNS {
+		t.Fatal("invalid partial timeout witness")
+	}
+	if e := server.Close(); e != nil {
+		t.Fatal(e)
+	}
+	if listener.stats()["active_tcp"].(int) != 0 {
+		t.Fatal("observed connection not released")
+	}
 }
 
 func TestSetupTransportDenyDefault(t *testing.T) {

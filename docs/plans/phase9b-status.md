@@ -15,8 +15,42 @@ instructions ONLY. No production code, dependency, auth/store/model policy,
 upstream URL, timeout, configuration knob, management listener or profiling
 endpoint changes. BOTH focused independent reviews now CLEARED measurement and
 isolation fixes; independent local validation/full resource verification PASSED.
-Normal focused main commit/push is authorized. ALL FOUR exact-HEAD hosted CI
-families remain PENDING; Phase9c, tag/release/publication remain unauthorized.
+Code checkpoint delivered as `a5ec69f591a1fb83644171713183029d378f8634`.
+Its Go CI FAILED Formatting; other workflow outcomes are not recorded by this
+correction. The mechanical follow-up below awaits review BEFORE another commit/
+push. The all-four CI checkpoint is NOT PASSED; Phase9c/publication unauthorized.
+
+## Delivery CI formatting follow-up — correction awaiting review
+
+Exact-HEAD [Go39009816461](https://github.com/Jghh42/atuin-ai/actions/runs/39009816461)
+failed the Formatting step `test -z "$(gofmt -l cmd internal tests)"` (exit1).
+Preserved log: `/tmp/phase9b-ci-39009816461-format-failure.log`. The full local
+format-list command named ONLY `tests/resourcehelper/main_test.go`:
+`/tmp/phase9b-ci-format-full-before.txt`; original formatter diff is retained at
+`/tmp/phase9b-ci-format-first.diff`. Prior local make-check/build/diff passed but
+DID NOT include CI's formatting check; they did not establish formatting success.
+The other THREE workflows' outcomes are unknown in this correction, not GREEN.
+
+Applied gofmt ONLY to that helper TEST file. The result is byte-identical to
+running gofmt on its committed a5ec version; only whitespace/statement layout
+changed, no assertions,30ms test deadline, workload or production code changed.
+`Makefile` also adds a minimal `fmt-check` prerequisite to `check`, running the
+EXACT CI format command across cmd/internal/tests without automatically editing
+files. This is a proposed build-gate change for quick independent review, not
+an already accepted follow-up. A controlled negative before formatting proved
+this gate rejects the known bad file (`/tmp/phase9b-fmt-check-negative-first.log`);
+the same full CI command is now empty/PASS.
+
+Focused helper tests and race20 PASS (`/tmp/phase9b-format-fix-helper.log`,
+`/tmp/phase9b-format-fix-helper-race20.log`); new make-check, build, exact full
+format command and diff check PASS (`/tmp/phase9b-format-fix-check.log`,
+`/tmp/phase9b-format-fix-build.log`). No seven-minute local resource rerun or new
+package was performed for this formatting-only test change. The accepted085
+package/report below remain immutable evidence for their PRIOR inputs, NOT a
+new SHA: test-format/build-gate/documentation changes alter holistic inventory.
+After review/authorization, a NEW exact-SHA resource CI must run the entire
+suite/count/provenance/cleanup gates. No old workflow rerun, force/amend/tag/
+publication or branch-setting change; no commit/push of this correction yet.
 
 ## Final independent acceptance / authorized focused code delivery
 
