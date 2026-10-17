@@ -184,8 +184,9 @@ PR/push/manual compatibility workflow runs both without live account secrets;
 its `Phase8 validation aggregate` depends on Go and actual compatibility jobs,
 rejecting failures, cancellations and skips. Administrators must require that
 check in branch/release policy; this repository change does not modify GitHub
-branch protection. CI has not run on these changes and runner namespace/tool
-availability is not inferred. Owned-label watchdog and workflow-always cleanup
+branch protection. First delivery CI demonstrated hosted namespace/tool and
+20-client success, but differential setup and aggregate failed; the focused
+harness fix needs review/new CI ([receipt](plans/phase8-ci-receipt.md)). Owned-label watchdog and workflow-always cleanup
 remove only the exact run's containers/networks, never global prune.
 Keep the manifests/binary/source-built image for independent reproduction, not
 as production credentials or packaging. [Full evidence, known differences,

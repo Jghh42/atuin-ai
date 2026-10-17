@@ -2,9 +2,12 @@
 
 2026-10-17 delivery checkpoint: **ALL final independent reviews CLEARED**;
 current-artifact local compatibility and independent race verification PASSED.
-Normal direct-main delivery is authorized. Exact-HEAD ALL-workflow CI (including
-actual source-prefix namespace setup and compatibility) is a separate gate and
-was not run at preparation time. Historical snapshots/failures below are retained,
+Initial delivery `6d023fe` was authorized and pushed. Its first exact-HEAD CI
+PASSED hosted source-prefix namespace/AppArmor, fresh builds and all 20 actual
+CLI cases, but FAILED differential Docker machine-output handling; aggregate RED.
+A focused test-only stderr/stdout/ID fix now awaits independent review and a new
+commit/CI run. [First failure, evidence and patch receipt](phase8-ci-receipt.md).
+Phase 9 remains paused. CI was not run at initial preparation time. Historical snapshots/failures below are retained,
 not current pending-review claims or retrospective isolation proof.
 Started from clean main
 `b990c404e4582246a8c2ff0a067b33f14b148ca0` (Phase 7 delivery).
@@ -551,8 +554,10 @@ Normal focused main commit/push is now authorized. Delivery must watch ALL
 workflows for that EXACT pushed SHA: existing Go Checks, compatibility Go job,
 source-prefix Bubblewrap version/inventory + real namespace probe, fresh Rust /
 reference builds, actual CLI/oracle gates, validation aggregate and always cleanup.
-A green old Go-only run is insufficient. The reviewed privileged hosted-kernel
-path remains UNVERIFIED until its actual CI job passes; no developer policy is
+A green old Go-only run is insufficient. At this pre-commit snapshot the reviewed privileged hosted-kernel
+path remained UNVERIFIED. The later first delivery CI DID pass that path/probe
+and actual CLI, but differential and aggregate failed; see the CI receipt above.
+No developer policy is
 changed to force that outcome. Preserve and diagnose any first CI failure before
 code changes, never blind-rerun or weaken isolation. Branch-protection admin
 settings remain external/unmodified. Report delivery SHA/URLs outside this

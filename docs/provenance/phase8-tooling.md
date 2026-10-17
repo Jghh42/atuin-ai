@@ -232,7 +232,10 @@ Final independent narrow review CLEARED this explicit privileged setup; that
 is not a claim of CI success. A mandatory unprivileged same-argument user/PID/FD/filesystem/root-
 readonly namespace probe must pass AFTER setup and before all actual CLI gates.
 Failure remains red; no skip/no-sandbox/relaxed-confinement fallback is present.
-The kernel profile load/unload has NOT run locally or on CI. Mocked tests prove
+The kernel profile load/unload was not executed at the preparation snapshot.
+First delivery CI subsequently PASSED actual hosted load/probe/removal and all
+20 CLI cases, while failing differential setup and the aggregate; see the
+[CI receipt](../plans/phase8-ci-receipt.md). No overall green is inferred. Mocked tests prove
 scope/partial-failure cleanup behavior; real parser `-Q -T` validates syntax
 without loading ANY kernel profile. An unresponsive/refusing runner stays blocked.
 
@@ -263,4 +266,6 @@ The synthetic prefix-only confinement regressions likewise failed at namespace
 creation, never inside actual Atuin. No developer-host policy was changed to
 force passes; those failures are preserved. The reviewed SYSTEM bwrap remains
 the local CLI build/test prerequisite. The new CI exact-prefix path is not a
-kernel-verified CI pass until an actual hosted run after authorized delivery.
+kernel-verified LOCAL prefix pass. The first actual hosted delivery run later
+passed this prefix/kernel/probe/CLI path and cleanup; differential and aggregate
+remained red. No developer-host policy was changed; see the CI receipt.

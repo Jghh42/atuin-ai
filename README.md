@@ -24,8 +24,10 @@ with ChatGPT (SIWC) and public Responses inference are deferred for later.
 > final independent reviews **CLEARED** confinement, build integrity,
 > semantic/session/policy/normalization assertions and hosted-CI setup. Independent
 > current-artifact CLI/oracle and repeated race gates passed. Historical
-> unconfined passes are not isolation proof. Exact-HEAD CI is a separate delivery
-> gate; Phase 9 remains unimplemented.
+> unconfined passes are not isolation proof. The first delivery CI passed hosted
+> namespace setup and all 20 CLI cases but failed differential Docker-ID handling;
+> its aggregate is red. A focused harness fix awaits review and corrected CI.
+> [CI receipt](docs/plans/phase8-ci-receipt.md). Phase 9 remains paused.
 > See [Phase 8](docs/plans/phase8-status.md), [Phase 7](docs/plans/phase7-status.md) and
 > [progress / remaining gates](docs/plans/autonomous-progress.md).
 
@@ -123,8 +125,9 @@ Bubblewrap 0.11.1 with usable Linux user/PID/mount namespaces. Secret-free
 PR/push/manual CI runs actual compatibility and exposes a failure-propagating
 `Phase8 validation aggregate` check (admin branch rules must require it).
 CI now builds checksum-pinned Bubblewrap into an owned prefix and probes the
-actual namespace operations; its exact-path hosted-job AppArmor setup is code-review cleared but still needs
-actual hosted CI execution at this delivery snapshot. No developer-host policy change is performed. See the [Phase 8 commands,
+actual namespace operations. The first hosted run demonstrated AppArmor/namespace
+setup and actual CLI success, not overall compatibility success; differential and
+aggregate failed. No developer-host policy change is performed. See the [Phase 8 commands,
 source/toolchain pins and isolated fake-only setup](docs/plans/phase8-status.md).
 No production/live or resource gate is cleared by these synthetic tests.
 

@@ -13,7 +13,7 @@ and delivery before moving on. This file distinguishes code from live gates.
 | 5 | Native bounded Responses SSE provider implemented behind injection; six initial findings/shared helper and lifecycle-output follow-up independently reviewed and cleared for authorized direct-main delivery. No live calls. [Checkpoint](phase5-status.md). |
 | 6 | Implemented behind injectable credentials/catalog/provider; one-generation runner, atomic CLI gate, bounded SSE writes and real TCP tests. Independent final review cleared runtime and all three focused test-strengthening follow-ups; authorized direct-main delivery checkpoint. Standalone remains safe 503. [Checkpoint](phase6-status.md). |
 | 7 | Production native OAuth/isolated descriptor-rooted store, durable pre-refresh intent, serialized rotation, explicit auth CLI and shared catalog/SSE composition implemented. Deterministic fake lifecycle tests; two initial reviews found no criticals but required concurrent-Close and Unicode-fold fixes plus formatter strengthening. Both independent fix re-reviews CLEARED with no new blockers; independent post-fix verification passed. Reviewed code checkpoint cleared for authorized direct-main delivery, not a live phase exit. Fresh production login/live lifecycle and live eligible catalog **NOT PASSED**. [Checkpoint](phase7-status.md). |
-| 8 | Implemented source-pinned unmodified Atuin PTY and original reference-source differential suites, synthetic OAuth/discovery/Responses only. All seven local tools include real isolated daemon output retrieval; default offline deterministic corpus plus opt-in hard gates/CI. Local validation/provenance and preserved harness failures: [Phase 8](phase8-status.md). All final independent re-reviews CLEARED corrected confinement/build/buffering/cleanup, oracle projection/session/policy/text normalization and exact-path hosted-CI setup. Independent current-artifact 20 CLI/14 oracle plus CLI race x2 (40 cases), oracle race x2 (28), unfiltered integration race x2 and integration race x10 PASSED. Authorized direct-main delivery; exact-HEAD ALL-workflow CI is the next gate. Historical unconfined passes are NOT isolation proof. Production live/catalog gates remain NOT PASSED. |
+| 8 | Implemented source-pinned unmodified Atuin PTY and original reference-source differential suites, synthetic OAuth/discovery/Responses only. All seven local tools include real isolated daemon output retrieval; default offline deterministic corpus plus opt-in hard gates/CI. Local validation/provenance and preserved harness failures: [Phase 8](phase8-status.md). All final independent re-reviews CLEARED corrected confinement/build/buffering/cleanup, oracle projection/session/policy/text normalization and exact-path hosted-CI setup. Independent current-artifact 20 CLI/14 oracle plus CLI race x2 (40 cases), oracle race x2 (28), unfiltered integration race x2 and integration race x10 PASSED. Delivered `6d023fe`; first exact-HEAD Go checks passed and hosted namespace/build/20-CLI steps passed, but differential Docker machine-output handling failed and aggregate is RED. Focused stderr/stdout/ID regression fix awaits independent review and new exact-HEAD CI; [first CI receipt](phase8-ci-receipt.md). Historical unconfined passes are NOT isolation proof. Production live/catalog gates remain NOT PASSED. |
 | 9 | Not implemented; packaging/resource and release gates remain. |
 
 ## Phase 7 delivered baseline / Phase 8 boundary
@@ -45,15 +45,21 @@ subsequently CLEARED re-review. Oracle's remaining P2 text-metadata normalizatio
 loss is fixed with direct and positive/policy mutation regressions. CI now builds
 checksum-pinned Bubblewrap into a private prefix, requires a real namespace probe,
 and implements exact-path hosted-job-only AppArmor userns permission plus always-
-cleanup (final narrow review CLEARED; actual hosted-kernel CI execution remains
-unverified until that exact-HEAD run passes). Local
+cleanup (final narrow review CLEARED; first delivery CI subsequently PASSED that
+actual hosted-kernel setup/probe and all 20 CLI cases, while failing differential
+setup and correctly keeping the aggregate red). Local
 prefix source build/version/inventory succeeded but its namespace probe is
 BLOCKED by developer AppArmor; no developer-host policy change forced a pass.
 The reviewed system-bwrap path remains unchanged unless explicitly configured. No runtime
 policy, real login, eligibility or Phase 9 changes. See [corrected evidence and
 preserved failures](phase8-status.md). All independent reviews and final local
 compatibility verification have now passed; normal main delivery is authorized.
-Do not start Phase 9 until ALL exact-HEAD push workflows, actual compatibility,
+First delivery CI exposed merged Docker stdout/stderr being used as IDs/JSON.
+A controlled cold-image run reproduced the exact daemon 404 from a tainted ID;
+first-job IDs/warnings were not logged, so precise CI attribution is bounded.
+The focused fix preserves diagnostics/exit failures and validates create IDs;
+new deterministic regressions and [receipt](phase8-ci-receipt.md) precede review.
+Do not start Phase 9 until ALL corrected exact-HEAD push workflows, actual compatibility,
 validation aggregate and scoped cleanup succeed. Existing branch protection
 is external and was not changed. No real-provider/live eligibility claim follows.
 

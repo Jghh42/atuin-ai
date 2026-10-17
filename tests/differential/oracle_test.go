@@ -25,13 +25,14 @@ func docker(t *testing.T, args ...string) string {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "/usr/bin/docker", append([]string{"--host=unix:///var/run/docker.sock"}, args...)...)
-	cmd.Env = []string{"PATH=/usr/bin:/bin", "HOME=" + t.TempDir()}
-	out, e := cmd.CombinedOutput()
+	out, e := executeDocker(ctx, "/usr/bin/docker", t.TempDir(), nil, args...)
 	if e != nil {
-		t.Fatalf("docker %s: %v\n%s", args[0], e, out)
+		t.Fatal(e) // Includes BOTH streams, without concealing command failures.
 	}
-	return strings.TrimSpace(string(out))
+	if out.Stderr != "" {
+		t.Logf("docker %s stderr (successful command): %s", args[0], out.Stderr)
+	}
+	return strings.TrimSpace(out.Stdout)
 }
 func fileSHA(t *testing.T, path string) string {
 	t.Helper()
@@ -46,20 +47,16 @@ func oracleRequest(t *testing.T, id, endpoint string, body []byte) (int, string,
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "/usr/bin/docker", "--host=unix:///var/run/docker.sock", "exec", "-i", id, "/fakecc", "request", endpoint)
-	cmd.Env = []string{"PATH=/usr/bin:/bin", "HOME=" + t.TempDir()}
-	cmd.Stdin = strings.NewReader(string(body))
-	out, e := cmd.CombinedOutput()
+	out, e := executeDocker(ctx, "/usr/bin/docker", t.TempDir(), strings.NewReader(string(body)), "exec", "-i", id, "/fakecc", "request", endpoint)
 	if e != nil {
-		t.Fatalf("oracle-only HTTP helper: %v %s", e, out)
+		t.Fatal(e)
 	}
-	var result struct {
-		Status  int    `json:"status"`
-		Body    string `json:"body"`
-		Session string `json:"session"`
+	if out.Stderr != "" {
+		t.Logf("oracle-only HTTP helper stderr (successful command): %s", out.Stderr)
 	}
-	if json.Unmarshal(out, &result) != nil {
-		t.Fatal("invalid oracle helper envelope")
+	result, e := decodeOracleEnvelope(out.Stdout)
+	if e != nil {
+		t.Fatal(e)
 	}
 	return result.Status, result.Body, result.Session
 }
@@ -103,6 +100,8 @@ func TestOriginalReferenceOracle(t *testing.T) {
 	if !m.Fresh || !m.Unchanged || m.Archive != "c9424d674e1a237b7f3332f95e7fd26a048e27d72027f0e8f3b87f8464382b95" || m.Recipe != fileSHA(t, "Dockerfile.oracle") || m.Builder != fileSHA(t, "build-oracle.py") || m.Support != fileSHA(t, "../build_support.py") {
 		t.Fatal("stale/inconsistent build recipe/archive proof; rebuild pinned oracle")
 	}
+	// Retain actual client/server/API metadata for any future CI-only diagnosis.
+	t.Logf("Docker client/server versions: %s", docker(t, "version", "--format", "{{json .}}"))
 	labels := docker(t, "image", "inspect", m.Image, "--format", `{{ index .Config.Labels "org.opencontainers.image.revision" }} {{ index .Config.Labels "ai.atuin.core.revision" }} {{ index .Config.Labels "ai.atuin.source.archive" }} {{ index .Config.Labels "ai.atuin.build.recipe" }}`)
 	if labels != strings.Join([]string{m.Server, m.Core, m.Archive, m.Recipe}, " ") {
 		t.Fatal("source/recipe image labels differ (local consistency, not producer attestation)")

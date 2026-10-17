@@ -64,10 +64,15 @@ func (l lease) create(t *testing.T, args ...string) string {
 		t.Fatal(e)
 	}
 	result := docker(t, args...)
+	id, err := resourceID(result)
+	if err != nil {
+		t.Fatal(err) // Keep the uncertain-create lease pending for scoped cleanup.
+	}
 	if _, e := io.WriteString(l.writer, "end\n"); e != nil {
 		t.Fatal(e)
 	}
-	return result
+	t.Logf("created Docker %s resource ID: %s", args[0], id)
+	return id
 }
 func (l lease) labels() []string {
 	return []string{"--label", "ai.atuin.phase8.run=" + l.run, "--label", "ai.atuin.phase8.lease=" + l.id}
