@@ -34,7 +34,24 @@ func Run(parent context.Context, p provider.Provider, req atuin.Request, sink Ev
 	run(parent, p, req, sink, config.GenerationTimeout)
 }
 
+// RunWithObserver preserves Run's wire contract with an optional safe observer.
+func RunWithObserver(parent context.Context, p provider.Provider, req atuin.Request, sink EventSink, observer FailureObserver) {
+	runObserved(parent, p, req, sink, config.GenerationTimeout, observer)
+}
+
 func run(parent context.Context, p provider.Provider, req atuin.Request, sink EventSink, timeout time.Duration) {
+	runObserved(parent, p, req, sink, timeout, nil)
+}
+
+func runObserved(parent context.Context, p provider.Provider, req atuin.Request, sink EventSink, timeout time.Duration, observer FailureObserver) {
+	var report FailureReport
+	selected := false
+	// Registered first: executes after callback unlock and context cancellation.
+	defer func() {
+		if selected && observer != nil {
+			observe(observer, report)
+		}
+	}()
 	ctx, cancel := context.WithTimeout(parent, timeout)
 	defer cancel()
 	writable := true
@@ -60,7 +77,9 @@ func run(parent context.Context, p provider.Provider, req atuin.Request, sink Ev
 	var mu sync.Mutex
 	closed, batchSeen := false, false
 	var eventErr error
+	invalidEvents := false
 	var calls []tools.Call
+	started := time.Now()
 	usage, streamErr := p.Stream(ctx, provider.Request{Conversation: req}, func(e provider.Event) error {
 		mu.Lock()
 		defer mu.Unlock()
@@ -73,6 +92,7 @@ func run(parent context.Context, p provider.Provider, req atuin.Request, sink Ev
 		switch e.Kind {
 		case provider.TextDelta:
 			if batchSeen || len(e.Calls) != 0 || len(e.Text) > config.MaxProviderEventBytes || !utf8.ValidString(e.Text) {
+				invalidEvents = true
 				eventErr = errEvents
 				break
 			}
@@ -83,6 +103,7 @@ func run(parent context.Context, p provider.Provider, req atuin.Request, sink Ev
 			}
 		case provider.ToolCalls:
 			if batchSeen || e.Text != "" || len(e.Calls) > config.MaxCallsPerResponse {
+				invalidEvents = true
 				eventErr = errEvents
 				break
 			}
@@ -90,6 +111,7 @@ func run(parent context.Context, p provider.Provider, req atuin.Request, sink Ev
 			// Own the bytes even if a faulty provider reuses its callback buffers.
 			for _, c := range e.Calls {
 				if len(c.Input) > config.MaxCallArgumentsBytes {
+					invalidEvents = true
 					eventErr = errEvents
 					break
 				}
@@ -97,6 +119,7 @@ func run(parent context.Context, p provider.Provider, req atuin.Request, sink Ev
 				calls = append(calls, c)
 			}
 		default:
+			invalidEvents = true
 			eventErr = errEvents
 		}
 		if eventErr != nil {
@@ -114,19 +137,29 @@ func run(parent context.Context, p provider.Provider, req atuin.Request, sink Ev
 	// one generic terminal. Use the parent context for that final attempt.
 	generationErr := ctx.Err()
 	ctx = parent
-	fail := func() {
+	fail := func(f provider.Failure) {
+		selected = true
+		report = NewFailureReport(f, time.Since(started))
 		emit("error", struct {
 			Message string `json:"message"`
 			Code    string `json:"code"`
 		}{"LLM request failed, please retry", "upstream_error"})
 	}
 	if streamErr != nil || eventErr != nil || generationErr != nil {
-		fail()
+		f := provider.NewFailure(provider.PhaseTurn, provider.ProviderFailure, 0)
+		if invalidEvents {
+			f = provider.NewFailure(provider.PhaseTurn, provider.EventsInvalid, 0)
+		} else if typed, ok := provider.FailureOf(streamErr); ok {
+			f = typed
+		} else if generationErr == context.DeadlineExceeded {
+			f = provider.NewFailure(provider.PhaseTurn, provider.GenerationTimeout, 0)
+		}
+		fail(f)
 		return
 	}
 	batch, err := tools.ValidateBatch(calls, req.Config.Capabilities)
 	if err != nil {
-		fail()
+		fail(provider.NewFailure(provider.PhaseTurn, provider.ToolBatchInvalid, 0))
 		return
 	}
 	seen := make(map[string]bool)
@@ -139,7 +172,7 @@ func run(parent context.Context, p provider.Provider, req atuin.Request, sink Ev
 	}
 	for _, c := range batch.Calls {
 		if seen[c.ID] {
-			fail()
+			fail(provider.NewFailure(provider.PhaseTurn, provider.HistoryCallIDCollision, 0))
 			return
 		}
 	}

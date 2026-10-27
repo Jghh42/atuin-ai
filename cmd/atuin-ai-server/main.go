@@ -86,6 +86,7 @@ func runWith(ctx context.Context, args []string, stderr io.Writer, deps commandD
 		return err
 	}
 	defer runtime.Close()
+	runtime.HTTP.FailureObserver = httpserver.NewFailureObserver(logger)
 	server, err := httpserver.NewWithRuntime(cfg, logger, runtime.HTTP)
 	if err != nil {
 		return errors.New("invalid server configuration")

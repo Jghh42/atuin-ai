@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -17,7 +19,20 @@ import (
 	"github.com/Jghh42/atuin-ai/internal/application"
 	"github.com/Jghh42/atuin-ai/internal/config"
 	"github.com/Jghh42/atuin-ai/internal/credentials"
+	"github.com/Jghh42/atuin-ai/internal/httpserver"
+	"github.com/Jghh42/atuin-ai/internal/provider"
+	"github.com/Jghh42/atuin-ai/internal/turn"
 )
+
+func TestCompanionSharedFailureLogger(t *testing.T) {
+	var buf bytes.Buffer
+	observer := httpserver.NewFailureObserver(slog.New(slog.NewJSONHandler(&buf, nil)))
+	observer(turn.NewFailureReport(provider.NewFailure(provider.PhaseStream, provider.InactivityTimeout, 0), time.Second))
+	var fields map[string]any
+	if json.Unmarshal(buf.Bytes(), &fields) != nil || len(fields) != 7 || fields["msg"] != "generation_failed" || fields["category"] != "inactivity_timeout" || fields["upstream_http_status"] != nil {
+		t.Fatal("shared diagnostic adapter contract")
+	}
+}
 
 func TestObservedTCPPartialTimeoutWitness(t *testing.T) {
 	base, e := net.Listen("tcp4", "127.0.0.1:0")

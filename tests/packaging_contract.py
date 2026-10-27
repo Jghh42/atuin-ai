@@ -2,7 +2,7 @@
 
 Do not import package.py: expected asset/member sets, source inspection and legal
 pins must not come from the self-described manifest or producer's inventory code.
-Go1.27.2-only legal/table pins are deliberate review gates on toolchain updates.
+Go1.27.3-only legal/table pins are deliberate review gates on toolchain updates.
 """
 import gzip
 import hashlib
@@ -34,7 +34,7 @@ for module in ("crypto", "net", "sys", "text"):
 UNICODE_LEGAL = {
     "Unicode-15-data-license.txt": "68f5b9f5ea36881a0942ba02f558e9e1faf76cc09cb165ad801744c61b738844",
     "Unicode-17-data-license.txt": "68af68845f9302fdc7f4d903cbdb6f1d376cd97e9c753bff087c35917e7d8831",
-    "Unicode-data-NOTICE.txt": "99d6e72fa8572a8cf43eecc2b68b1063faa283bba603adddd9f715112e527485",
+    "Unicode-data-NOTICE.txt": "a17c6464748b6769c7a9af58ad2cbdbba53f241e869703a4157004b653e78c9e",
 }
 TABLES = {
     "github.com/rivo/uniseg@v0.4.7/graphemeproperties.go": "321483625d9a4aa92e4a5730df51c59d5b49725cd20e3879749488e5628b3da8",
@@ -43,10 +43,10 @@ TABLES = {
     "github.com/rivo/uniseg@v0.4.7/lineproperties.go": "d73432ab989195312fdaa4f4dcea34c7bfb478160b98ad26fbc31df94f898b45",
     "github.com/rivo/uniseg@v0.4.7/eastasianwidth.go": "1cd2368ddedc56182d2f64576f2a713a2ad6234265d940575285f61006527c5b",
     "github.com/rivo/uniseg@v0.4.7/emojipresentation.go": "c4e1921aafedd787a29a0a6e329b85c6833eb1cfad0cfaf00450783f99e33b9c",
-    "go1.27.2/src/unicode/tables.go": "ac0e5d5d1b58ed4b02d7cb4a0085bdefbdb4f7aae6fadddbc9477f8463da8bd8",
-    "go1.27.2/src/vendor/golang.org/x/net/idna/tables17.0.0.go": "c1a0162f154cb63bab4de125817927c1d1d8a19326ad7c6adbb69d9d249b9cf3",
-    "go1.27.2/src/vendor/golang.org/x/text/unicode/bidi/tables17.0.0.go": "a49eafd4eb11f7c8ae810ee5d69ca59a0cddd97dc644afbcb3e40563617088fc",
-    "go1.27.2/src/vendor/golang.org/x/text/unicode/norm/tables17.0.0.go": "26784025eb1881a4452f101a7ef34b33c8ca02bd0603bfec41d2c823494ff7cb",
+    "go1.27.3/src/unicode/tables.go": "ac0e5d5d1b58ed4b02d7cb4a0085bdefbdb4f7aae6fadddbc9477f8463da8bd8",
+    "go1.27.3/src/vendor/golang.org/x/net/idna/tables17.0.0.go": "c1a0162f154cb63bab4de125817927c1d1d8a19326ad7c6adbb69d9d249b9cf3",
+    "go1.27.3/src/vendor/golang.org/x/text/unicode/bidi/tables17.0.0.go": "a49eafd4eb11f7c8ae810ee5d69ca59a0cddd97dc644afbcb3e40563617088fc",
+    "go1.27.3/src/vendor/golang.org/x/text/unicode/norm/tables17.0.0.go": "26784025eb1881a4452f101a7ef34b33c8ca02bd0603bfec41d2c823494ff7cb",
 }
 
 
@@ -168,7 +168,7 @@ def verify(directory, source_root=ROOT):
     require(rows == {name: digest(data) for name, data in blobs.items() if name != "SHA256SUMS"}, "checksum bytes")
     require(manifest["assets"] == {name: {"size": len(blobs[name]), "sha256": digest(blobs[name])}
                                    for name in expected_assets}, "exact manifest assets/sizes/hashes")
-    require(manifest["schema"] == 1 and manifest["toolchain"] == "go1.27.2", "schema/toolchain")
+    require(manifest["schema"] == 1 and manifest["toolchain"] == "go1.27.3", "schema/toolchain")
     actual_inventory, actual_source = inspect_source(source_root)
     require(manifest["source_inventory"] == actual_inventory and manifest["source"] == actual_source, "source inventory/identity misrepresentation")
     require(manifest["mode"] in {"DEVELOPMENT; RELEASE BLOCKED", "CLEAN TAGGED; publication requires separate approval"}, "mode")

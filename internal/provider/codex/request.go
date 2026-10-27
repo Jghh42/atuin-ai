@@ -206,17 +206,17 @@ func (c RequestClient) Open(ctx context.Context, req provider.Request) (*http.Re
 	}
 	body, err := Project(req, now)
 	if err != nil {
-		return nil, err
+		return nil, failure(ErrRequest, provider.PhaseRequest, provider.RequestInvalid)
 	}
 	if c.Credentials == nil {
-		return nil, ErrCredentials
+		return nil, failure(ErrCredentials, provider.PhaseCredentials, provider.CredentialsUnavailable)
 	}
 	credential, err := c.Credentials.Current(ctx)
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
 	if err != nil || !credentials.MatchesIdentity(ctx, credential.Identity) || credential.Identity.Provider != "codex" || credential.Identity.Account == "" || credential.AccessToken == "" {
-		return nil, ErrCredentials
+		return nil, failure(ErrCredentials, provider.PhaseCredentials, provider.CredentialsUnavailable)
 	}
 	url := c.URL
 	if url == "" {
@@ -224,7 +224,7 @@ func (c RequestClient) Open(ctx context.Context, req provider.Request) (*http.Re
 	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
-		return nil, ErrRequest
+		return nil, failure(ErrRequest, provider.PhaseRequest, provider.RequestInvalid)
 	}
 	request.Header.Set("Authorization", "Bearer "+credential.AccessToken)
 	request.Header.Set("chatgpt-account-id", credential.Identity.Account)
@@ -239,11 +239,16 @@ func (c RequestClient) Open(ctx context.Context, req provider.Request) (*http.Re
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
-		return nil, ErrTransport
+		category := provider.TransportFailure
+		if isTimeout(err) {
+			category = provider.TransportTimeout
+		}
+		return nil, failure(ErrTransport, provider.PhaseTransport, category)
 	}
 	if response.StatusCode != http.StatusOK {
+		failure := httpFailure(response.StatusCode)
 		response.Body.Close()
-		return nil, ErrResponse
+		return nil, failure
 	}
 	return response, nil
 }

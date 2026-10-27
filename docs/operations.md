@@ -16,12 +16,13 @@ without enabling linger. Unsupported sessions use foreground serve, never sudo.
 See [complete setup, lock/rollback rules, paths, start/stop/removal and native
 manual acceptance](init.md). The installer itself does not run setup.
 
-Requires Go **1.27.2** minimum. The exact `go.mod` patch is also the local
-Makefile and CI toolchain pin: Make exports `GOTOOLCHAIN=go1.27.2`, and CI verifies
+Requires Go **1.27.3** minimum. The exact `go.mod` patch is also the local
+Makefile and CI toolchain pin: Make exports `GOTOOLCHAIN=go1.27.3`, and CI verifies
 setup-go selected that exact release before pinning all subsequent commands.
 Normal automatic toolchain download is allowed; an older launcher is sufficient.
-This officially published security-patched release contains the upstream fuzz
-coordinator race fix; see the [sourced diagnosis](plans/fuzz-toolchain-diagnosis.md).
+This officially published security-patched release fixes GO-2026-6809 and retains
+the upstream fuzz coordinator race fix; see the [current verified security pin](provenance/go1273-security.md)
+and [historical fuzz diagnosis](plans/fuzz-toolchain-diagnosis.md).
 The 5-second smoke and 2-minute nightly campaigns are unchanged, with no error
 filter/retry wrapper. Build with `make build`, then run:
 
@@ -177,6 +178,58 @@ contents and upstream credentials must never be logged. Native upstream transpor
 uses HTTP/1 without connection pooling (six connections/host maximum), avoiding
 net/http raw unsolicited-idle-response/HTTP2 diagnostics; redirects are refused. Configuration failures
 are intentionally generic to avoid parser diagnostics exposing secret values.
+
+## Generation failure diagnostics (development candidate)
+
+New debug builds emit one `generation_failed` JSON stderr line for a selected
+failure that attempts the unchanged generic SSE terminal. Old v0.1.0 logs cannot
+recover the cause retrospectively. No success logging, retries, automatic tools,
+refresh-and-replay, model fallback or additional provider requests are added.
+Early client cancellation and downstream-write-only failures do not report.
+
+The **only seven keys** are standard `time`, `level`, `msg`, plus `phase`,
+`category`, `upstream_http_status`, `elapsed_ms`. Status is the actual rejected
+HTTP integer (100–599), or null when unavailable; null is not HTTP zero.
+Elapsed milliseconds are nonnegative, from immediately before streaming to the
+failure decision, excluding terminal flush and logger latency. Unknown enum
+values become `unknown`. No error text, body, header, URL/path, model/tool name,
+ID, prompt/history/arguments, usage or credential is attached.
+
+Phases are `request`, `credentials`, `transport`, `http`, `stream`, `turn`,
+`unknown`. Categories are:
+
+- `request_invalid`, `credentials_unavailable`
+- `transport_failure`, `transport_timeout`
+- `http_unauthorized`, `http_forbidden`, `http_rate_limited`, `http_server_error`,
+  `http_rejected`
+- `stream_incomplete`, `stream_malformed`, `stream_read_failure`,
+  `stream_read_timeout`, `upstream_error`, `upstream_failed`,
+  `upstream_incomplete`, `refusal`, `unsupported_output`
+- `inactivity_timeout`, `generation_timeout`, `events_invalid`,
+  `tool_batch_invalid`, `history_call_id_collision`, `provider_failure`, `unknown`
+
+These describe an observed failure branch, **not a root-cause or retryability
+guarantee**. Typed inspection has a total 64-node/edge budget, including joined
+breadth/cycles; information beyond that budget falls back safely. It never calls
+arbitrary Error/String/Is/As methods. Synchronous Unwrap/Timeout implementations
+are trusted to return; diagnostic inspection is not a sandbox for hostile code.
+
+Reporting is synchronous **after** the terminal write/flush attempt, callback
+mutex unlock, turn cancellation and provider body-close/watchdog joins. Observer
+and writer panics are contained without logging panic values or adding writes.
+This is **not nonblocking logging**: a permanently blocked trusted stderr writer
+can retain a handler and its admission slot after upstream cleanup. With all four
+slots retained, later chat requests receive busy. No worker/queue/goroutine or
+stderr flag workaround is introduced. Restore the local stderr destination (or
+stop the debug process) rather than assuming a hard-bound handler under log outage.
+
+For colleague debugging, use only a separately verified development binary in
+foreground after stopping the old service, with the same saved login/config;
+leave the stable binary untouched. Only the user/colleague should initiate a
+fresh natural request. Ctrl-C stops the debug process; restart the old service to
+roll back. Do not run automated live probes or attempt credential/model fixes
+based only on a category. Ask for **only the `generation_failed` lines**, never a
+whole journal, request dump, credential file or provider transcript.
 
 Packaging/installer tests within `make check` additionally require Python3.9+,
 OpenSSL and **curl >=8.4.0**. They use real curl only against an ephemeral-CA

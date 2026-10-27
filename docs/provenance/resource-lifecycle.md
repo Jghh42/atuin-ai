@@ -33,7 +33,7 @@ profiling endpoint or timeout change is part of this receipt.
 
 ## Reproduce (Linux amd64)
 
-Requires exact Go1.27.2, Python3.9+ stdlib, OpenSSL, GNU `/usr/bin/time`, and
+Requires exact Go1.27.3, Python3.9+ stdlib, OpenSSL, GNU `/usr/bin/time`, and
 usable unprivileged Bubblewrap0.11.1 user/PID/mount/**network** namespaces.
 Missing or restricted prerequisites **FAIL**, never green-skip:
 

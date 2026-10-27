@@ -661,7 +661,7 @@ class Packaging(unittest.TestCase):
 def shipping_smoke(directory):
     manifest = contract.verify(directory)
     metadata_env = {"PATH": os.defpath, "HOME": "/nonexistent", "GOENV": "off", "GOWORK": "off",
-                    "GOTOOLCHAIN": "go1.27.2", "GOPATH": str(Path.home() / "go"),
+                    "GOTOOLCHAIN": "go1.27.3", "GOPATH": str(Path.home() / "go"),
                     "GOMODCACHE": str(Path.home() / "go/pkg/mod")}
     go = shutil.which("go")
     for target in manifest["targets"]:
@@ -688,7 +688,7 @@ def shipping_smoke(directory):
             assert result.stderr == b""
             expected_version = (f"atuin-ai-server version={manifest['version']} revision={manifest['source']['revision']} "
                                 f"source_sha256={manifest['source']['inventory_sha256']} dirty={str(manifest['source']['dirty']).lower()} "
-                                "target=linux/amd64 go=go1.27.2\n").encode()
+                                "target=linux/amd64 go=go1.27.3\n").encode()
             assert result.stdout == expected_version
             assert list(home.iterdir()) == [] and list(config.iterdir()) == []
         env.pop("CHAT_CONFIG")

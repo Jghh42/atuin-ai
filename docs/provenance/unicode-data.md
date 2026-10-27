@@ -75,11 +75,25 @@ Again the retained bytes equal the entire first Unicode grant section, not ICU's
 unrelated notices. Existing Go LICENSE/PATENTS/vendor BSD grants are also kept;
 none are treated as substitutes for the separate Unicode grant.
 
+## Current Go 1.27.3 applicability review (2026-10-27)
+
+The [security-pin review](go1273-security.md) independently remeasured both shipping
+targets using actual Go 1.27.3 selected source files and compared them byte-for-byte
+with Go 1.27.2. All four Unicode17 tables above, Go LICENSE/PATENTS, every selected
+stdlib-vendor legal grant and the extracted selected-source notice bundle are
+unchanged. Both Unicode grants and uniseg Unicode15 tables remain unchanged.
+The earlier Go 1.27.2 measurements above remain historical evidence; current
+packager/consumer table provenance keys name exactly Go 1.27.3. No new Unicode
+version, guessed copyright year, notice omission or relaxed hash pin is introduced.
+
 ## Completeness / verification boundary
 
 `LICENSES/Unicode-data-NOTICE.txt` attributes all six uniseg and four Go tables,
 original data copyrights, versions and immutable grant sources. SHA256:
-`99d6e72fa8572a8cf43eecc2b68b1063faa283bba603adddd9f715112e527485`.
+`a17c6464748b6769c7a9af58ad2cbdbba53f241e869703a4157004b653e78c9e`
+for the current Go 1.27.3 attribution. The original Go 1.27.2 attribution's hash
+was `99d6e72fa8572a8cf43eecc2b68b1063faa283bba603adddd9f715112e527485`;
+only the verified toolchain version label changed, not grant terms or table bytes.
 All three Unicode legal files MUST be present in BOTH human archives and the
 installer's concatenated legal asset. Packager checks exact reviewed grant/
 notice hashes, the six generated module table selections and all four selected

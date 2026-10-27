@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/Jghh42/atuin-ai/internal/config"
+	"github.com/Jghh42/atuin-ai/internal/provider"
 )
 
 // The 1 MiB budget includes every wire byte in a frame: comments, ignored
@@ -28,7 +29,13 @@ func readSSE(r io.Reader, consume func(string, []byte) (bool, error)) error {
 			continue
 		}
 		if err != nil {
-			return ErrStream
+			category := provider.StreamReadFailure
+			if err == io.EOF {
+				category = provider.StreamIncomplete
+			} else if isTimeout(err) {
+				category = provider.StreamReadTimeout
+			}
+			return failure(ErrStream, provider.PhaseStream, category)
 		} // even a valid JSON payload needs its blank delimiter
 		if !utf8.Valid(line) {
 			return ErrStream

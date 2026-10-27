@@ -27,7 +27,7 @@ var _ provider.Provider = RequestClient{}
 
 func (c RequestClient) stream(parent context.Context, req provider.Request, sink func(provider.Event) error, generation, inactivity time.Duration) (provider.Usage, error) {
 	if sink == nil {
-		return provider.Usage{}, ErrRequest
+		return provider.Usage{}, failure(ErrRequest, provider.PhaseRequest, provider.RequestInvalid)
 	}
 	deadline, stop := context.WithTimeout(parent, generation)
 	defer stop()
@@ -52,16 +52,23 @@ func (c RequestClient) stream(parent context.Context, req provider.Request, sink
 				}
 				timer.Reset(inactivity)
 			case <-timer.C:
-				cancel(context.DeadlineExceeded)
+				cancel(failure(context.DeadlineExceeded, provider.PhaseStream, provider.InactivityTimeout))
 				return
 			}
 		}
 	}()
 	defer func() { cancel(nil); <-finished }()
+	contextFailure := func() error {
+		cause := context.Cause(ctx)
+		if parent.Err() == nil && deadline.Err() == context.DeadlineExceeded && cause == context.DeadlineExceeded {
+			return failure(context.DeadlineExceeded, provider.PhaseStream, provider.GenerationTimeout)
+		}
+		return cause
+	}
 	response, err := c.Open(ctx, req)
 	if err != nil {
 		if ctx.Err() != nil {
-			return provider.Usage{}, context.Cause(ctx)
+			return provider.Usage{}, contextFailure()
 		}
 		return provider.Usage{}, err
 	}
@@ -91,7 +98,7 @@ func (c RequestClient) stream(parent context.Context, req provider.Request, sink
 		return nil
 	})
 	if ctx.Err() != nil {
-		return provider.Usage{}, context.Cause(ctx)
+		return provider.Usage{}, contextFailure()
 	}
 	return usage, err
 }

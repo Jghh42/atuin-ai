@@ -122,10 +122,10 @@ IPv4 loopback only (`127.0.0.1:17391` by default), not a remote/multi-user servi
 
 ## Development
 
-The project minimum and exact Make/CI toolchain pin is **Go 1.27.2**. Normal
+The project minimum and exact Make/CI toolchain pin is **Go 1.27.3**. Normal
 Go toolchain auto-download is supported. This security-patched Go toolchain
 also fixes the fuzz coordinator's budget-boundary race; all fuzz budgets and
-failure assertions remain unchanged. [Diagnosis and pin rationale](docs/plans/fuzz-toolchain-diagnosis.md).
+failure assertions remain unchanged. [Current security pin and verified SDK/legal comparison](docs/provenance/go1273-security.md); [historical fuzz diagnosis](docs/plans/fuzz-toolchain-diagnosis.md).
 
 ```sh
 make check

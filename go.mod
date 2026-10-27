@@ -1,6 +1,6 @@
 module github.com/Jghh42/atuin-ai
 
-go 1.27.2
+go 1.27.3
 
 require github.com/BurntSushi/toml v1.5.0
 

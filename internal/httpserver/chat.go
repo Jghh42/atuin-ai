@@ -18,9 +18,10 @@ import (
 // Runtime is the production composition seam. Package application supplies one
 // credential lifecycle and account-bound catalog; no proof store is imported.
 type Runtime struct {
-	Credentials credentials.Source
-	Catalog     CatalogSource
-	Provider    provider.Provider
+	Credentials     credentials.Source
+	Catalog         CatalogSource
+	Provider        provider.Provider
+	FailureObserver turn.FailureObserver
 	// WriteTimeout bounds each frame AND flush, not upstream generation time.
 	// Zero selects five seconds. Inject a short bound for slow-client tests.
 	WriteTimeout time.Duration
@@ -45,7 +46,7 @@ func streamChat(w http.ResponseWriter, r *http.Request, runtime Runtime, req atu
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("X-Accel-Buffering", "no")
 	w.Header().Set("X-Atuin-AI-Session-Id", req.SessionID)
-	turn.Run(ctx, runtime.Provider, req, turn.SinkFunc(func(ctx context.Context, e turn.Event) error {
+	turn.RunWithObserver(ctx, runtime.Provider, req, turn.SinkFunc(func(ctx context.Context, e turn.Event) error {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
@@ -65,5 +66,5 @@ func streamChat(w http.ResponseWriter, r *http.Request, runtime Runtime, req atu
 			cancel()
 		}
 		return err
-	}))
+	}), runtime.FailureObserver)
 }

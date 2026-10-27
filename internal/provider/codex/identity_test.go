@@ -2,6 +2,7 @@ package codex
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"testing"
 
@@ -22,7 +23,7 @@ func TestDiscoveryIdentityCannotRebindDuringInferenceLookup(t *testing.T) {
 		})
 		client := RequestClient{Credentials: source, Transport: rejectTransport{t}}
 		ctx := credentials.BindIdentity(context.Background(), expected)
-		if _, err := client.Open(ctx, decodedRequest(t, `[{"role":"user","content":"hello"}]`)); err != ErrCredentials {
+		if _, err := client.Open(ctx, decodedRequest(t, `[{"role":"user","content":"hello"}]`)); !errors.Is(err, ErrCredentials) {
 			t.Fatal("lifecycle mismatch accepted", err)
 		}
 	}

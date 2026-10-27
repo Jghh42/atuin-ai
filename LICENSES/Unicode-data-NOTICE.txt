@@ -14,7 +14,7 @@ retains the historical full data-file grant, not today's moving license page.
 Unicode 15.0.0 UCD ReadMe and GraphemeBreakProperty headers: © 2022 Unicode®, Inc.
 Applicable full grant: Unicode-15-data-license.txt (Copyright © 1991-2022 Unicode, Inc.).
 
-Go 1.27.2 runtime/stdlib selected Unicode 17.0.0 tables:
+Go 1.27.3 runtime/stdlib selected Unicode 17.0.0 tables:
 - src/unicode/tables.go
 - src/vendor/golang.org/x/net/idna/tables17.0.0.go
 - src/vendor/golang.org/x/text/unicode/bidi/tables17.0.0.go

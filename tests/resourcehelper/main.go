@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -195,7 +196,9 @@ func run() error {
 		return e
 	}
 	defer app.Close()
-	server, e := httpserver.NewWithRuntime(cfg, nil, app.HTTP)
+	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+	app.HTTP.FailureObserver = httpserver.NewFailureObserver(logger)
+	server, e := httpserver.NewWithRuntime(cfg, logger, app.HTTP)
 	if e != nil {
 		return e
 	}

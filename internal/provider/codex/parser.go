@@ -86,9 +86,16 @@ type parser struct {
 }
 
 func parseStream(r io.Reader, sink func(provider.Event) error) (provider.Usage, error) {
-	p := parser{slots: make(map[int]*outputSlot), sink: sink}
+	var sinkErr error
+	p := parser{slots: make(map[int]*outputSlot), sink: func(e provider.Event) error {
+		sinkErr = sink(e)
+		return sinkErr
+	}}
 	err := readSSE(r, p.event)
 	if err != nil {
+		if sinkErr == nil {
+			err = streamFailure(err)
+		}
 		return provider.Usage{}, err
 	}
 	return p.usage, nil
@@ -127,8 +134,12 @@ func (p *parser) event(name string, data []byte) (bool, error) {
 		if len(e.Response.Output) != 0 {
 			return false, ErrUnsupported
 		}
-	case "error", "response.failed", "response.incomplete":
-		return false, ErrResponse
+	case "error":
+		return false, failure(ErrResponse, provider.PhaseStream, provider.UpstreamError)
+	case "response.failed":
+		return false, failure(ErrResponse, provider.PhaseStream, provider.UpstreamFailed)
+	case "response.incomplete":
+		return false, failure(ErrResponse, provider.PhaseStream, provider.UpstreamIncomplete)
 	case "response.refusal.delta", "response.refusal.done":
 		return false, ErrRefusal
 	case "response.output_item.added", "response.output_item.done":
