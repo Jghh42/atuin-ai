@@ -131,12 +131,32 @@ the old session in that pre-side-effect case.
 There is no automatic old-token retry. Once tokens arrive, a detached bounded
 persistence operation finishes despite caller cancellation. Filesystem budgets
 are checked between syscalls, not a guarantee against a kernel-stalled fsync.
-Secret structs redact all fmt verbs, including formatting mistakes, and JSON
-slog output without changing intentional private-store JSON. Duplicate-member
+New private continuation objects use opaque unexported payload pointers,
+including under invalid fmt verbs/containers and JSON/slog. Legacy credential
+formatter methods are not an arbitrary-formatting confidentiality boundary;
+never print private credentials/contexts. Intentional private-store JSON is unchanged. Duplicate-member
 validation follows Go's Unicode SimpleFold aliases, not lowercasing alone;
 persisted field names remain exact.
 Unsafe/corrupt state needs operator investigation, not guessed endpoints or
 manual token edits. [Full lifecycle invariants](authentication.md#rotation-and-restart-safety).
+
+## Durable private reasoning continuation (development candidate)
+
+[Finite contract, private storage, diagnostics and attended recovery](reasoning-continuation.md)
+apply to the enabled candidate. The existing saved login/config and credential
+JSON stay unchanged. Normal runtime owns fixed `continuation-v1`; auth status/
+diagnosis and declined init never open/create/prune it. Snapshots are encrypted,
+but the separate local root key is plaintext: protect the whole namespace like
+credentials, not as secure erasure or protection from same-UID/root/backups.
+
+Retained protected exchanges require exact opaque IDs and full bound history;
+missing/corrupt/expired/policy/model/session/window-changed state fails before
+POST, without fallback. For transcript/window loss use `/new`; this does NOT
+repair a corrupt global key. Such repair requires explicitly attended new-binary
+logout/login with consent. Rollback to stable v0.1.0 retains the SAME login/config
+but needs a NEW conversation; old logout does not purge the new namespace.
+Four leases,2MiB sealed snapshot/128records/64MiB actual total and inherited24h
+expiry are hard finite limits, not universal all-turn support.
 
 ## HTTP boundary
 
@@ -183,20 +203,22 @@ are intentionally generic to avoid parser diagnostics exposing secret values.
 
 New debug builds emit one `generation_failed` JSON stderr line for a selected
 failure that attempts the unchanged generic SSE terminal. Old v0.1.0 logs cannot
-recover the cause retrospectively. No success logging, retries, automatic tools,
+recover the cause retrospectively. No retries, automatic tools,
 refresh-and-replay, model fallback or additional provider requests are added.
+The enabled reasoning candidate separately permits only closed handled/replayed
+success reports AFTER successful done/flush and complete cleanup (below).
 Early client cancellation and downstream-write-only failures do not report.
 
 The **only seven keys** are standard `time`, `level`, `msg`, plus `phase`,
 `category`, `upstream_http_status`, `elapsed_ms`. Status is the actual rejected
 HTTP integer (100–599), or null when unavailable; null is not HTTP zero.
-Elapsed milliseconds are nonnegative, from immediately before streaming to the
+Elapsed milliseconds are nonnegative, from immediately before prepared generation/streaming to the
 failure decision, excluding terminal flush and logger latency. Unknown enum
 values become `unknown`. No error text, body, header, URL/path, model/tool name,
 ID, prompt/history/arguments, usage or credential is attached.
 
 Phases are `request`, `credentials`, `transport`, `http`, `stream`, `turn`,
-`unknown`. Categories are:
+`continuation`, `unknown`. Categories include:
 
 - `request_invalid`, `credentials_unavailable`
 - `transport_failure`, `transport_timeout`
@@ -207,6 +229,18 @@ Phases are `request`, `credentials`, `transport`, `http`, `stream`, `turn`,
   `upstream_incomplete`, `refusal`, `unsupported_output`
 - `inactivity_timeout`, `generation_timeout`, `events_invalid`,
   `tool_batch_invalid`, `history_call_id_collision`, `provider_failure`, `unknown`
+
+Additional closed categories cover continuation unavailable/missing/expired/
+binding mismatch/corrupt/quota/projection unsupported/lifecycle changed, missing
+reasoning state/no visible output, and unsupported lifecycle output/content/
+channel/item/namespace. Exact labels are documented in
+[the implementation contract](../internal/provider/failure.go); no raw
+provider discriminator is appended. Optional successful
+`generation_reasoning_handled` / `generation_reasoning_replayed` use the SAME
+seven keys with phase `stream`, null HTTP status and categories
+`reasoning_handled`, `reasoning_replayed`, `reasoning_replayed_and_handled`.
+Ordinary success remains silent. Success elapsed ends at terminal decision;
+observers run only after done/flush, native cleanup, lease close, unlock/cancel.
 
 These describe an observed failure branch, **not a root-cause or retryability
 guarantee**. Typed inspection has a total 64-node/edge budget, including joined
@@ -229,7 +263,9 @@ leave the stable binary untouched. Only the user/colleague should initiate a
 fresh natural request. Ctrl-C stops the debug process; restart the old service to
 roll back. Do not run automated live probes or attempt credential/model fixes
 based only on a category. Ask for **only the `generation_failed` lines**, never a
-whole journal, request dump, credential file or provider transcript.
+whole journal, request dump, credential file or provider transcript. With the
+reasoning candidate, share only those lines and the fixed handled/replayed lines
+when explicitly requested; these do not establish live inference acceptance.
 
 Packaging/installer tests within `make check` additionally require Python3.9+,
 OpenSSL and **curl >=8.4.0**. They use real curl only against an ephemeral-CA

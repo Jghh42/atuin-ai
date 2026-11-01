@@ -28,6 +28,7 @@ type fakeNative struct {
 	token                                          string
 	refresh                                        string
 	exchanges, rotations, discoveries, generations int
+	generate                                       func(int, []map[string]any) []any
 }
 
 func (f *fakeNative) clock() time.Time        { f.mu.Lock(); defer f.mu.Unlock(); return f.now }
@@ -85,7 +86,9 @@ func (f *fakeNative) RoundTrip(r *http.Request) (*http.Response, error) {
 			f.t.Error("wrong generation projection")
 		}
 		var output []any
-		if f.generations == 2 {
+		if f.generate != nil {
+			output = f.generate(f.generations, wire.Input)
+		} else if f.generations == 2 {
 			output = []any{map[string]any{"type": "function_call", "id": "item-read", "call_id": "call-read", "name": "read_file", "arguments": `{"file_path":"fixture.txt","offset":0,"limit":10}`}}
 		} else {
 			if f.generations == 3 {

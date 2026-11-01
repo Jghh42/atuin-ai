@@ -244,3 +244,50 @@ Independent review and local full085 verification are CLEARED/PASSED, within
 the stated finite resolution. Native Mac execution, real-account/provider/live
 eligible discovery, ALL FOUR exact-HEAD hosted CI families and explicit
 publication approval remain separate release gates.
+
+## Enabled reasoning candidate: separate storage stress
+
+`make reasoning-resource BINARY=/absolute/development-linux-binary
+CLI=/absolute/pinned-atuin OUT=/absolute/fresh-evidence` is an ADDITIONAL gate,
+not a modification/substitute for the original446/0catalog/4peak/23-process suite
+or its real60s/300s default timeouts. It uses a distinct fd-pinned read-only set
+of eight required public inputs, no checkout/private HOME mount, and a fresh
+loopback-only/no-route namespace plus denied remote-connect witness. The same
+production composition, native HTTPS CONNECT/TLS fake, synthetic saved login and
+default transport/timeouts are used. No real provider/auth/service operations.
+
+Shipping exercises eight missing-state failures, eight handled executable batches,
+eight inherited executable replays, FOUR subsequent terminal successes, then four
+simultaneous near-limit scopes across two protected generations. Initial request
+wire is4MiB-1024; each near output has600k encrypted bytes,200k discarded leading
+bytes and160k raw escaped Unicode arguments. Unicode grapheme estimation retains
+the unchanged180000 ceiling; second self-contained snapshots approach2MiB.
+Exact original items/args/results/order are checked, including no-new-reasoning
+protected inheritance. Disk totals/record limits and zero residual native activity
+are asserted. Max sampled VmRSS/VmHWM remains under256MiB, warmed normal HWM64MiB,
+and descriptors return to baseline. Four ADDITIONAL concurrent requests each
+send128 distinct900KiB encrypted DONE snapshots then EOF, never completed/tools;
+checkpoint state stays fixed-size rather than retaining128 payloads. Each current
+shipping/companion workload additionally exercises four simultaneous ordinary
+message-DONE streams,128frames each with300KiB inapplicable name+300KiB call_id+
+256KiB arguments; each is below1MiB and ends EOF/no tools. Individual per-field
+128-frame regressions account ALL reachable slot-owned bytes, not reasoning only.
+The current shipping/companion workload is44 generations. No shipping forced GC/race/GOMEMLIMIT tuning.
+The fail-closed sampler propagates every thread/read/permission/early-exit failure,
+requires nonzero per-actual-PID baseline and final VmRSS/VmHWM samples covering
+workload boundaries, and asserts bounded join termination on all cleanup paths.
+Periodic20ms is a requested cadence only, not a continuity guarantee. Current
+kernel VmHWM observations bound the measured process peak. Nine mandatory fast
+synthetic sampler regressions run in normal make check, without new workload or
+budget allowances. Older fb9 stress passes did not establish this corrected gate;
+no claim is made that their sampler actually failed.
+
+A separately labeled resource-helper companion runs the same44-generation workload
+and post-cycle success, using existing test-only pipe GC snapshots to compare
+heap<=24MiB and baseline growth<=512KiB/512objects, goroutine growth<=2, FD growth0.
+Readiness refuses unprimed metrics, so removing/moving startup telemetry priming
+cannot emit READY and silently undercount the baseline. There is no production
+profiling/metrics endpoint or decrypted whole-store cache.
+This is finite local retention evidence, not a secure-erasure or leak-free-forever
+claim. Original workload/allowances and original eight-input isolation remain
+unchanged. Preserve failed first receipts and diagnoses alongside final results.

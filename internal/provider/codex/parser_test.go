@@ -33,7 +33,7 @@ func fn(id, call, args string) map[string]any {
 	return map[string]any{"type": "function_call", "id": id, "call_id": call, "name": "read_file", "arguments": args}
 }
 func msg(text string) map[string]any {
-	return map[string]any{"type": "message", "id": "msg-1", "content": []any{map[string]any{"type": "output_text", "text": text}}}
+	return map[string]any{"type": "message", "id": "msg-1", "role": "assistant", "status": "completed", "content": []any{map[string]any{"type": "output_text", "text": text, "annotations": []any{}}}}
 }
 func added(index int, item map[string]any) string {
 	return frame("response.output_item.added", map[string]any{"output_index": index, "item": item})

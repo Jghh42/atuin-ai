@@ -15,6 +15,8 @@ type ManagerOptions struct {
 	// Invalidate is fixed at construction, synchronously invoked outside state
 	// locks AFTER publishing lifecycle state. Composition binds one cache once.
 	Invalidate func()
+	// Dependent is optional; nil preserves the legacy runtime composition.
+	Dependent LifecycleDependent
 }
 type refreshFlight struct {
 	done chan struct{}
@@ -25,11 +27,12 @@ type refreshFlight struct {
 // cancels other Current waiters, or a rotation/persistence already in progress.
 type Manager struct {
 	mu           sync.Mutex
-	op           sync.Mutex
+	op           operationGate
 	record       Record
 	store        Storage
 	oauth        OAuthClient
 	invalidate   func()
+	dependent    LifecycleDependent
 	flight       *refreshFlight
 	closing      bool
 	closed       bool
@@ -51,7 +54,20 @@ func NewManager(store Storage, opts ManagerOptions) (*Manager, error) {
 		return nil, ErrStore
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	return &Manager{record: r, store: store, oauth: opts.OAuth, invalidate: opts.Invalidate, life: ctx, stop: cancel, shutdownDone: make(chan struct{})}, nil
+	m := &Manager{record: r, store: store, oauth: opts.OAuth, invalidate: opts.Invalidate, dependent: opts.Dependent, life: ctx, stop: cancel, shutdownDone: make(chan struct{})}
+	if m.dependent != nil {
+		if r.State == "active" {
+			m.activate(r)
+		} else {
+			m.suspend(SuspendStartup)
+			if r.Generation > 0 && m.purge() != nil {
+				cancel()
+				_ = m.dependent.Close()
+				return nil, ErrStore
+			}
+		}
+	}
+	return m, nil
 }
 func (m *Manager) invalidated() {
 	if m.invalidate != nil {
@@ -147,13 +163,11 @@ func (m *Manager) rotate(old Record, f *refreshFlight) {
 	}
 	intent, e := next(old, false, m.oauth.now())
 	if e != nil {
-		m.publish(tombstone(old, "unusable", m.oauth.now()))
+		m.publishUnusable(tombstone(old, "unusable", m.oauth.now()), SuspendUnusable)
 		err = ErrStore
 		return
 	}
-	m.mu.Lock()
-	m.record = intent
-	m.mu.Unlock()
+	m.publishUnusable(intent, SuspendRefresh)
 	ctx, stop := context.WithTimeout(m.life, 30*time.Second)
 	defer stop()
 	if m.store.Begin(ctx, intent) != nil {
@@ -164,6 +178,7 @@ func (m *Manager) rotate(old Record, f *refreshFlight) {
 	// transport/malformed/invalid_grant/save failure leaves it unusable on restart.
 	replacement, e := m.oauth.refresh(ctx, old)
 	if e != nil {
+		_ = m.purge() // successful Begin; terminal unusable state
 		err = ErrReauth
 		return
 	}
@@ -171,12 +186,14 @@ func (m *Manager) rotate(old Record, f *refreshFlight) {
 	replacement.AuthEpoch = intent.AuthEpoch
 	replacement.SavedAt = m.oauth.now()
 	if m.persist(replacement) != nil {
+		_ = m.purge()
 		err = ErrStore
 		return
 	}
 	m.mu.Lock()
 	m.record = replacement
 	m.mu.Unlock() // rotation preserves epoch/catalog
+	m.activate(replacement)
 }
 func (m *Manager) persist(r Record) error {
 	// Detach from callers and shutdown once tokens have arrived. The store checks
@@ -195,10 +212,12 @@ func (m *Manager) operationContext(ctx context.Context) (context.Context, func()
 // Login explicitly replaces this application's session, including the same
 // account. Catalog membership/diagnosis is separate from saving login.
 func (m *Manager) Login(ctx context.Context, display func(DevicePrompt) error) error {
-	m.op.Lock()
-	defer m.op.Unlock()
 	ctx, stop := m.operationContext(ctx)
 	defer stop()
+	if m.op.LockContext(ctx) != nil {
+		return ErrUnavailable
+	}
+	defer m.op.Unlock()
 	m.mu.Lock()
 	old := m.record
 	unavailable := m.closing || m.closed
@@ -208,10 +227,16 @@ func (m *Manager) Login(ctx context.Context, display func(DevicePrompt) error) e
 	}
 	intent, e := next(old, true, m.oauth.now())
 	if e != nil {
+		if m.dependent != nil {
+			m.publishUnusable(tombstone(old, "unusable", m.oauth.now()), SuspendUnusable)
+		}
 		return e
 	}
-	m.publish(intent)
+	m.publishUnusable(intent, SuspendReauth)
 	if m.store.Begin(ctx, intent) != nil {
+		return ErrStore
+	}
+	if m.purge() != nil {
 		return ErrStore
 	}
 	r, e := m.oauth.login(ctx, display)
@@ -225,13 +250,18 @@ func (m *Manager) Login(ctx context.Context, display func(DevicePrompt) error) e
 		return ErrStore
 	}
 	m.publish(r)
+	m.activate(r)
 	return nil
 }
 
 // Logout is durable LOCAL secret deletion. No remote revocation endpoint is
 // verified; a secret-free tombstone retains monotonic counters.
 func (m *Manager) Logout(ctx context.Context) error {
-	m.op.Lock()
+	bound, stop := m.operationContext(ctx)
+	defer stop()
+	if m.op.LockContext(bound) != nil {
+		return ErrUnavailable
+	}
 	defer m.op.Unlock()
 	m.mu.Lock()
 	old := m.record
@@ -242,18 +272,25 @@ func (m *Manager) Logout(ctx context.Context) error {
 	}
 	intent, e := next(old, false, m.oauth.now())
 	if e != nil {
+		if m.dependent != nil {
+			m.publishUnusable(tombstone(old, "unusable", m.oauth.now()), SuspendUnusable)
+		}
 		return e
 	}
-	m.publish(intent)
-	if m.store.Begin(ctx, intent) != nil {
+	m.publishUnusable(intent, SuspendLogout)
+	if m.store.Begin(bound, intent) != nil {
 		return ErrStore
 	}
+	purgeErr := m.purge()
 	r := intent
 	r.State = "logged_out"
 	if m.persist(r) != nil {
 		return ErrStore
 	}
 	m.publish(r)
+	if purgeErr != nil {
+		return ErrStore
+	}
 	return nil
 }
 
@@ -288,10 +325,17 @@ func (m *Manager) Close() error {
 	done := m.shutdownDone
 	m.mu.Unlock()
 	m.stop()
+	m.suspend(SuspendShutdown)
 	m.invalidated()
 	m.wg.Wait()
 	m.op.Lock()
-	err := m.store.Close()
+	var err error
+	if m.dependent != nil && m.dependent.Close() != nil {
+		err = ErrStore
+	}
+	if storeErr := m.store.Close(); storeErr != nil && err == nil {
+		err = storeErr
+	}
 	m.op.Unlock()
 	m.mu.Lock()
 	m.shutdownErr = err

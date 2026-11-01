@@ -17,6 +17,25 @@ Installer/bootstrap behavior remains noninteractive and never invokes init.
 Native success does not establish byte identity with fresh version-stamped
 release builds or production maturity.
 
+## Private reasoning development candidate
+
+The [bounded reasoning implementation](reasoning-continuation.md) requires NEW
+fresh development packages at two absolute output paths, not relabeled foundation
+or stable assets. Existing installer/public v0.1.0 assets are not modified.
+Source identity includes the full nonignored candidate; each producer still uses
+two fresh source paths/caches and both minimum targets. Independent consumer36
+unit tests plus32 rehashed mutations run before AND after the unchanged full
+resource gate. Separate reasoning CLI/restart/storage stress and packaged init
+no-TTY/private-controlling-PTY explicit-login-decline gates are additional.
+
+Actual Go1.27.3 target-selected stdlib/vendor/Unicode legal bytes are measured
+before considering strict-pin changes; encryption imports do not justify guessed
+notice growth. The current selected-source notice bundle remains335056 bytes,
+with unchanged reviewed hash/vendor grants/Unicode tables: no legal pin or
+installer budget increase is needed. Final manifests/receipts identify exact
+source/binaries; cross-compiled Darwin remains compilation evidence only, not a
+new native Mac claim, release authorization or independent producer attestation.
+
 ## Build / examine locally
 
 Requires Git, Python 3.9+ stdlib, and the exact official **Go 1.27.3** toolchain

@@ -64,6 +64,31 @@ trusted; this is not protection against a compromised account. Linux and macOS
 are targeted; no Windows or network-filesystem/multireplica guarantee is made.
 Plaintext private files are not encryption, secure erasure or an OS keyring.
 
+### Private continuation candidate
+
+The [bounded reasoning candidate](reasoning-continuation.md) adds only a fixed
+`continuation-v1` child; saved credential JSON schema/codecs and configuration
+remain unchanged. Snapshots are AES-GCM encrypted, with a separate private local
+PLAINTEXT root key. This is not encryption of credentials, a keyring, secure
+erasure, protection against same-UID/root or backups containing that key.
+
+Ordinary successful refresh preserves AuthEpoch/key/records. Every unusable
+publication, even failed durable Begin, suspends/revokes and joins native private
+stream cleanup before returning. Failed Begin does NOT purge key/state or send
+OAuth; successful durable intent allows bounded safe purge. Close preserves
+committed private data and closes its dependent resources before flock release.
+Auth status/diagnose do not open/inspect/create/prune this child, and init opens
+it for missing login only after explicit YES. New-binary attended logout also
+removes safely owned continuation data without parsing a corrupt key; failures
+remain failures, not durable-deletion success claims.
+
+For a changed/omitted protected transcript or automatic200000-byte CLI window,
+start a NEW chat (`/new`). This cannot repair global key corruption/loss with
+existing records; stop serve and use attended new-binary logout/login with
+consent. No automatic reauthentication/manual credential edits. Stable v0.1.0
+rollback keeps the SAME saved login/config but requires a NEW conversation;
+stable cannot interpret protected IDs and its logout cannot purge this namespace.
+
 ### Rotation and restart safety
 
 `Current` returns an atomic provider/account/auth-epoch/access-token pair.
@@ -111,7 +136,10 @@ struct-field aliases, including long s (ſ) and Kelvin sign (K); lowercasing a
 is insufficient. Persisted field names remain exact, and numbers remain lossless.
 Secret structs implement fmt.Formatter plus String/GoString and slog.LogValuer:
 unsupported formatting verbs emit only a fixed redaction label. Intentional
-private-store JSON serialization is unchanged.
+private-store JSON serialization is unchanged. Formatter methods alone do not
+protect arbitrary legacy credential values from invalid Go formatting diagnostics;
+never print private credentials/contexts. New continuation values instead use
+unexported opaque payload pointers with adversarial composite-format tests.
 
 Counter overflow fails rather than wrapping; failed in-memory reservations may
 leave counter gaps, not backward/reused values. Private orphan temporary records

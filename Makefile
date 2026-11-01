@@ -1,4 +1,4 @@
-.PHONY: build test race vet lint vuln fuzz check fmt fmt-check toolchain e2e differential compatibility packaging-test package package-dev resource resource-release resource-test resource-isolation-test
+.PHONY: build test race vet lint vuln fuzz check fmt fmt-check toolchain e2e differential compatibility packaging-test package package-dev resource resource-release resource-test resource-isolation-test reasoning-e2e reasoning-resource reasoning-harness-test
 
 # go.mod is the single exact toolchain pin. Force that release even when the
 # launcher is newer; normal Go toolchain download is allowed when it is absent.
@@ -31,7 +31,7 @@ fuzz: toolchain
 	go test ./internal/safety -run='^$$' -fuzz=FuzzEscalate -fuzztime=5s -parallel=2
 	go test ./internal/provider/codex -run='^$$' -fuzz=FuzzResponsesSSE -fuzztime=5s -parallel=2
 
-check: toolchain fmt-check test race vet lint vuln fuzz packaging-test resource-test
+check: toolchain fmt-check test race vet lint vuln fuzz packaging-test resource-test reasoning-harness-test
 
 fmt: toolchain
 	go fmt ./cmd/... ./internal/... ./tests/...
@@ -50,6 +50,20 @@ differential: toolchain
 	go test -v ./tests/differential -run '^TestOriginalReferenceOracle$$' -count=1 -timeout=5m
 
 compatibility: e2e differential
+
+reasoning-harness-test:
+	python3 -B -I tests/reasoning/sampler_test.py
+
+# Separate enabled-reasoning proofs; never alter the CLI20/oracle14 contracts.
+reasoning-e2e: build
+	@test -n "$$ATUIN_E2E_MANIFEST" -a -n "$(OUT)" || { echo 'BLOCKED: pinned ATUIN_E2E_MANIFEST and fresh OUT required'; exit 1; }
+	go build -o bin/reasoning-resourcehelper ./tests/resourcehelper
+	ATUIN_REASONING_SERVER="$(abspath bin/atuin-ai-server)" ATUIN_REASONING_HELPER="$(abspath bin/reasoning-resourcehelper)" ATUIN_REASONING_OUT="$(abspath $(OUT))" go test -v ./tests/e2e -run '^TestPinnedReasoningCLI$$' -count=1 -timeout=3m
+
+reasoning-resource: toolchain
+	@test -n "$(BINARY)" -a -n "$(CLI)" -a -n "$(OUT)" || { echo 'BLOCKED: explicit development BINARY, pinned CLI and fresh OUT required'; exit 1; }
+	go build -o bin/reasoning-resourcehelper ./tests/resourcehelper
+	python3 -B -I tests/reasoning/run.py --stress --server "$(BINARY)" --helper "$(abspath bin/reasoning-resourcehelper)" --cli "$(CLI)" --out "$(OUT)"
 
 # Fresh ignored output directory required; nothing publishes or creates tags.
 # VERSION must be an existing exact-HEAD tag for clean release-mode packaging.

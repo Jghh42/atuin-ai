@@ -2,9 +2,11 @@
 package turn
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"sync"
 	"time"
 	"unicode/utf8"
@@ -28,59 +30,94 @@ func (f SinkFunc) Emit(ctx context.Context, e Event) error { return f(ctx, e) }
 
 var errEvents = errors.New("invalid provider events")
 
-// Run never executes tools, retries, or continues a generation. Sink errors are
-// sticky: cancel immediately and never attempt another downstream write.
+// Run owns one generation, never tools/retries. Writer errors are sticky.
 func Run(parent context.Context, p provider.Provider, req atuin.Request, sink EventSink) {
 	run(parent, p, req, sink, config.GenerationTimeout)
 }
-
-// RunWithObserver preserves Run's wire contract with an optional safe observer.
 func RunWithObserver(parent context.Context, p provider.Provider, req atuin.Request, sink EventSink, observer FailureObserver) {
 	runObserved(parent, p, req, sink, config.GenerationTimeout, observer)
 }
-
+func RunWithObservers(parent context.Context, p provider.Provider, req atuin.Request, sink EventSink, failure FailureObserver, reasoning ReasoningObserver) {
+	runObservers(parent, p, req, sink, config.GenerationTimeout, failure, reasoning)
+}
 func run(parent context.Context, p provider.Provider, req atuin.Request, sink EventSink, timeout time.Duration) {
 	runObserved(parent, p, req, sink, timeout, nil)
 }
-
 func runObserved(parent context.Context, p provider.Provider, req atuin.Request, sink EventSink, timeout time.Duration, observer FailureObserver) {
+	runObservers(parent, p, req, sink, timeout, observer, nil)
+}
+
+func runObservers(parent context.Context, p provider.Provider, req atuin.Request, sink EventSink, timeout time.Duration, observer FailureObserver, reasoningObserver ReasoningObserver) {
 	var report FailureReport
-	selected := false
-	// Registered first: executes after callback unlock and context cancellation.
+	var reasoningReport ReasoningReport
+	selected, reasoningSelected := false, false
+	// Registered first: terminal -> unlock -> transaction/native cleanup -> cancel
+	// -> observers. Synchronous trusted logger latency is intentionally not hidden.
 	defer func() {
 		if selected && observer != nil {
 			observe(observer, report)
+		} else if reasoningSelected && reasoningObserver != nil {
+			observeReasoning(reasoningObserver, reasoningReport)
 		}
 	}()
 	ctx, cancel := context.WithTimeout(parent, timeout)
 	defer cancel()
-	writable := true
-	emit := func(name string, data any) bool {
-		if !writable || ctx.Err() != nil {
-			return false
+	var prepared provider.PreparedGeneration
+	defer func() {
+		if prepared != nil {
+			prepared.Close()
 		}
-		if err := sink.Emit(ctx, Event{name, data}); err != nil {
+	}()
+	writable, terminalAttempted, terminalSucceeded := true, false, false
+	var writerError error
+	emit := func(bound context.Context, name string, data any) error {
+		if !writable {
+			if writerError != nil {
+				return writerError
+			}
+			return errEvents
+		}
+		if e := bound.Err(); e != nil {
+			return e
+		}
+		if terminalAttempted {
+			return errEvents
+		}
+		if name == "done" || name == "error" {
+			terminalAttempted = true
+		}
+		if e := sink.Emit(bound, Event{name, data}); e != nil {
+			writerError = e
 			writable = false
 			cancel()
-			return false
+			return e
 		}
-		return true
+		if name == "done" {
+			terminalSucceeded = true
+		}
+		return nil
 	}
-	status := func(state string) bool {
-		return emit("status", struct {
+	status := func(bound context.Context, state string) error {
+		return emit(bound, "status", struct {
 			State string `json:"state"`
 		}{state})
 	}
-	if !status("processing") || !status("thinking") {
+	if status(ctx, "processing") != nil || status(ctx, "thinking") != nil {
 		return
 	}
-	var mu sync.Mutex
-	closed, batchSeen := false, false
-	var eventErr error
-	invalidEvents := false
-	var calls []tools.Call
 	started := time.Now()
-	usage, streamErr := p.Stream(ctx, provider.Request{Conversation: req}, func(e provider.Event) error {
+	var prepareErr error
+	if pp, ok := p.(provider.PreparedProvider); ok {
+		prepared, prepareErr = pp.Prepare(ctx, provider.Request{Conversation: req})
+		if prepareErr == nil && prepared == nil {
+			prepareErr = provider.WithFailure(errEvents, provider.NewFailure(provider.PhaseTurn, provider.EventsInvalid, 0))
+		}
+	}
+	var mu sync.Mutex
+	closed, batchSeen, invalidEvents := false, false, false
+	var eventErr error
+	var calls []tools.Call
+	callback := func(e provider.Event) error {
 		mu.Lock()
 		defer mu.Unlock()
 		if closed {
@@ -96,10 +133,10 @@ func runObserved(parent context.Context, p provider.Provider, req atuin.Request,
 				eventErr = errEvents
 				break
 			}
-			if !emit("text", struct {
+			if e := emit(ctx, "text", struct {
 				Content string `json:"content"`
-			}{e.Text}) {
-				eventErr = errEvents
+			}{e.Text}); e != nil {
+				eventErr = e
 			}
 		case provider.ToolCalls:
 			if batchSeen || e.Text != "" || len(e.Calls) > config.MaxCallsPerResponse {
@@ -108,7 +145,6 @@ func runObserved(parent context.Context, p provider.Provider, req atuin.Request,
 				break
 			}
 			batchSeen = true
-			// Own the bytes even if a faulty provider reuses its callback buffers.
 			for _, c := range e.Calls {
 				if len(c.Input) > config.MaxCallArgumentsBytes {
 					invalidEvents = true
@@ -126,43 +162,56 @@ func runObserved(parent context.Context, p provider.Provider, req atuin.Request,
 			cancel()
 		}
 		return eventErr
-	})
+	}
+	var usage provider.Usage
+	streamErr := prepareErr
+	if prepareErr == nil {
+		if prepared != nil {
+			usage, streamErr = prepared.Stream(ctx, callback)
+		} else {
+			usage, streamErr = p.Stream(ctx, provider.Request{Conversation: req}, callback)
+		}
+	}
 	mu.Lock()
 	defer mu.Unlock()
 	closed = true
 	if !writable || parent.Err() != nil {
 		return
 	}
-	// Event validation cancels upstream but a writable downstream still gets its
-	// one generic terminal. Use the parent context for that final attempt.
 	generationErr := ctx.Err()
-	ctx = parent
 	fail := func(f provider.Failure) {
+		if terminalAttempted {
+			return
+		}
 		selected = true
 		report = NewFailureReport(f, time.Since(started))
-		emit("error", struct {
+		_ = emit(parent, "error", struct {
 			Message string `json:"message"`
 			Code    string `json:"code"`
 		}{"LLM request failed, please retry", "upstream_error"})
 	}
-	if streamErr != nil || eventErr != nil || generationErr != nil {
-		f := provider.NewFailure(provider.PhaseTurn, provider.ProviderFailure, 0)
+	classify := func(err error) provider.Failure {
 		if invalidEvents {
-			f = provider.NewFailure(provider.PhaseTurn, provider.EventsInvalid, 0)
-		} else if typed, ok := provider.FailureOf(streamErr); ok {
-			f = typed
-		} else if generationErr == context.DeadlineExceeded {
-			f = provider.NewFailure(provider.PhaseTurn, provider.GenerationTimeout, 0)
+			return provider.NewFailure(provider.PhaseTurn, provider.EventsInvalid, 0)
 		}
-		fail(f)
+		if f, ok := provider.FailureOf(err); ok {
+			return f
+		}
+		if generationErr == context.DeadlineExceeded {
+			return provider.NewFailure(provider.PhaseTurn, provider.GenerationTimeout, 0)
+		}
+		return provider.NewFailure(provider.PhaseTurn, provider.ProviderFailure, 0)
+	}
+	if streamErr != nil || eventErr != nil || generationErr != nil {
+		fail(classify(streamErr))
 		return
 	}
-	batch, err := tools.ValidateBatch(calls, req.Config.Capabilities)
-	if err != nil {
+	batch, e := tools.ValidateBatch(calls, req.Config.Capabilities)
+	if e != nil {
 		fail(provider.NewFailure(provider.PhaseTurn, provider.ToolBatchInvalid, 0))
 		return
 	}
-	seen := make(map[string]bool)
+	seen := map[string]bool{}
 	for _, m := range req.Messages {
 		for _, b := range m.Content {
 			if b.Type == "tool_use" {
@@ -176,22 +225,60 @@ func runObserved(parent context.Context, p provider.Provider, req atuin.Request,
 			return
 		}
 	}
-	for _, c := range batch.Calls {
-		if !emit("tool_call", c) {
+	publicationStarted := false
+	publish := func(bound context.Context, translated []tools.Call) error {
+		if publicationStarted || len(translated) != len(batch.Calls) {
+			invalidEvents = true
+			return errEvents
+		}
+		publicationStarted = true
+		ids := make(map[string]bool, len(translated))
+		for j, c := range translated {
+			if strings.TrimSpace(c.ID) == "" || ids[c.ID] || seen[c.ID] || c.Name != batch.Calls[j].Name || !bytes.Equal(c.Input, batch.Calls[j].Input) {
+				invalidEvents = true
+				return errEvents
+			}
+			ids[c.ID] = true
+		}
+		for _, c := range translated {
+			if e := emit(bound, "tool_call", c); e != nil {
+				return e
+			}
+		}
+		if batch.Kind == tools.LocalTools {
+			if e := status(bound, "waiting_for_tools"); e != nil {
+				return e
+			}
+		}
+		return emit(bound, "done", struct {
+			SessionID string `json:"session_id"`
+			Usage     any    `json:"usage"`
+		}{req.SessionID, usagePayload(usage)})
+	}
+	if prepared != nil {
+		e = prepared.Publish(ctx, batch, publish)
+		if e != nil {
+			if !writable || parent.Err() != nil || terminalAttempted {
+				return
+			}
+			fail(classify(e))
 			return
 		}
+		if !publicationStarted || !terminalSucceeded {
+			fail(provider.NewFailure(provider.PhaseTurn, provider.EventsInvalid, 0))
+			return
+		}
+		if terminalSucceeded {
+			reasoningReport, reasoningSelected = NewReasoningReport(prepared.Outcome(), time.Since(started))
+		}
+	} else {
+		// Preserve the legacy path's terminal context behavior; only protected
+		// transaction publication uses the mandatory original-lifetime context.
+		_ = publish(parent, batch.Calls)
 	}
-	if batch.Kind == tools.LocalTools && !status("waiting_for_tools") {
-		return
-	}
-	emit("done", struct {
-		SessionID string `json:"session_id"`
-		Usage     any    `json:"usage"`
-	}{req.SessionID, usagePayload(usage)})
 }
 
-// Unknown counts remain null, including cache creation (not supplied by Codex).
-// Costs are always null: subscription tokens are not a price/credit estimate.
+// Unknown counts remain null; prices are not subscription credit estimates.
 func usagePayload(u provider.Usage) map[string]any {
 	count := func(v int64, known bool) any {
 		if known {

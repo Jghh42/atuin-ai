@@ -35,10 +35,10 @@ func TestFailureClosedPresentations(t *testing.T) {
 	for p := 0; p < 256; p++ {
 		for c := 0; c < 256; c++ {
 			f := NewFailure(Phase(p), Category(c), 999)
-			if p > int(PhaseTurn) && f.Phase() != PhaseUnknown {
+			if p > int(PhaseContinuation) && f.Phase() != PhaseUnknown {
 				t.Fatal("phase not closed")
 			}
-			if c > int(ProviderFailure) && f.Category() != CategoryUnknown {
+			if c > int(UnsupportedNamespace) && f.Category() != CategoryUnknown {
 				t.Fatal("category not closed")
 			}
 			if f.HTTPStatus() != 0 {
@@ -107,6 +107,28 @@ func TestFailureInspectionSkipsNilJoinedChildren(t *testing.T) {
 	err := &wideError{children: []error{nil, cycle, typed}}
 	if _, ok := FailureOf(err); ok || cycle.calls > 64 {
 		t.Fatal("cycle escaped total budget")
+	}
+}
+
+func TestFailureInspection64thNodeNilFirstChild(t *testing.T) {
+	for _, depth := range []int{62, 63, 64} {
+		last := &wideError{children: []error{nil, privateError{}}}
+		var root error = last
+		for range depth {
+			root = &cycleError{next: root}
+		}
+		visited := 0
+		WalkErrors(root, func(error) bool { visited++; return false })
+		want := depth + 1
+		if want > 64 {
+			want = 64
+		}
+		if visited != want {
+			t.Fatalf("depth=%d visited=%d want=%d", depth, visited, want)
+		}
+		if (last.calls == 1) != (depth < 64) {
+			t.Fatal("unwrap boundary changed")
+		}
 	}
 }
 

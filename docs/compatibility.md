@@ -141,6 +141,35 @@ contains independently written synthetic before/after-user-turn regressions,
 including raw numeric spellings and ordinary paired local calls. This is not
 live proof or real-CLI validation; the live eligible-catalog gate remains NOT PASSED.
 
+## Private reasoning continuation candidate (ADR0005)
+
+[The finite development contract](reasoning-continuation.md) supersedes the
+Phase4 ID=no-hidden-state exception ONLY for new protected executable exchanges.
+Legacy IDs/numbers, suggestion-as-text, one generation, full K/result order and
+unchanged public framing remain. Supported reasoning is private, never ordinary
+text/log output. A prepared transaction authenticates every retained90-byte
+`aic1_...` handle, restores the original full output once and maps actual result
+order to original backend CallIDs. Raw Stream/Open/Project reject marked history.
+Protected arguments recursively require canonical decimal signed64/unsigned64
+integers; the pinned Rust fixture verifies both extremes without float rounding.
+
+Strict stable-policy/full-prefix binding intentionally rejects model/session/
+capability/environment/history/window changes before POST; a new user message is
+not a reset. The pinned200000 **serialized UTF8-byte** window (one frozen first
+turn+whole-turn tail) can invalidate a prefix earlier than24h/2MiB. Use a NEW chat
+for that loss, not suffix matching or forced fallback. `/new` cannot repair a
+corrupt global key: use attended new-binary logout/login only with consent.
+Credential JSON/config remain stable-readable, but rollback needs a NEW
+conversation; old logout does not purge the continuation namespace.
+
+Original CLI20/oracle14 manifests/assertions remain unchanged and run once each.
+`tests/e2e/reasoning_test.go` is a separate pinned-CLI proof with actual server
+process restarts, a two-call same-path read-file batch with TWO explicit pending
+permission confirmations, inherited nonreasoning
+executable protection, exact raw arguments/items/results/text spans and terminal
+reasoning. It is not evidence for unknown installed clients/private extensions,
+live native acceptance, universal windows or an earlier real-machine root cause.
+
 Before importing, follow the [third-party process](provenance/README.md).
 Before claiming model support, complete the selected-backend
 [live validation](authentication.md). The isolated Codex proof covers only the

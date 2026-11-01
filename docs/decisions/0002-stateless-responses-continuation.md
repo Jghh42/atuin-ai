@@ -3,6 +3,10 @@
 - Status: accepted invariants; isolated Codex replay passed on `gpt-6.1-sol`; production/SIWC validation separate
 - Date: 2026-10-16
 
+> Supersession pointer (2026-11-01): [ADR 0005](0005-durable-provider-continuation.md)
+> explicitly supersedes only the no-hidden-state and ID=backend-call-ID rules
+> for new protected executable continuation. Historical evidence below is unchanged.
+
 ## Context
 
 Atuin persists its own transcript and resends relevant history. Its session

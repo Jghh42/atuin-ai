@@ -147,6 +147,28 @@ func (l *observedListener) stats() map[string]any {
 	return map[string]any{"active_tcp": l.active, "write_timeout": l.timeout}
 }
 
+// Initialize telemetry BEFORE readiness/baseline so the first quiescent heap
+// measurement includes runtime/metrics' lazy allocations. Reuse the same sample
+// storage; diagnostics themselves must not appear as workload retention growth.
+func newDiagnosticSamples() []metrics.Sample {
+	samples := []metrics.Sample{{Name: "/memory/classes/heap/objects:bytes"}, {Name: "/gc/heap/objects:objects"}, {Name: "/sched/goroutines:goroutines"}}
+	metrics.Read(samples)
+	return samples
+}
+
+// Readiness is guarded by already-primed metrics; moving/removing startup
+// priming cannot silently establish a baseline which excludes instrumentation.
+func companionReady(encoder *json.Encoder, samples []metrics.Sample) error {
+	if len(samples) != 3 {
+		return errors.New("telemetry not primed")
+	}
+	for _, sample := range samples {
+		if sample.Value.Kind() != metrics.KindUint64 {
+			return errors.New("telemetry not primed")
+		}
+	}
+	return encoder.Encode(map[string]bool{"companion_ready": true})
+}
 func run() error {
 	if len(os.Args) < 2 {
 		return errors.New("mode required")
@@ -189,6 +211,7 @@ func run() error {
 	if os.Args[1] != "serve" || len(os.Args) != 2 {
 		return errors.New("unknown mode")
 	}
+	samples := newDiagnosticSamples()
 	// All default production transport, manager, catalog, native parser/runner and
 	// server composition. No shortened timeouts or injected provider.
 	app, e := application.NewWithOptions(path, cfg, application.Options{})
@@ -198,6 +221,7 @@ func run() error {
 	defer app.Close()
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 	app.HTTP.FailureObserver = httpserver.NewFailureObserver(logger)
+	app.HTTP.ReasoningObserver = httpserver.NewReasoningObserver(logger)
 	server, e := httpserver.NewWithRuntime(cfg, logger, app.HTTP)
 	if e != nil {
 		return e
@@ -212,7 +236,7 @@ func run() error {
 	observed := &observedListener{Listener: listener}
 	go func() { done <- server.Serve(ctx, observed) }()
 	encoder := json.NewEncoder(os.Stdout)
-	if e := encoder.Encode(map[string]bool{"companion_ready": true}); e != nil {
+	if e := companionReady(encoder, samples); e != nil {
 		return e
 	}
 	commands := make(chan string)
@@ -249,7 +273,6 @@ func run() error {
 			runtime.GC()
 			var m runtime.MemStats
 			runtime.ReadMemStats(&m)
-			samples := []metrics.Sample{{Name: "/memory/classes/heap/objects:bytes"}, {Name: "/gc/heap/objects:objects"}, {Name: "/sched/goroutines:goroutines"}}
 			metrics.Read(samples)
 			if e := encoder.Encode(map[string]any{"goroutines": runtime.NumGoroutine(), "heap_alloc": m.HeapAlloc, "heap_objects": m.HeapObjects, "stack_inuse": m.StackInuse, "heap_inuse": m.HeapInuse, "metric_heap_bytes": samples[0].Value.Uint64(), "metric_heap_objects": samples[1].Value.Uint64(), "metric_goroutines": samples[2].Value.Uint64()}); e != nil {
 				return e

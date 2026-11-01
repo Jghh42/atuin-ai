@@ -97,11 +97,13 @@ func runInit(ctx context.Context, args []string, deps commandDeps) error {
 	wizard := setup.Wizard{
 		TTY: tty,
 		OpenAuth: func() (setup.Auth, error) {
-			r, err := openRuntime(cfg, deps, false)
+			r, err := openRuntime(cfg, deps, false, true)
 			if err != nil {
 				return nil, err
 			}
-			return &initAuth{r}, nil
+			// Read status without opening private continuation state. Only an
+			// explicit YES may reopen the lifecycle-capable runtime for login.
+			return &initAuth{Runtime: r, open: func() (*application.Runtime, error) { return openRuntime(cfg, deps, false) }}, nil
 		},
 		Service: service,
 		PrepareConfig: func() (string, error) {
@@ -155,9 +157,33 @@ func decodeInitConfiguration(snapshot setup.Snapshot) (config.Config, error) {
 	return cfg, nil
 }
 
-type initAuth struct{ *application.Runtime }
+type initAuth struct {
+	*application.Runtime
+	open func() (*application.Runtime, error)
+}
 
-func (a *initAuth) Status() credentials.Status { return a.Manager.Status() }
+func (a *initAuth) Status() credentials.Status {
+	if a.Runtime == nil {
+		return credentials.Status{}
+	}
+	return a.Manager.Status()
+}
+func (a *initAuth) Close() error {
+	if a.Runtime == nil {
+		return nil
+	}
+	e := a.Runtime.Close()
+	a.Runtime = nil
+	return e
+}
 func (a *initAuth) Login(ctx context.Context, display func(credentials.DevicePrompt) error) error {
+	if e := a.Close(); e != nil {
+		return e
+	}
+	r, e := a.open()
+	if e != nil {
+		return e
+	}
+	a.Runtime = r
 	return a.Manager.Login(ctx, display)
 }

@@ -1,0 +1,14 @@
+{
+  "type": "response.completed",
+  "response": {
+    "id": "synthetic-response",
+    "status": "completed",
+    "output": [
+      {"id":"synthetic-reasoning","type":"reasoning","summary":[{"type":"summary_text","text":"SYNTHETIC-PRIVATE-SUMMARY"}],"content":null,"encrypted_content":"SYNTHETIC-OPAQUE-NOT-REAL-CIPHERTEXT","status":null},
+      {"id":"synthetic-message","type":"message","role":"assistant","status":"completed","content":[{"type":"output_text","text":" \t"},{"type":"output_text","text":"Inspecting. \n"}]},
+      {"id":"synthetic-function-a","type":"function_call","call_id":"backend-a","name":"read_file","arguments":"{\"file_path\":\"synthetic-a\",\"extra\":[0,18446744073709551615]}"},
+      {"id":"synthetic-function-b","type":"function_call","call_id":"backend-b","name":"read_file","arguments":"{\"file_path\":\"synthetic-b\"}"}
+    ],
+    "usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}
+  }
+}

@@ -18,6 +18,7 @@ const (
 	PhaseHTTP
 	PhaseStream
 	PhaseTurn
+	PhaseContinuation
 )
 
 func (p Phase) String() string {
@@ -34,6 +35,8 @@ func (p Phase) String() string {
 		return "stream"
 	case PhaseTurn:
 		return "turn"
+	case PhaseContinuation:
+		return "continuation"
 	default:
 		return "unknown"
 	}
@@ -71,10 +74,28 @@ const (
 	ToolBatchInvalid
 	HistoryCallIDCollision
 	ProviderFailure
+	ContinuationHandleInvalid
+	ContinuationMissing
+	ContinuationExpired
+	ContinuationCorrupt
+	ContinuationBindingMismatch
+	ContinuationUnavailable
+	ContinuationLimit
+	ContinuationClockInvalid
+	ContinuationCommitFailed
+	ContinuationLifecycleChanged
+	ContinuationProjectionUnsupported
+	ReasoningStateMissing
+	ReasoningNoVisibleOutput
+	UnsupportedLifecycleOutput
+	UnsupportedContent
+	UnsupportedChannel
+	UnsupportedItem
+	UnsupportedNamespace
 )
 
 func (c Category) String() string {
-	names := [...]string{"unknown", "request_invalid", "credentials_unavailable", "transport_failure", "transport_timeout", "http_unauthorized", "http_forbidden", "http_rate_limited", "http_server_error", "http_rejected", "stream_incomplete", "stream_malformed", "stream_read_failure", "stream_read_timeout", "upstream_error", "upstream_failed", "upstream_incomplete", "refusal", "unsupported_output", "inactivity_timeout", "generation_timeout", "events_invalid", "tool_batch_invalid", "history_call_id_collision", "provider_failure"}
+	names := [...]string{"unknown", "request_invalid", "credentials_unavailable", "transport_failure", "transport_timeout", "http_unauthorized", "http_forbidden", "http_rate_limited", "http_server_error", "http_rejected", "stream_incomplete", "stream_malformed", "stream_read_failure", "stream_read_timeout", "upstream_error", "upstream_failed", "upstream_incomplete", "refusal", "unsupported_output", "inactivity_timeout", "generation_timeout", "events_invalid", "tool_batch_invalid", "history_call_id_collision", "provider_failure", "continuation_handle_invalid", "continuation_missing", "continuation_expired", "continuation_corrupt", "continuation_binding_mismatch", "continuation_unavailable", "continuation_limit", "continuation_clock_invalid", "continuation_commit_failed", "continuation_lifecycle_changed", "continuation_projection_unsupported", "reasoning_state_missing", "reasoning_no_visible_output", "unsupported_lifecycle_output", "unsupported_content", "unsupported_channel", "unsupported_item", "unsupported_namespace"}
 	if int(c) >= len(names) {
 		return "unknown"
 	}
@@ -93,10 +114,10 @@ type Failure struct {
 }
 
 func NewFailure(p Phase, c Category, status int) Failure {
-	if p > PhaseTurn {
+	if p > PhaseContinuation {
 		p = PhaseUnknown
 	}
-	if c > ProviderFailure {
+	if c > UnsupportedNamespace {
 		c = CategoryUnknown
 	}
 	if status < 100 || status > 599 {
@@ -170,6 +191,9 @@ func WalkErrors(err error, visit func(error) bool) {
 				err = children[0]
 				if err != nil {
 					continue
+				}
+				if work == budget {
+					return // Do not charge a 65th edge after the last visited node.
 				}
 				work++ // A nil first child still consumes the total sibling budget.
 			}

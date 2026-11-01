@@ -37,3 +37,13 @@ pinned Atuin protocol specification, not copied upstream test code or live
 traffic. Terminal mixed batches intentionally fail atomically rather than
 reproducing reference precedence; unknown usage is null, not fabricated zero.
 No new third-party material or NOTICE change is required.
+
+## Durable continuation foundation (not enabled)
+
+`reasoning-foundation.json` is original synthetic data, with no real account,
+token, user input, provider ciphertext or captured traffic. It documents schema
+facts and leading text/parallel-call boundaries. It is NOT an accepted production
+parser fixture in this phase: current raw parsing still rejects reasoning. Its
+opaque marker is intentionally not real ciphertext. Schema/provenance and
+nullability rules: [reasoning provenance](../../docs/provenance/reasoning-continuation.md).
+No SDK code is copied; historical phase evidence above is unchanged.

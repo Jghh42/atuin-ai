@@ -3,6 +3,7 @@ package codex
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/json"
 	"hash"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/Jghh42/atuin-ai/internal/config"
+	"github.com/Jghh42/atuin-ai/internal/continuation"
 	"github.com/Jghh42/atuin-ai/internal/provider"
 	"github.com/Jghh42/atuin-ai/internal/tools"
 )
@@ -18,16 +20,52 @@ import (
 const maxOutputItems = 128
 
 type outputItem struct {
+	rawReason *rawReasoning
+	metadata  *itemMetadata
 	Type      string          `json:"type"`
 	ID        string          `json:"id"`
 	CallID    string          `json:"call_id"`
 	Name      string          `json:"name"`
 	Arguments string          `json:"arguments"`
 	Namespace json.RawMessage `json:"namespace"`
-	Content   []struct {
-		Type string `json:"type"`
-		Text string `json:"text"`
-	} `json:"content"`
+	Content   outputContent   `json:"content"`
+}
+
+type outputText struct {
+	metadata *itemMetadata
+	Type     string `json:"type"`
+	Text     string `json:"text"`
+}
+type outputContent []outputText
+
+func (parts *outputContent) UnmarshalJSON(raw []byte) error {
+	raw = bytes.TrimSpace(raw)
+	if bytes.Equal(raw, []byte("null")) {
+		*parts = nil
+		return nil
+	}
+	d := json.NewDecoder(bytes.NewReader(raw))
+	tok, e := d.Token()
+	if e != nil || tok != json.Delim('[') {
+		return ErrStream
+	}
+	out := make(outputContent, 0)
+	for d.More() {
+		if len(out) >= maxOutputItems {
+			return ErrStream
+		}
+		var part outputText
+		if d.Decode(&part) != nil {
+			return ErrStream
+		}
+		out = append(out, part)
+	}
+	tok, e = d.Token()
+	if e != nil || tok != json.Delim(']') {
+		return ErrStream
+	}
+	*parts = out
+	return nil
 }
 
 // A missing lifecycle output is allowed; an explicitly supplied output must
@@ -39,8 +77,28 @@ func (items *outputItems) UnmarshalJSON(raw []byte) error {
 	if len(raw) == 0 || raw[0] != '[' {
 		return ErrStream
 	}
-	type plain outputItems
-	return json.Unmarshal(raw, (*plain)(items))
+	d := json.NewDecoder(bytes.NewReader(raw))
+	tok, e := d.Token()
+	if e != nil || tok != json.Delim('[') {
+		return ErrStream
+	}
+	out := make(outputItems, 0)
+	for d.More() {
+		if len(out) >= maxOutputItems {
+			return ErrStream
+		}
+		var item outputItem
+		if d.Decode(&item) != nil {
+			return ErrStream
+		}
+		out = append(out, item)
+	}
+	tok, e = d.Token()
+	if e != nil || tok != json.Delim(']') {
+		return ErrStream
+	}
+	*items = out
+	return nil
 }
 
 type wireEvent struct {
@@ -48,6 +106,7 @@ type wireEvent struct {
 	Sequence     *int64      `json:"sequence_number"`
 	Index        *int        `json:"output_index"`
 	ContentIndex *int        `json:"content_index"`
+	SummaryIndex *int        `json:"summary_index"`
 	ItemID       string      `json:"item_id"`
 	ResponseID   *string     `json:"response_id"`
 	Delta        *string     `json:"delta"`
@@ -62,18 +121,32 @@ type wireEvent struct {
 	} `json:"response"`
 }
 type textState struct {
-	sum  hash.Hash
-	size int64
-	done bool
+	sum            hash.Hash
+	size           int64
+	done           bool
+	metadataDone   bool
+	metadataDigest [32]byte
 }
 type outputSlot struct {
-	item     outputItem
-	initial  [32]byte
-	args     string
-	argsDone bool
-	texts    map[int]*textState
+	reason                 *reasoningSlot
+	item                   outputItem
+	initial                [32]byte
+	identity, callIdentity [32]byte
+	args                   string
+	argsDone               bool
+	texts                  map[int]*textState
+	metadataDone           bool
+	metadataDigest         [32]byte
+	projectionUnsupported  bool
 }
 type parser struct {
+	privateValue
+	*parserPayload
+}
+type parserPayload struct {
+	prepared   bool
+	capture    *continuation.TextCapture
+	completion *completion
 	slots      map[int]*outputSlot
 	sink       func(provider.Event) error
 	calls      int
@@ -86,19 +159,31 @@ type parser struct {
 }
 
 func parseStream(r io.Reader, sink func(provider.Event) error) (provider.Usage, error) {
+	u, _, e := parseConfigured(r, sink, false)
+	return u, e
+}
+func parseConfigured(r io.Reader, sink func(provider.Event) error, prepared bool) (provider.Usage, *completion, error) {
 	var sinkErr error
-	p := parser{slots: make(map[int]*outputSlot), sink: func(e provider.Event) error {
+	capture := continuation.NewTextCapture()
+	defer capture.Close()
+	p := parser{parserPayload: &parserPayload{slots: make(map[int]*outputSlot), prepared: prepared, capture: capture, sink: func(e provider.Event) error {
+		if prepared && e.Kind == provider.TextDelta {
+			_ = capture.Add(e.Text)
+		}
 		sinkErr = sink(e)
 		return sinkErr
-	}}
+	}}}
 	err := readSSE(r, p.event)
 	if err != nil {
+		if p.completion != nil {
+			p.completion.close()
+		}
 		if sinkErr == nil {
 			err = streamFailure(err)
 		}
-		return provider.Usage{}, err
+		return provider.Usage{}, nil, err
 	}
-	return p.usage, nil
+	return p.usage, p.completion, nil
 }
 func (p *parser) event(name string, data []byte) (bool, error) {
 	if bytes.Equal(data, []byte("[DONE]")) || !validStreamJSON(data, true) {
@@ -108,6 +193,20 @@ func (p *parser) event(name string, data []byte) (bool, error) {
 	if json.Unmarshal(data, &e) != nil || e.Type == "" || (name != "" && name != e.Type) {
 		return false, ErrStream
 	}
+	defer func() {
+		if e.Item != nil && e.Item.rawReason != nil {
+			clear(e.Item.rawReason.data)
+			e.Item.rawReason.data = nil
+		}
+		if e.Response != nil {
+			for _, item := range e.Response.Output {
+				if item.rawReason != nil {
+					clear(item.rawReason.data)
+					item.rawReason.data = nil
+				}
+			}
+		}
+	}()
 	digest := sha256.Sum256(data)
 	if e.Sequence != nil {
 		if *e.Sequence < 0 {
@@ -132,7 +231,7 @@ func (p *parser) event(name string, data []byte) (bool, error) {
 		// nonempty output is unsupported, even with a matching response ID.
 		// Never silently drop reasoning, execution, refusal, or other content.
 		if len(e.Response.Output) != 0 {
-			return false, ErrUnsupported
+			return false, p.unsupported(provider.UnsupportedLifecycleOutput)
 		}
 	case "error":
 		return false, failure(ErrResponse, provider.PhaseStream, provider.UpstreamError)
@@ -142,7 +241,14 @@ func (p *parser) event(name string, data []byte) (bool, error) {
 		return false, failure(ErrResponse, provider.PhaseStream, provider.UpstreamIncomplete)
 	case "response.refusal.delta", "response.refusal.done":
 		return false, ErrRefusal
+	case "response.reasoning_summary_part.added", "response.reasoning_summary_part.done", "response.reasoning_summary_text.delta", "response.reasoning_summary_text.done", "response.reasoning_text.delta", "response.reasoning_text.done":
+		return false, p.reasonEvent(e, data)
 	case "response.output_item.added", "response.output_item.done":
+		if p.prepared && e.Item != nil && e.Item.Type == "reasoning" {
+			if _, err := strictObject(data, "type", "sequence_number", "output_index", "item", "response_id"); err != nil || e.Sequence == nil {
+				return false, ErrStream
+			}
+		}
 		if e.Index == nil || e.Item == nil {
 			return false, ErrStream
 		}
@@ -188,10 +294,7 @@ func (p *parser) event(name string, data []byte) (bool, error) {
 		// Inspect content parts, including refusal, rather than ignoring an output
 		// channel that could carry unsupported state.
 		var part struct {
-			Part struct {
-				Type string `json:"type"`
-				Text string `json:"text"`
-			} `json:"part"`
+			Part outputText `json:"part"`
 		}
 		if json.Unmarshal(data, &part) != nil {
 			return false, ErrStream
@@ -200,11 +303,14 @@ func (p *parser) event(name string, data []byte) (bool, error) {
 			return false, ErrRefusal
 		}
 		if part.Part.Type != "output_text" {
-			return false, ErrUnsupported
+			return false, p.unsupported(provider.UnsupportedContent)
 		}
 		s, err := p.slot(e, "message")
 		if err != nil || e.ContentIndex == nil {
 			return false, ErrStream
+		}
+		if err := p.partMetadata(s, *e.ContentIndex, part.Part.metadata, e.Type == "response.content_part.done"); err != nil {
+			return false, err
 		}
 		if e.Type == "response.content_part.done" {
 			return false, p.text(s, *e.ContentIndex, part.Part.Text, true)
@@ -251,6 +357,11 @@ func (p *parser) event(name string, data []byte) (bool, error) {
 				calls = append(calls, tools.Call{ID: s.item.CallID, Name: s.item.Name, Input: json.RawMessage(s.args)})
 			}
 		}
+		if p.prepared {
+			if err := p.collect(e.Response.Output); err != nil {
+				return false, err
+			}
+		}
 		if len(calls) > 0 {
 			if err := p.sink(provider.Event{Kind: provider.ToolCalls, Calls: calls}); err != nil {
 				return false, err
@@ -261,13 +372,28 @@ func (p *parser) event(name string, data []byte) (bool, error) {
 	default:
 		// Unknown additive metadata is ignored, but unknown execution/reasoning
 		// channels fail closed even if an eventual output snapshot omits them.
-		if unsupportedChannel(e.Type) {
-			return false, ErrUnsupported
+		if unsupportedChannel(e.Type) || p.prepared && unsupportedMediaChannel(e.Type) {
+			return false, p.unsupported(provider.UnsupportedChannel)
 		}
 	}
 	return false, nil
 }
 
+func (p *parser) unsupported(category provider.Category) error {
+	if !p.prepared {
+		return ErrUnsupported
+	}
+	return failure(ErrUnsupported, provider.PhaseStream, category)
+}
+func unsupportedMediaChannel(kind string) bool {
+	channel := strings.TrimPrefix(kind, "response.")
+	for _, family := range []string{"audio", "output_audio", "video", "output_video", "image"} {
+		if channel == family || strings.HasPrefix(channel, family+"_") || strings.HasPrefix(channel, family+".") {
+			return true
+		}
+	}
+	return false
+}
 func unsupportedChannel(kind string) bool {
 	for _, marker := range []string{"reasoning", "tool", "_call", "refusal", "output_item", "content_part"} {
 		if strings.Contains(kind, marker) {
@@ -316,28 +442,40 @@ func (p *parser) slot(e wireEvent, kind string) (*outputSlot, error) {
 		return nil, ErrStream
 	}
 	s := p.slots[*e.Index]
-	if s == nil || s.item.Type != kind || e.ItemID == "" || s.item.ID != e.ItemID {
+	if s == nil || s.item.Type != kind || e.ItemID == "" || slotID(s) != e.ItemID {
 		return nil, ErrStream
 	}
 	return s, nil
 }
 func (p *parser) item(index int, item outputItem, final bool) (*outputSlot, error) {
+	if item.Type == "reasoning" {
+		return p.reasonItem(index, item, final)
+	}
 	if index < 0 || index >= maxOutputItems || !identifier(item.ID) {
 		return nil, ErrStream
 	}
 	if item.Type != "message" && item.Type != "function_call" {
-		return nil, ErrUnsupported
+		return nil, p.unsupported(provider.UnsupportedItem)
 	}
 	if len(item.Namespace) > 0 && string(item.Namespace) != "null" {
-		return nil, ErrUnsupported
+		return nil, p.unsupported(provider.UnsupportedNamespace)
 	}
-	if item.Type == "function_call" && (!identifier(item.CallID) || !functionName(item.Name)) {
+	if item.metadata != nil && item.metadata.executionInvalid {
+		return nil, p.unsupported(provider.UnsupportedChannel)
+	}
+	if item.metadata != nil && item.metadata.presence == continuation.Present && (item.metadata.status == "incomplete" || final && item.metadata.status != "completed") {
+		if item.metadata.status == "incomplete" {
+			return nil, failure(ErrResponse, provider.PhaseStream, provider.UpstreamIncomplete)
+		}
+		return nil, ErrStream
+	}
+	if item.Type == "function_call" && (continuation.Reserved(item.CallID) || !identifier(item.CallID) || !functionName(item.Name)) {
 		return nil, ErrStream
 	}
 	s := p.slots[index]
 	if s == nil {
 		for _, other := range p.slots {
-			if other.item.ID == item.ID || (item.Type == "function_call" && other.item.CallID == item.CallID) {
+			if slotID(other) == item.ID || (item.Type == "function_call" && other.callIdentity == ordinaryCallIdentity(item.CallID)) {
 				return nil, ErrStream
 			}
 		}
@@ -350,22 +488,38 @@ func (p *parser) item(index int, item outputItem, final bool) (*outputSlot, erro
 		if len(item.Arguments) > config.MaxCallArgumentsBytes {
 			return nil, ErrStream
 		}
-		encoded, _ := json.Marshal(item)
-		s = &outputSlot{item: item, initial: sha256.Sum256(encoded), args: item.Arguments, texts: make(map[int]*textState)}
-		// Do not retain message content or duplicate argument snapshots.
-		s.item.Content = nil
-		s.item.Arguments = ""
+		// Construct a MINIMAL per-kind checkpoint. Inapplicable message fields
+		// may fill a frame but must never become retained strings/slices. Keep
+		// their legacy identity/retransmission comparisons via fixed digests.
+		checkpoint := outputItem{Type: "message", ID: strings.Clone(item.ID)}
+		args := ""
+		if item.Type == "function_call" {
+			checkpoint.Type = "function_call"
+			checkpoint.CallID = strings.Clone(item.CallID)
+			checkpoint.Name = strings.Clone(item.Name)
+			args = strings.Clone(item.Arguments)
+		}
+		s = &outputSlot{item: checkpoint, identity: ordinaryIdentity(item), callIdentity: ordinaryCallIdentity(item.CallID), initial: itemDigest(item, p.prepared), args: args, texts: make(map[int]*textState)}
 		p.slots[index] = s
 	} else {
-		if item.ID != s.item.ID || item.Type != s.item.Type || item.CallID != s.item.CallID || item.Name != s.item.Name {
+		if ordinaryIdentity(item) != s.identity {
 			return nil, ErrStream
 		}
 		if !final {
-			encoded, _ := json.Marshal(item)
-			if sha256.Sum256(encoded) != s.initial {
+			if itemDigest(item, p.prepared) != s.initial {
 				return nil, ErrStream
 			}
 			return s, nil
+		}
+	}
+	if item.metadata != nil {
+		s.projectionUnsupported = s.projectionUnsupported || item.metadata.sticky || final && item.metadata.unsupported
+		if p.prepared && final {
+			if s.metadataDone && s.metadataDigest != item.metadata.digest {
+				return nil, ErrStream
+			}
+			s.metadataDone = true
+			s.metadataDigest = item.metadata.digest
 		}
 	}
 	if item.Type == "function_call" {
@@ -386,7 +540,10 @@ func (p *parser) item(index int, item outputItem, final bool) (*outputSlot, erro
 				return nil, ErrRefusal
 			}
 			if part.Type != "output_text" {
-				return nil, ErrUnsupported
+				return nil, p.unsupported(provider.UnsupportedContent)
+			}
+			if err := p.partMetadata(s, i, part.metadata, final); err != nil {
+				return nil, err
 			}
 			// added snapshots are normally empty; any text is a prefix, not final.
 			if err := p.text(s, i, part.Text, final); err != nil {
@@ -396,11 +553,76 @@ func (p *parser) item(index int, item outputItem, final bool) (*outputSlot, erro
 	}
 	return s, nil
 }
+func ordinaryIdentity(item outputItem) [32]byte {
+	h := sha256.New()
+	digestField(h, "ordinary-slot-identity1")
+	for _, v := range []string{item.Type, item.ID, item.CallID, item.Name} {
+		digestField(h, v)
+	}
+	var sum [32]byte
+	copy(sum[:], h.Sum(nil))
+	return sum
+}
+func ordinaryCallIdentity(call string) [32]byte {
+	h := sha256.New()
+	digestField(h, "ordinary-slot-callid1")
+	digestField(h, call)
+	var sum [32]byte
+	copy(sum[:], h.Sum(nil))
+	return sum
+}
+func itemDigest(item outputItem, prepared bool) [32]byte {
+	// Same decoded-field equality as the legacy JSON snapshot, without a
+	// frame-sized json.Marshal scratch buffer entering stdlib encoder pools.
+	// Namespace is already proven absent/null; raw/metadata pointers were never
+	// JSON fields. Preserve nil-vs-empty content and exact ordered part bytes.
+	h := sha256.New()
+	digestField(h, "ordinary-initial-decoded1")
+	for _, v := range []string{item.Type, item.ID, item.CallID, item.Name, item.Arguments} {
+		digestField(h, v)
+	}
+	if item.Content == nil {
+		digestField(h, "null")
+	} else {
+		digestField(h, "array")
+	}
+	var count [8]byte
+	binary.BigEndian.PutUint64(count[:], uint64(len(item.Content)))
+	_, _ = h.Write(count[:])
+	for _, part := range item.Content {
+		digestField(h, part.Type)
+		digestField(h, part.Text)
+	}
+	if prepared && item.metadata != nil {
+		_, _ = h.Write(item.metadata.digest[:])
+	}
+	var sum [32]byte
+	copy(sum[:], h.Sum(nil))
+	return sum
+}
+func (p *parser) partMetadata(s *outputSlot, index int, m *itemMetadata, final bool) error {
+	if !p.prepared || m == nil {
+		return nil
+	}
+	state, e := p.textState(s, index)
+	if e != nil {
+		return e
+	}
+	s.projectionUnsupported = s.projectionUnsupported || m.sticky || final && m.unsupported
+	if final {
+		if state.metadataDone && state.metadataDigest != m.digest {
+			return ErrStream
+		}
+		state.metadataDone = true
+		state.metadataDigest = m.digest
+	}
+	return nil
+}
 func (s *outputSlot) snapshot(args string) error {
 	if len(args) > config.MaxCallArgumentsBytes || (s.argsDone && args != s.args) || !strings.HasPrefix(args, s.args) || !validArguments(args) {
 		return ErrStream
 	}
-	s.args = args
+	s.args = strings.Clone(args)
 	s.argsDone = true
 	return nil
 }

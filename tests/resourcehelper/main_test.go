@@ -120,14 +120,29 @@ func TestFreshLoginClosesAndReacquiresStore(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
+	sawPrivate := false
 	for _, entry := range entries {
 		info, e := entry.Info()
 		if e != nil {
 			t.Fatal(e)
 		}
-		if info.Mode().Perm() != 0600 {
+		if entry.Name() == "continuation-v1" {
+			sawPrivate = true
+			if !info.IsDir() || info.Mode().Perm() != 0700 {
+				t.Fatal("unsafe synthetic continuation directory")
+			}
+			children, e := os.ReadDir(filepath.Join(path, entry.Name()))
+			if e != nil || len(children) != 0 {
+				t.Fatal("login-only setup created private key/index")
+			}
+			continue
+		}
+		if !info.Mode().IsRegular() || info.Mode().Perm() != 0600 {
 			t.Fatal("unsafe synthetic store mode")
 		}
+	}
+	if !sawPrivate {
+		t.Fatal("fixed continuation child missing")
 	}
 }
 func TestSetupExchangeRejectsExtraFormFields(t *testing.T) {

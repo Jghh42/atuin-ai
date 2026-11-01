@@ -87,6 +87,7 @@ func runWith(ctx context.Context, args []string, stderr io.Writer, deps commandD
 	}
 	defer runtime.Close()
 	runtime.HTTP.FailureObserver = httpserver.NewFailureObserver(logger)
+	runtime.HTTP.ReasoningObserver = httpserver.NewReasoningObserver(logger)
 	server, err := httpserver.NewWithRuntime(cfg, logger, runtime.HTTP)
 	if err != nil {
 		return errors.New("invalid server configuration")
@@ -98,7 +99,7 @@ func runWith(ctx context.Context, args []string, stderr io.Writer, deps commandD
 	return server.Serve(ctx, listener)
 }
 
-func openRuntime(cfg config.Config, deps commandDeps, diagnostic bool) (*application.Runtime, error) {
+func openRuntime(cfg config.Config, deps commandDeps, diagnostic bool, statusOnly ...bool) (*application.Runtime, error) {
 	path := deps.state
 	if path == "" {
 		var err error
@@ -106,6 +107,9 @@ func openRuntime(cfg config.Config, deps commandDeps, diagnostic bool) (*applica
 		if err != nil {
 			return nil, err
 		}
+	}
+	if len(statusOnly) > 0 && statusOnly[0] {
+		return application.NewStatus(path, cfg, deps.transport)
 	}
 	if diagnostic {
 		return application.NewDiagnostic(path, cfg, deps.transport)
@@ -140,7 +144,7 @@ func runAuth(ctx context.Context, args []string, out io.Writer, deps commandDeps
 			return err
 		}
 	}
-	runtime, err := openRuntime(cfg, deps, args[0] == "diagnose")
+	runtime, err := openRuntime(cfg, deps, args[0] == "diagnose", args[0] == "status")
 	if err != nil {
 		if args[0] == "diagnose" {
 			configured := cfg.DefaultModel != ""
@@ -168,7 +172,7 @@ func runAuth(ctx context.Context, args []string, out io.Writer, deps commandDeps
 	case "logout":
 		err = runtime.Manager.Logout(ctx)
 		if err == nil {
-			_, err = fmt.Fprintln(out, "Local credentials deleted; remote revocation is not supported")
+			_, err = fmt.Fprintln(out, "Local credentials deleted; private continuation state deleted; remote revocation is not supported")
 		}
 	case "login":
 		err = runtime.Manager.Login(ctx, display)

@@ -44,6 +44,20 @@ aggregation, safety post-processing, timeouts, and error normalization. The
 CLI still owns the UI, transcript/session persistence, context-window
 selection, permissions, and execution of local file/shell/history tools.
 
+## Go development candidate: opaque protected tool IDs
+
+The reverse-engineered reference facts below remain historical. The Go candidate
+adds [ADR0005 private continuation](../reasoning-continuation.md) without changing
+any JSON field/event/framing. For new protected executable exchanges, `tool_call.id`
+and subsequent `tool_use.id` / `tool_result.tool_use_id` are exact opaque90-byte
+`aic1_...` strings, NOT backend CallIDs or paths. Retain them unchanged, together
+with the complete issued batch and each actual result. Legacy unprotected IDs
+remain byte-for-byte backend IDs. Session UUIDs remain client conversation IDs,
+never provider response/session identifiers. No new endpoint, authentication,
+client option, fallback, retry or server tool execution is introduced. Protected
+history/policy/window loss fails generically before POST; finite retention and
+attended recovery differ from the stateless reference as documented in ADR0005.
+
 ## Client configuration
 
 ```toml

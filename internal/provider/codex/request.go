@@ -10,6 +10,7 @@ import (
 
 	"github.com/Jghh42/atuin-ai/internal/atuin"
 	"github.com/Jghh42/atuin-ai/internal/config"
+	"github.com/Jghh42/atuin-ai/internal/continuation"
 	"github.com/Jghh42/atuin-ai/internal/credentials"
 	"github.com/Jghh42/atuin-ai/internal/prompt"
 	"github.com/Jghh42/atuin-ai/internal/provider"
@@ -73,18 +74,54 @@ func Project(req provider.Request, now time.Time) ([]byte, error) {
 	if !bounded(r) {
 		return nil, ErrRequest
 	}
+	marked, e := continuation.Marked(r.Messages)
+	if e != nil || marked {
+		return nil, ErrRequest
+	}
+	return projectRequest(r, now, prompt.Build(r.Context, r.Config), functionDefinitions(r), nil)
+}
+func functionDefinitions(r atuin.Request) []functionDefinition {
+	var out []functionDefinition
+	for _, d := range tools.Definitions(r.Config.Capabilities) {
+		out = append(out, functionDefinition{Type: "function", Definition: d})
+	}
+	return out
+}
+func projectRequest(r atuin.Request, now time.Time, instructions string, definitions []functionDefinition, replay map[int]replayRun) ([]byte, error) {
+	if !bounded(r) {
+		return nil, ErrRequest
+	}
 	body := requestBody{
 		Model: r.Config.ProviderModel, Stream: true,
-		Instructions: prompt.Build(r.Context, r.Config),
+		Instructions: instructions,
 		Input:        []any{message{"user", prompt.TurnContext(r.Context, now)}},
 		Include:      []string{"reasoning.encrypted_content"}, ToolChoice: "auto", ParallelToolCalls: true,
 	}
 	body.Text.Verbosity = "low"
-	for _, d := range tools.Definitions(r.Config.Capabilities) {
-		body.Tools = append(body.Tools, functionDefinition{Type: "function", Definition: d})
-	}
+	body.Tools = definitions
 	seen, pending := map[string]bool{}, map[string]bool{}
-	for _, m := range r.Messages {
+	for pos := 0; pos < len(r.Messages); pos++ {
+		if run, ok := replay[pos]; ok {
+			if run.end <= pos || run.end > len(r.Messages) {
+				return nil, ErrRequest
+			}
+			for _, raw := range run.items {
+				body.Input = append(body.Input, json.RawMessage(raw))
+			}
+			for _, m := range r.Messages[pos:run.end] {
+				for _, b := range m.Content {
+					if b.Type == "tool_use" {
+						if seen[b.ID] {
+							return nil, ErrRequest
+						}
+						seen[b.ID] = true
+					}
+				}
+			}
+			pos = run.end - 1
+			continue
+		}
+		m := r.Messages[pos]
 		if m.Role != "user" && m.Role != "assistant" {
 			return nil, ErrRequest
 		}
@@ -93,7 +130,7 @@ func Project(req provider.Request, now time.Time) ([]byte, error) {
 			case "text":
 				body.Input = append(body.Input, message{m.Role, b.Text})
 			case "tool_use":
-				if m.Role != "assistant" || b.ID == "" || b.Name == "" || seen[b.ID] || !json.Valid(b.Input) {
+				if m.Role != "assistant" || continuation.Reserved(b.ID) || b.ID == "" || b.Name == "" || seen[b.ID] || !json.Valid(b.Input) {
 					return nil, ErrRequest
 				}
 				seen[b.ID] = true
@@ -107,7 +144,7 @@ func Project(req provider.Request, now time.Time) ([]byte, error) {
 				pending[b.ID] = true
 				body.Input = append(body.Input, functionCall{"function_call", b.ID, b.Name, string(b.Input)})
 			case "tool_result":
-				if m.Role != "user" || !pending[b.ToolUseID] {
+				if m.Role != "user" || continuation.Reserved(b.ToolUseID) || !pending[b.ToolUseID] {
 					return nil, ErrRequest
 				}
 				delete(pending, b.ToolUseID)
@@ -207,6 +244,12 @@ func (c RequestClient) Open(ctx context.Context, req provider.Request) (*http.Re
 	body, err := Project(req, now)
 	if err != nil {
 		return nil, failure(ErrRequest, provider.PhaseRequest, provider.RequestInvalid)
+	}
+	return c.openEncoded(ctx, body)
+}
+func (c RequestClient) openEncoded(ctx context.Context, body []byte) (*http.Response, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
 	}
 	if c.Credentials == nil {
 		return nil, failure(ErrCredentials, provider.PhaseCredentials, provider.CredentialsUnavailable)

@@ -226,7 +226,7 @@ func TestAnnouncedEmptyPartsAreBoundedAndReconciled(t *testing.T) {
 	}
 	assertNoCallsFailure(t, stream+announcedPart(1, 0, "msg-2")+complete())
 	// Check the error at announcement time, not a later completion limit.
-	p := parser{slots: make(map[int]*outputSlot)}
+	p := parser{parserPayload: &parserPayload{slots: make(map[int]*outputSlot)}}
 	if _, err := p.item(0, outputItem{Type: "message", ID: "msg-1"}, false); err != nil {
 		t.Fatal(err)
 	}

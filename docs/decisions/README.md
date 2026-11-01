@@ -18,6 +18,10 @@ Recorded Phase 0 decisions:
    [Phase 7 code checkpoint](../plans/phase7-status.md); production live gates
    remain NOT PASSED.
 
+5. [Bounded durable private provider continuation](0005-durable-provider-continuation.md)
+   — accepted design; foundation primitives only, production reasoning acceptance
+   and runtime wiring remain disabled pending independent code review.
+
 Future records may cover the localhost security boundary, supported released
 Atuin versions, and single-process credential persistence. Those are not
 implemented or proven by these Phase 0 documents.

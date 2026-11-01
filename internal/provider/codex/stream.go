@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net/http"
 	"time"
 
 	"github.com/Jghh42/atuin-ai/internal/config"
@@ -26,6 +27,9 @@ func (c RequestClient) Stream(ctx context.Context, req provider.Request, sink fu
 var _ provider.Provider = RequestClient{}
 
 func (c RequestClient) stream(parent context.Context, req provider.Request, sink func(provider.Event) error, generation, inactivity time.Duration) (provider.Usage, error) {
+	return streamNative(parent, func(ctx context.Context) (*http.Response, error) { return c.Open(ctx, req) }, parseStream, sink, generation, inactivity)
+}
+func streamNative(parent context.Context, open func(context.Context) (*http.Response, error), parse func(io.Reader, func(provider.Event) error) (provider.Usage, error), sink func(provider.Event) error, generation, inactivity time.Duration) (provider.Usage, error) {
 	if sink == nil {
 		return provider.Usage{}, failure(ErrRequest, provider.PhaseRequest, provider.RequestInvalid)
 	}
@@ -65,7 +69,7 @@ func (c RequestClient) stream(parent context.Context, req provider.Request, sink
 		}
 		return cause
 	}
-	response, err := c.Open(ctx, req)
+	response, err := open(ctx)
 	if err != nil {
 		if ctx.Err() != nil {
 			return provider.Usage{}, contextFailure()
@@ -87,7 +91,7 @@ func (c RequestClient) stream(parent context.Context, req provider.Request, sink
 		default:
 		}
 	}}
-	usage, err := parseStream(&reader, func(event provider.Event) error {
+	usage, err := parse(&reader, func(event provider.Event) error {
 		if ctx.Err() != nil {
 			return context.Cause(ctx)
 		}
