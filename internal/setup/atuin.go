@@ -15,9 +15,14 @@ import (
 	"unicode/utf8"
 
 	"github.com/BurntSushi/toml"
+	"github.com/Jghh42/atuin-ai/internal/credentials"
 )
 
 const MaxAtuinBytes = 64 << 10
+
+// ErrAtuinReadable refuses to write the client token into an existing Atuin
+// config that other local users can read; the token authenticates to the server.
+var ErrAtuinReadable = errors.New("atuin configuration is readable by other users; make it private before adding the client token")
 
 var ErrTOML = errors.New("unsupported Atuin TOML layout or protocol; edit the three [ai] keys manually, retaining model")
 
@@ -236,8 +241,15 @@ type replacement struct {
 	text       string
 }
 
-func PatchAtuin(data []byte, port int) ([]byte, error) {
-	if len(data) > MaxAtuinBytes || !utf8.Valid(data) || port < 1 || port > 65535 {
+// ManualAtuinConfig is the exact [ai] fragment for users who edit Atuin's
+// configuration themselves. The token is shown only on the private terminal.
+func ManualAtuinConfig(port int, token string) string {
+	return fmt.Sprintf("[ai]\nenabled = true\nendpoint = \"http://127.0.0.1:%d\"\napi_token = \"%s\"", port, token)
+}
+
+func PatchAtuin(data []byte, port int, token string) ([]byte, error) {
+	// The validated token alphabet needs no TOML escaping.
+	if len(data) > MaxAtuinBytes || !utf8.Valid(data) || port < 1 || port > 65535 || !credentials.ValidClientToken(token) {
 		return nil, ErrTOML
 	}
 	var before map[string]any
@@ -270,7 +282,7 @@ func PatchAtuin(data []byte, port int) ([]byte, error) {
 	if e != nil {
 		return nil, e
 	}
-	values := map[string]string{"enabled": "true", "endpoint": fmt.Sprintf("\"http://127.0.0.1:%d\"", port), "api_token": "\"\""}
+	values := map[string]string{"enabled": "true", "endpoint": fmt.Sprintf("\"http://127.0.0.1:%d\"", port), "api_token": "\"" + token + "\""}
 	seen := map[string]bool{}
 	inAI, hasAI := false, false
 	insertAt := len(data)
@@ -433,12 +445,16 @@ func semanticEqual(a, b reflect.Value) bool {
 		return reflect.DeepEqual(a.Interface(), b.Interface())
 	}
 }
-func ConfigureAtuin(files Files, path string, port int) error {
+func ConfigureAtuin(files Files, path string, port int, token string) error {
 	old, e := files.Read(path, MaxAtuinBytes)
 	if e != nil {
 		return e
 	}
-	data, e := PatchAtuin(old.Data, port)
+	// Replace keeps an existing file's mode, so check before writing anything.
+	if old.Exists && old.Mode&0077 != 0 {
+		return ErrAtuinReadable
+	}
+	data, e := PatchAtuin(old.Data, port, token)
 	if e != nil {
 		return e
 	}

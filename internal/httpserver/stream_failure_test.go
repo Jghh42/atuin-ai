@@ -7,7 +7,6 @@ import (
 	"github.com/Jghh42/atuin-ai/internal/atuin"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -30,7 +29,7 @@ func TestFlushBeforeCompletionAndFailureWithheldCalls(t *testing.T) {
 		}
 		return provider.Usage{}, errors.New("private provider failure")
 	})))
-	resp, err := http.Post(ts.URL+"/api/cli/chat", "application/json", strings.NewReader(simpleBody))
+	resp, err := authorizedPost(ts.URL+"/api/cli/chat", "application/json", strings.NewReader(simpleBody))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +93,7 @@ func TestHTTPWriteAndFlushFailuresNoRetry(t *testing.T) {
 			generations++
 			return provider.Usage{}, nil
 		}))
-		req := httptest.NewRequest("POST", "/api/cli/chat", strings.NewReader(simpleBody))
+		req := newRequest("POST", "/api/cli/chat", strings.NewReader(simpleBody))
 		normalized, err := (atuin.Decoder{Catalog: atuin.ModelCatalog{Default: "model", Models: map[string]string{"model": "model"}}}).Decode([]byte(simpleBody))
 		if err != nil {
 			t.Fatal(err)

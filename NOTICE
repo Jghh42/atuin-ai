@@ -102,7 +102,7 @@ and notice-bearing comments from selected stdlib sources (including Sun
 Microsystems fdlibm and Stephen L. Moshier/Cephes notices). These are legal
 texts, not bundled proof programs or compatibility tooling. Unicode data has
 separate terms: uniseg v0.4.7's six generated Unicode 15.0.0 tables require the
-full Unicode data/software grant (Copyright 1991-2022 Unicode, Inc.); Go1.27.3
+full Unicode data/software grant (Copyright 1991-2022 Unicode, Inc.); Go 1.27.4
 selects Unicode 17.0.0 stdlib/IDNA/bidi/normalization tables, with the full
 Unicode License V3 grant (Copyright 2016-2025 Unicode, Inc.). Both grants and
 specific data/table attribution are retained as LICENSES/Unicode-15-data-license.txt,

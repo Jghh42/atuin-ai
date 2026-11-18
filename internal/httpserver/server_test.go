@@ -25,9 +25,9 @@ func start(t *testing.T, cfg config.Config, chat http.Handler) (string, context.
 		return credentials.Credential{Identity: credentials.Identity{Provider: "codex", Account: "test-account", Epoch: 1}, AccessToken: "test-token"}, nil
 	}), cfg.DefaultModel)
 	if chat == nil {
-		s, err = NewWithCatalog(cfg, nil, source)
+		s, err = NewWithCatalog(cfg, nil, source, testToken)
 	} else {
-		s, err = buildServer(cfg, nil, source, chat)
+		s, err = buildServer(cfg, nil, source, testToken, chat)
 	}
 	if err != nil {
 		t.Fatal(err)
@@ -68,8 +68,7 @@ func request(t *testing.T, method, url string, body io.Reader, status int) []byt
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Authentication is intentionally absent, not required or rejected.
-	req.Header.Set("Authorization", "Bearer deliberately-ignored")
+	req.Header.Set("Authorization", "Bearer "+testToken)
 	client := &http.Client{Timeout: 3 * time.Second}
 	res, err := client.Do(req)
 	if err != nil {
@@ -214,7 +213,7 @@ func TestLoopbackOnlyAndShutdown(t *testing.T) {
 }
 
 func TestRejectNonLoopbackListener(t *testing.T) {
-	s, err := New(config.Default(), nil)
+	s, err := New(config.Default(), nil, testToken)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -274,7 +273,7 @@ func TestForcedShutdownCancelsActiveRequest(t *testing.T) {
 	entered, cancelled := make(chan struct{}), make(chan struct{})
 	release := make(chan struct{})
 	defer close(release)
-	s, err := newServer(config.Default(), nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	s, err := newServer(config.Default(), nil, testToken, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		close(entered)
 		<-r.Context().Done()
 		close(cancelled)
@@ -294,8 +293,7 @@ func TestForcedShutdownCancelsActiveRequest(t *testing.T) {
 	go func() { done <- s.Serve(ctx, l) }()
 	clientDone := make(chan error, 1)
 	go func() {
-		client := &http.Client{Timeout: 7 * time.Second}
-		res, err := client.Post("http://"+l.Addr().String()+"/api/cli/chat", "application/json", strings.NewReader(`{}`))
+		res, err := authorizedPost("http://"+l.Addr().String()+"/api/cli/chat", "application/json", strings.NewReader(`{}`))
 		if res != nil {
 			res.Body.Close()
 		}

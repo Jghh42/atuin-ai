@@ -62,8 +62,8 @@ runs at most the same three harmless generations. It never retries/tries another
 model or expands production eligibility automatically. Candidate IDs are withheld
 on failure; successful proof alone may be reviewed for a later allowlist change.
 The sole authorized follow-up failed before text completion; do not rerun it
-without a new explicit decision. [Evidence](proofs/codex-discovered-replay-followup.md). Current discovery schema succeeded but returned
-no proven eligible model: [live gate NOT PASSED](proofs/codex-discovery-phase3a.md).
+without a new explicit decision. [Evidence](history/proofs/codex-discovered-replay-followup.md). Current discovery schema succeeded but returned
+no proven eligible model: [live gate NOT PASSED](history/proofs/codex-discovery-phase3a.md).
 
 Refresh and local cleanup are explicitly opt-in:
 
@@ -87,6 +87,6 @@ not the independent SIWC identity-verification contract. No API-key billing
 fallback occurs automatically. HTTP redirects and automatic retries are disabled.
 
 Actual outcomes are recorded separately in the
-[redacted Phase 0 report](proofs/codex-phase0.md): login and text/tool replay
+[redacted Phase 0 report](history/proofs/codex-phase0.md): login and text/tool replay
 and refresh/restart passed; cleanup remains an explicit follow-up. This instruction
 document is not itself live validation evidence.

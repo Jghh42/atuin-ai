@@ -168,15 +168,9 @@ func (m *Manager) suspend(reason SuspendReason) {
 	}
 }
 func (m *Manager) publishUnusable(r Record, reason SuspendReason) {
-	if reason == SuspendRefresh {
-		m.mu.Lock()
-		m.record = r
-		m.mu.Unlock()
-	} else {
-		m.mu.Lock()
-		m.record = r
-		m.mu.Unlock()
-	}
+	m.mu.Lock()
+	m.record = r
+	m.mu.Unlock()
 	m.suspend(reason)
 	if reason != SuspendRefresh {
 		m.invalidated()

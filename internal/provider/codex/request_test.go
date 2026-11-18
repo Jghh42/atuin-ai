@@ -79,7 +79,7 @@ func TestExactOutboundRequests(t *testing.T) {
 				if r.Method != "POST" || r.URL.RequestURI() != "/backend-api/codex/responses" {
 					t.Errorf("wrong method/path %s %s", r.Method, r.URL)
 				}
-				headers := map[string]string{"Authorization": "Bearer fresh-token", "Chatgpt-Account-Id": "fresh-account", "Originator": "atuin-ai", "User-Agent": "atuin-ai/phase4", "Openai-Beta": "responses=experimental", "Content-Type": "application/json", "Accept": "text/event-stream"}
+				headers := map[string]string{"Authorization": "Bearer fresh-token", "Chatgpt-Account-Id": "fresh-account", "Originator": "atuin-ai", "User-Agent": UserAgent, "Openai-Beta": "responses=experimental", "Content-Type": "application/json", "Accept": "text/event-stream"}
 				for k, v := range headers {
 					if r.Header.Get(k) != v {
 						t.Errorf("incorrect header %s", k)

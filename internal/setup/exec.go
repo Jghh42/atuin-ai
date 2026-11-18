@@ -121,7 +121,7 @@ const systemdProperties = "LoadState,FragmentPath,DropInPaths,NeedDaemonReload,T
 
 func allowedCommand(c Command) bool {
 	a := c.Args
-	if c.Path == "/usr/bin/systemctl" {
+	if c.Path == systemctl {
 		if len(a) == 3 && a[0] == "--user" && a[2] == "atuin-ai-server.service" {
 			switch a[1] {
 			case "is-enabled", "stop", "start", "enable", "disable":

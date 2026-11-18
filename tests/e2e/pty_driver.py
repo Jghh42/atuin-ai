@@ -114,7 +114,8 @@ def run(plan, children):
         'pidfile_path = ' + json.dumps(str(root / 'runtime' / 'daemon.pid')),
         '[output]', 'enabled = ' + ('true' if plan.get('daemon') else 'false'),
         '[ai]', 'enabled = true', 'endpoint_protocol = "oss"',
-        'endpoint = ' + json.dumps(plan['endpoint']), 'session_continue_minutes = 30', 'tips = false',
+        'endpoint = ' + json.dumps(plan['endpoint']), 'api_token = ' + json.dumps(plan['api_token']),
+        'session_continue_minutes = 30', 'tips = false',
     ]) + '\n'
     (root / 'atuin' / 'config.toml').write_text(config)
     skill = root / 'atuin' / 'skills' / 'synthetic'

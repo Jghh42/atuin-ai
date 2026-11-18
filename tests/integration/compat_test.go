@@ -17,7 +17,7 @@ func TestSyntheticCompatibilityCorpus(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
 			n := testutil.New(t, []testutil.Turn{c.Turn}, true)
-			status, body, header := testutil.PostWithSession(t, n.URL, c.Request)
+			status, body, header := testutil.PostWithSession(t, n.URL, n.Token, c.Request)
 			if status != 200 {
 				t.Fatalf("status %d", status)
 			}

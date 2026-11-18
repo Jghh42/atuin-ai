@@ -1,0 +1,17 @@
+name: Set up pinned Go
+description: Install the exact go.mod toolchain and fail on any other version.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+      with:
+        go-version-file: go.mod
+        check-latest: false
+        cache: true
+    - name: Verify and pin exact Go toolchain
+      shell: bash
+      run: |
+        toolchain="$(awk '$1 == "go" { print "go" $2; exit }' go.mod)"
+        test "$(GOTOOLCHAIN=local go env GOVERSION)" = "$toolchain"
+        printf 'GOTOOLCHAIN=%s\n' "$toolchain" >> "$GITHUB_ENV"
+        go version

@@ -19,6 +19,9 @@ import (
 
 const ResponsesURL = "https://chatgpt.com/backend-api/codex/responses"
 
+// UserAgent identifies this server on every Codex backend request.
+const UserAgent = "atuin-ai-server"
+
 var (
 	ErrRequest     = errors.New("invalid Codex generation request")
 	ErrCredentials = errors.New("codex credentials unavailable")
@@ -272,7 +275,7 @@ func (c RequestClient) openEncoded(ctx context.Context, body []byte) (*http.Resp
 	request.Header.Set("Authorization", "Bearer "+credential.AccessToken)
 	request.Header.Set("chatgpt-account-id", credential.Identity.Account)
 	request.Header.Set("originator", "atuin-ai")
-	request.Header.Set("User-Agent", "atuin-ai/phase4")
+	request.Header.Set("User-Agent", UserAgent)
 	request.Header.Set("OpenAI-Beta", "responses=experimental")
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "text/event-stream")

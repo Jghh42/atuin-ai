@@ -66,7 +66,7 @@ func TestReviewSuppliedNullRequiredHTTPZeroToolFrames(t *testing.T) {
 				}
 				return nullRequiredWire(field, "added")
 			})
-			server, e := httpserver.NewWithRuntime(config.Default(), nil, httpserver.Runtime{Credentials: f.manager, Catalog: catalog.New(f.manager, ""), Provider: f.client})
+			server, e := httpserver.NewWithRuntime(config.Default(), nil, httpserver.Runtime{ClientToken: reviewClientToken, Credentials: f.manager, Catalog: catalog.New(f.manager, ""), Provider: f.client})
 			if e != nil {
 				t.Fatal(e)
 			}
@@ -89,7 +89,9 @@ func TestReviewSuppliedNullRequiredHTTPZeroToolFrames(t *testing.T) {
 				}
 			}()
 			client := http.Client{Timeout: 5 * time.Second}
-			response, e := client.Post("http://"+listener.Addr().String()+"/api/cli/chat", "application/json", strings.NewReader(`{"session_id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","messages":[{"role":"user","content":"owned"}],"config":{"capabilities":["client_v1_read_file"]}}`))
+			request, _ := http.NewRequest(http.MethodPost, "http://"+listener.Addr().String()+"/api/cli/chat", strings.NewReader(`{"session_id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","messages":[{"role":"user","content":"owned"}],"config":{"capabilities":["client_v1_read_file"]}}`))
+			request.Header.Set("Authorization", "Bearer "+reviewClientToken)
+			response, e := client.Do(request)
 			if e != nil {
 				t.Fatal(e)
 			}

@@ -55,4 +55,4 @@ mentions Ratatui; no Ratatui code is used here. See root NOTICE.
   independently implemented; no disk persistence or raw metadata forwarding.
 
 The private backend is volatile. Source inspection is not live eligibility
-proof: see [redacted evidence](../proofs/codex-discovery-phase3a.md).
+proof: see [redacted evidence](../history/proofs/codex-discovery-phase3a.md).

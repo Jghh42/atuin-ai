@@ -148,7 +148,7 @@ func TestAuthDiagnoseSavedSessionNoRefreshStableJSON(t *testing.T) {
 					t.Fatal("diagnose changed persistent credential state")
 				}
 				if !tc.corrupt && !tc.locked {
-					r, err := openRuntime(config.Default(), commandDeps{state: path, transport: deps.transport}, true)
+					r, err := openRuntime(config.Default(), commandDeps{state: path, transport: deps.transport}, diagnostic)
 					if err != nil {
 						t.Fatal(err)
 					}

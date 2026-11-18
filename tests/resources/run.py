@@ -472,9 +472,11 @@ class Suite:
             except OSError:
                 require(time.monotonic() < deadline, 'server listen deadline')
                 time.sleep(.01)
+        # The server created (or reused) this environment's client token before listening.
+        self.token = (pathlib.Path(env['XDG_CONFIG_HOME'])/'atuin-ai'/'credentials'/'client-token').read_text().strip()
         if not empty:
             conn = http.client.HTTPConnection('127.0.0.1',17391, timeout=10)
-            conn.request('GET','/api/cli/models')
+            conn.request('GET','/api/cli/models',headers={'Authorization':'Bearer '+self.token})
             resp = conn.getresponse()
             require(resp.status == 200 and json.loads(resp.read())['default'] == 'gpt-6.1-sol', 'native catalog warmup')
             conn.close()
@@ -491,11 +493,10 @@ class Suite:
         self.fixture.add(plan)
         return plan, body
 
-    @staticmethod
-    def request(body, partial=False):
+    def request(self, body, partial=False):
         sock = socket.create_connection(('127.0.0.1',17391), 5)
         sock.settimeout(15)
-        head = (f'POST /api/cli/chat HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nConnection: close\r\nContent-Length: {len(body)}\r\n\r\n').encode()
+        head = (f'POST /api/cli/chat HTTP/1.1\r\nHost: localhost\r\nAuthorization: Bearer {self.token}\r\nContent-Type: application/json\r\nConnection: close\r\nContent-Length: {len(body)}\r\n\r\n').encode()
         sock.sendall(head+body[:-1] if partial else head+body)
         return sock
 
@@ -647,7 +648,7 @@ class Suite:
                 # >bufio-size partial bodies were actually consumed, not just sent.
                 self.partial_admission_witness(process, sockets)
                 conn = http.client.HTTPConnection('127.0.0.1',17391,timeout=5)
-                conn.request('POST','/api/cli/chat',b'{}')
+                conn.request('POST','/api/cli/chat',b'{}',{'Authorization':'Bearer '+self.token})
                 fifth = conn.getresponse()
                 require(fifth.status == 503 and json.loads(fifth.read())['error'] == 'busy', 'four predecode admission slots')
                 conn.close()

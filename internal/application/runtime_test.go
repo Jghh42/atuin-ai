@@ -160,8 +160,14 @@ func startServer(t *testing.T, r *Runtime) (string, func()) {
 		})
 	}
 	t.Cleanup(stop)
-	return "http://" + listener.Addr().String(), stop
+	base := "http://" + listener.Addr().String()
+	serverTokens.Store(base, r.HTTP.ClientToken)
+	return base, stop
 }
+
+// serverTokens maps each test server's base URL to its client token.
+var serverTokens sync.Map
+
 func api(t *testing.T, base, route, body string) (int, string) {
 	t.Helper()
 	method := "GET"
@@ -170,6 +176,9 @@ func api(t *testing.T, base, route, body string) (int, string) {
 	}
 	req, _ := http.NewRequest(method, base+route, strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
+	if token, ok := serverTokens.Load(base); ok {
+		req.Header.Set("Authorization", "Bearer "+token.(string))
+	}
 	client := http.Client{Timeout: 5 * time.Second}
 	res, e := client.Do(req)
 	if e != nil {

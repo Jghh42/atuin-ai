@@ -12,7 +12,7 @@ import (
 )
 
 func TestUnwiredProductionFailsClosed(t *testing.T) {
-	s, err := New(config.Default(), nil)
+	s, err := New(config.Default(), nil, testToken)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -22,7 +22,7 @@ func TestUnwiredProductionFailsClosed(t *testing.T) {
 			method = "POST"
 		}
 		w := httptest.NewRecorder()
-		s.http.Handler.ServeHTTP(w, httptest.NewRequest(method, path, strings.NewReader(`{"messages":[{"role":"user","content":"hi"}]}`)))
+		s.http.Handler.ServeHTTP(w, newRequest(method, path, strings.NewReader(`{"messages":[{"role":"user","content":"hi"}]}`)))
 		if w.Code != 503 || strings.Contains(w.Body.String(), "gpt-") {
 			t.Fatal(w.Code, w.Body.String())
 		}
@@ -52,7 +52,7 @@ func TestOneCatalogReadPerRequestAndObservedDecoderResolution(t *testing.T) {
 		source.snapshots = append(source.snapshots, snapshot)
 	}
 	observed := 0
-	s, err := newWithCatalog(config.Default(), nil, source, func(r atuin.Request) {
+	s, err := newWithCatalog(config.Default(), nil, source, testToken, func(r atuin.Request) {
 		observed++
 		if source.calls != 2 || r.Config.ModelAlias != "gpt-6.1-sol" || r.Config.ProviderModel != "gpt-6.1-sol" {
 			t.Fatalf("inconsistent decoder snapshot: calls=%d config=%+v", source.calls, r.Config)
@@ -62,17 +62,17 @@ func TestOneCatalogReadPerRequestAndObservedDecoderResolution(t *testing.T) {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()
-	s.http.Handler.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/cli/models", nil))
+	s.http.Handler.ServeHTTP(w, newRequest(http.MethodGet, "/api/cli/models", nil))
 	if w.Code != 200 || source.calls != 1 || !strings.Contains(w.Body.String(), "First snapshot") {
 		t.Fatal(w.Code, source.calls, w.Body.String())
 	}
 	w = httptest.NewRecorder()
-	s.http.Handler.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/cli/chat", strings.NewReader(`{"messages":[{"role":"user","content":"hi"}],"config":{"model":"unknown"}}`)))
+	s.http.Handler.ServeHTTP(w, newRequest(http.MethodPost, "/api/cli/chat", strings.NewReader(`{"messages":[{"role":"user","content":"hi"}],"config":{"model":"unknown"}}`)))
 	if w.Code != 503 || source.calls != 2 || observed != 1 {
 		t.Fatal(w.Code, source.calls, observed, w.Body.String())
 	}
 	w = httptest.NewRecorder()
-	s.http.Handler.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/cli/models", nil))
+	s.http.Handler.ServeHTTP(w, newRequest(http.MethodGet, "/api/cli/models", nil))
 	if w.Code != 503 || source.calls != 3 {
 		t.Fatal(w.Code, source.calls)
 	}
@@ -86,17 +86,17 @@ func TestSnapshotResolutionAndSanitizedProjection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s, err := NewWithCatalog(config.Default(), nil, snapshotSource{snapshot})
+	s, err := NewWithCatalog(config.Default(), nil, snapshotSource{snapshot}, testToken)
 	if err != nil {
 		t.Fatal(err)
 	}
 	w := httptest.NewRecorder()
-	s.http.Handler.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/cli/models", nil))
+	s.http.Handler.ServeHTTP(w, newRequest(http.MethodGet, "/api/cli/models", nil))
 	if w.Code != 200 || strings.Contains(w.Body.String(), "unproven") || !strings.Contains(w.Body.String(), `"alias":"gpt-6.1-sol"`) {
 		t.Fatal(w.Code, w.Body.String())
 	}
 	w = httptest.NewRecorder()
-	s.http.Handler.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/api/cli/chat", strings.NewReader(`{"messages":[{"role":"user","content":"hi"}],"config":{"model":"missing"}}`)))
+	s.http.Handler.ServeHTTP(w, newRequest(http.MethodPost, "/api/cli/chat", strings.NewReader(`{"messages":[{"role":"user","content":"hi"}],"config":{"model":"missing"}}`)))
 	if w.Code != 503 {
 		t.Fatal(w.Code, w.Body.String())
 	}

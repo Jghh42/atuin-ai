@@ -10,7 +10,7 @@ was necessary or attempted. No Pi/Codex credential store, cookie, subprocess,
 external login session or device code was accessed. Production does not load
 this probe store automatically.
 
-Pinned [source contract](../provenance/codex-discovery.md): native GET
+Pinned [source contract](../../provenance/codex-discovery.md): native GET
 `https://chatgpt.com/backend-api/codex/models?client_version=0.134.0`, Bearer
 access token, matching `ChatGPT-Account-Id`, `Accept: application/json`, and
 application-specific `User-Agent: atuin-ai/phase3a`. No raw request/response logs,

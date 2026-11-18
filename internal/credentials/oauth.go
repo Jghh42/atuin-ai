@@ -5,8 +5,10 @@ package credentials
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"io"
 	"math"
 	"net"
@@ -108,7 +110,7 @@ func (c OAuthClient) post(ctx context.Context, path, contentType, body string) (
 	}
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "atuin-ai/native-codex")
+	req.Header.Set("User-Agent", "atuin-ai-server")
 	transport := c.Transport
 	if transport == nil {
 		return 0, nil, ErrOAuth
@@ -116,6 +118,9 @@ func (c OAuthClient) post(ctx context.Context, path, contentType, body string) (
 	client := &http.Client{Transport: transport, Timeout: 20 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	res, e := client.Do(req)
 	if e != nil {
+		if notSent(e) {
+			return 0, nil, errNotSent
+		}
 		return 0, nil, ErrOAuth
 	}
 	defer res.Body.Close()
@@ -124,6 +129,19 @@ func (c OAuthClient) post(ctx context.Context, path, contentType, body string) (
 		return 0, nil, ErrOAuth
 	}
 	return res.StatusCode, b, nil
+}
+
+// errNotSent marks a failure before any request byte reached the authorization
+// server. Only then is it safe to keep a refresh token for a later retry.
+var errNotSent = errors.New("codex authorization request not sent")
+
+// notSent recognizes DNS, connect, proxy CONNECT and TLS handshake rejections.
+// Everything else, including timeouts after connecting, stays ambiguous.
+func notSent(e error) bool {
+	var op *net.OpError
+	var cert *tls.CertificateVerificationError
+	var record tls.RecordHeaderError
+	return errors.As(e, &op) && (op.Op == "dial" || op.Op == "proxyconnect") || errors.As(e, &cert) || errors.As(e, &record)
 }
 func oauthError(b []byte) (string, error) {
 	if len(b) == 0 {
@@ -246,7 +264,11 @@ func (c OAuthClient) login(ctx context.Context, display func(DevicePrompt) error
 				if decodeJSON(b, &code, false) != nil || !validSecret(code.Code) || !validVerifier(code.Verifier) {
 					return Record{}, ErrOAuth
 				}
-				return c.exchange(ctx, url.Values{"grant_type": {"authorization_code"}, "client_id": {ClientID}, "code": {code.Code}, "code_verifier": {code.Verifier}, "redirect_uri": {deviceRedirect}}, Record{})
+				r, e := c.exchange(ctx, url.Values{"grant_type": {"authorization_code"}, "client_id": {ClientID}, "code": {code.Code}, "code_verifier": {code.Verifier}, "redirect_uri": {deviceRedirect}}, Record{})
+				if e == errNotSent {
+					e = ErrOAuth
+				}
+				return r, e
 			}
 			if status != 403 && status != 404 {
 				return Record{}, ErrOAuth
@@ -316,7 +338,7 @@ func accessClaims(token string) (string, time.Time, error) {
 func (c OAuthClient) exchange(ctx context.Context, form url.Values, old Record) (Record, error) {
 	status, b, e := c.post(ctx, "/oauth/token", "application/x-www-form-urlencoded", form.Encode())
 	if e != nil {
-		return Record{}, ErrOAuth
+		return Record{}, e
 	}
 	ec, e := oauthError(b)
 	if e != nil {

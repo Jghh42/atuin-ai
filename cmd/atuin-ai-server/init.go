@@ -97,13 +97,13 @@ func runInit(ctx context.Context, args []string, deps commandDeps) error {
 	wizard := setup.Wizard{
 		TTY: tty,
 		OpenAuth: func() (setup.Auth, error) {
-			r, err := openRuntime(cfg, deps, false, true)
+			r, err := openRuntime(cfg, deps, statusOnly)
 			if err != nil {
 				return nil, err
 			}
 			// Read status without opening private continuation state. Only an
 			// explicit YES may reopen the lifecycle-capable runtime for login.
-			return &initAuth{Runtime: r, open: func() (*application.Runtime, error) { return openRuntime(cfg, deps, false) }}, nil
+			return &initAuth{Runtime: r, open: func() (*application.Runtime, error) { return openRuntime(cfg, deps, serving) }}, nil
 		},
 		Service: service,
 		PrepareConfig: func() (string, error) {
@@ -112,9 +112,10 @@ func runInit(ctx context.Context, args []string, deps commandDeps) error {
 				return "", err
 			}
 			target = chosen
-			return fmt.Sprintf("Atuin configuration: %s\nOnly [ai] enabled=true, endpoint=http://127.0.0.1:%d, api_token=empty; model and all other settings retained.", target, cfg.Port), nil
+			return fmt.Sprintf("Atuin configuration: %s\nOnly [ai] enabled=true, endpoint=http://127.0.0.1:%d, api_token=the local client token; model and all other settings retained.", target, cfg.Port), nil
 		},
-		Configure: func() error { return setup.ConfigureAtuin(files, target, cfg.Port) },
+		Configure: func(token string) error { return setup.ConfigureAtuin(files, target, cfg.Port, token) },
+		Port:      cfg.Port,
 	}
 	return wizard.Run(ctx)
 }
@@ -167,6 +168,12 @@ func (a *initAuth) Status() credentials.Status {
 		return credentials.Status{}
 	}
 	return a.Manager.Status()
+}
+func (a *initAuth) ClientToken() (string, error) {
+	if a.Runtime == nil {
+		return "", credentials.ErrStore
+	}
+	return a.Runtime.ClientToken()
 }
 func (a *initAuth) Close() error {
 	if a.Runtime == nil {

@@ -27,6 +27,11 @@ func (s *syntheticStore) Commit(context.Context, credentials.Record) error {
 }
 func (s *syntheticStore) Close() error { s.closed++; return nil }
 
+// managerAuth supplies the client token that application.Runtime normally adds.
+type managerAuth struct{ *credentials.Manager }
+
+func (managerAuth) ClientToken() (string, error) { return testToken, nil }
+
 type noNetwork struct{ t *testing.T }
 
 func (n noNetwork) RoundTrip(*http.Request) (*http.Response, error) {
@@ -45,7 +50,7 @@ func TestExpiredRefreshableRealManagerPreservedWithoutNetworkOrWrites(t *testing
 		t.Fatal(e)
 	}
 	w, _, _, events := fixture("n", "n")
-	w.OpenAuth = func() (Auth, error) { return manager, nil }
+	w.OpenAuth = func() (Auth, error) { return managerAuth{manager}, nil }
 	if e = w.Run(context.Background()); e != nil {
 		t.Fatal(e)
 	}

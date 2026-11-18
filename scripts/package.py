@@ -37,7 +37,7 @@ VERSION_RE = r"v[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9]+(?:[.-][A-Za-z0-9]+)*)?"
 UNICODE_LEGAL = {
     "Unicode-15-data-license.txt": "68f5b9f5ea36881a0942ba02f558e9e1faf76cc09cb165ad801744c61b738844",
     "Unicode-17-data-license.txt": "68af68845f9302fdc7f4d903cbdb6f1d376cd97e9c753bff087c35917e7d8831",
-    "Unicode-data-NOTICE.txt": "a17c6464748b6769c7a9af58ad2cbdbba53f241e869703a4157004b653e78c9e",
+    "Unicode-data-NOTICE.txt": "bac1a90cfa29496da47003f83e19b658484eb1f401123ce364b12cdf3ed81e3d",
 }
 UNISEG_TABLES = {"graphemeproperties.go", "wordproperties.go", "sentenceproperties.go",
                  "lineproperties.go", "eastasianwidth.go", "emojipresentation.go"}
@@ -270,7 +270,7 @@ def build(snapshot_dir, work, env, go, version, identity):
                         if not re.search(r'(?:UnicodeVersion|Version)\s*=\s*"17\.0\.0"', path.read_text()):
                             raise RuntimeError("unreviewed Go Unicode version")
                         go_tables.add(relative)
-                        unicode_tables["go1.27.3/" + relative] = sha(path.read_bytes())
+                        unicode_tables["go1.27.4/" + relative] = sha(path.read_bytes())
                     elif "tables" in name and any(x in dep["ImportPath"] for x in ("/idna", "/unicode/bidi", "/unicode/norm")):
                         raise RuntimeError("unreviewed Go Unicode table selection")
         if uniseg_tables != UNISEG_TABLES or go_tables != GO_UNICODE_TABLES:
@@ -358,7 +358,7 @@ def package(args):
         if not go:
             raise RuntimeError("go launcher missing")
         pin = re.search(r"^go ([0-9.]+)$", (ROOT / "go.mod").read_text(), re.M).group(1)
-        if pin != "1.27.3":
+        if pin != "1.27.4":
             raise RuntimeError("review exact toolchain change before packaging")
         with tempfile.TemporaryDirectory(prefix="packaging-", dir=out) as scratch:
             scratch = Path(scratch)

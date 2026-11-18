@@ -19,11 +19,11 @@ func TestPatchAtuinSurgicalAndIdempotent(t *testing.T) {
 		"[ai]\nendpoint = 'old'", // no newline
 	} {
 		t.Run(strings.ReplaceAll(text, "\n", "/")[:min(30, len(text))], func(t *testing.T) {
-			out, e := PatchAtuin([]byte(text), 19222)
+			out, e := PatchAtuin([]byte(text), 19222, testToken)
 			if e != nil {
 				t.Fatal(e)
 			}
-			again, e := PatchAtuin(out, 19222)
+			again, e := PatchAtuin(out, 19222, testToken)
 			if e != nil || !bytes.Equal(out, again) {
 				t.Fatal("not idempotent", e, string(out), string(again))
 			}
@@ -56,12 +56,12 @@ func TestPatchAtuinRefusals(t *testing.T) {
 		"[ai]\nenabled=not_toml\n",
 		strings.Repeat(" ", MaxAtuinBytes+1),
 	} {
-		if _, e := PatchAtuin([]byte(text), 17391); e == nil {
+		if _, e := PatchAtuin([]byte(text), 17391, testToken); e == nil {
 			t.Fatalf("accepted unsupported %q", text)
 		}
 	}
 	// OSS explicitly configured remains byte-for-byte, as do unknown model IDs.
-	if _, e := PatchAtuin([]byte("[ai]\nendpoint_protocol='oss'\nmodel='future-model'\n"), 17391); e != nil {
+	if _, e := PatchAtuin([]byte("[ai]\nendpoint_protocol='oss'\nmodel='future-model'\n"), 17391, testToken); e != nil {
 		t.Fatal(e)
 	}
 }
@@ -70,14 +70,15 @@ func TestConfigureAtuinPrivateBackupNoopAndModes(t *testing.T) {
 	path := filepath.Join(root, "config.toml")
 	files := DiskFiles{}
 	original := []byte("# kept\n[ai]\nmodel='future-model'\napi_token='SYNTHETIC-ONLY'\n")
-	if e := os.WriteFile(path, original, 0640); e != nil {
+	// An unusual owner-only mode is preserved; readable modes are refused separately.
+	if e := os.WriteFile(path, original, 0400); e != nil {
 		t.Fatal(e)
 	}
-	if e := ConfigureAtuin(files, path, 17392); e != nil {
+	if e := ConfigureAtuin(files, path, 17392, testToken); e != nil {
 		t.Fatal(e)
 	}
 	st, _ := os.Stat(path)
-	if st.Mode().Perm() != 0640 {
+	if st.Mode().Perm() != 0400 {
 		t.Fatal("mode changed")
 	}
 	names, _ := filepath.Glob(filepath.Join(root, ".atuin-ai-backup-*"))
@@ -92,7 +93,7 @@ func TestConfigureAtuinPrivateBackupNoopAndModes(t *testing.T) {
 	if st.Mode().Perm() != 0600 {
 		t.Fatal("backup not private")
 	}
-	if e = ConfigureAtuin(files, path, 17392); e != nil {
+	if e = ConfigureAtuin(files, path, 17392, testToken); e != nil {
 		t.Fatal(e)
 	}
 	after, _ := filepath.Glob(filepath.Join(root, ".atuin-ai-backup-*"))
@@ -100,7 +101,7 @@ func TestConfigureAtuinPrivateBackupNoopAndModes(t *testing.T) {
 		t.Fatal("noop made backup")
 	}
 	newPath := filepath.Join(root, "new", "config.toml")
-	if e = ConfigureAtuin(files, newPath, 17391); e != nil {
+	if e = ConfigureAtuin(files, newPath, 17391, testToken); e != nil {
 		t.Fatal(e)
 	}
 	st, _ = os.Stat(newPath)
@@ -121,7 +122,7 @@ func TestResolverMacLegacyAndAmbiguity(t *testing.T) {
 	if e != nil || p != legacy {
 		t.Fatal("explicit creation path refused")
 	}
-	if e = ConfigureAtuin(files, legacy, 17391); e != nil {
+	if e = ConfigureAtuin(files, legacy, 17391, testToken); e != nil {
 		t.Fatal(e)
 	}
 	p, e = ResolveAtuin("", home, "", "", "", files)
@@ -129,7 +130,7 @@ func TestResolverMacLegacyAndAmbiguity(t *testing.T) {
 		t.Fatal(p, e)
 	}
 	newer := filepath.Join(home, ".atuin", "config.toml")
-	if e = ConfigureAtuin(files, newer, 17391); e != nil {
+	if e = ConfigureAtuin(files, newer, 17391, testToken); e != nil {
 		t.Fatal(e)
 	}
 	if _, e = ResolveAtuin("", home, "", "", "", files); e == nil {
@@ -140,7 +141,7 @@ func TestResolverMacLegacyAndAmbiguity(t *testing.T) {
 		t.Fatal(p, e)
 	}
 	// XDG must not hide an existing legacy config either.
-	if e = ConfigureAtuin(files, filepath.Join(root, "xdg", "atuin", "config.toml"), 17391); e != nil {
+	if e = ConfigureAtuin(files, filepath.Join(root, "xdg", "atuin", "config.toml"), 17391, testToken); e != nil {
 		t.Fatal(e)
 	}
 	if _, e = ResolveAtuin("", home, filepath.Join(root, "xdg"), "", "", files); e == nil {

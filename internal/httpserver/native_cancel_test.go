@@ -147,7 +147,7 @@ func TestNativeCancellationChainReleasesAdmission(t *testing.T) {
 					if err := conn.SetDeadline(time.Now().Add(2 * time.Second)); err != nil {
 						t.Fatal(err)
 					}
-					if _, err := fmt.Fprintf(conn, "POST /api/cli/chat HTTP/1.1\r\nHost: localhost\r\nContent-Length: %d\r\nContent-Type: application/json\r\n\r\n%s", len(simpleBody), simpleBody); err != nil {
+					if _, err := fmt.Fprintf(conn, "POST /api/cli/chat HTTP/1.1\r\nHost: localhost\r\nAuthorization: Bearer %s\r\nContent-Length: %d\r\nContent-Type: application/json\r\n\r\n%s", testToken, len(simpleBody), simpleBody); err != nil {
 						t.Fatal(err)
 					}
 					reader := bufio.NewReader(conn)

@@ -95,7 +95,7 @@ func (e *execFixture) Run(ctx context.Context, c Command) (CommandResult, error)
 		return CommandResult{ExitCode: -1}, errors.New("unexpected allowlist rejection")
 	}
 	verb := c.Args[0]
-	if c.Path == "/usr/bin/systemctl" {
+	if c.Path == systemctl {
 		verb = c.Args[1]
 	}
 	if (verb == "show" || verb == "print") && e.inspectResult != nil {
@@ -475,8 +475,8 @@ func TestServiceEscapingAndCommandAllowlist(t *testing.T) {
 	for _, c := range []Command{
 		{Path: "/bin/sh", Args: []string{"-c", "true"}},
 		{Path: "systemctl", Args: []string{"--user", "start", "atuin-ai-server.service"}},
-		{Path: "/usr/bin/systemctl", Args: []string{"start", "foreign.service"}},
-		{Path: "/usr/bin/systemctl", Args: []string{"--user", "start", "foreign.service"}},
+		{Path: systemctl, Args: []string{"start", "foreign.service"}},
+		{Path: systemctl, Args: []string{"--user", "start", "foreign.service"}},
 		{Path: "/bin/launchctl", Args: []string{"bootstrap", "system", "/tmp/io.github.jghh42.atuin-ai.plist"}},
 		{Path: "/bin/launchctl", Args: []string{"print", "gui/0/" + serviceLabel}},
 	} {

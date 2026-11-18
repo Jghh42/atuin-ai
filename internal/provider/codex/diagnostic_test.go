@@ -101,7 +101,7 @@ func TestDiagnosticHTTPAndValidationClasses(t *testing.T) {
 			}
 			d := Discovery{Transport: diagnosticTransport(func(r *http.Request) (*http.Response, error) {
 				calls++
-				if r.URL.String() != ModelsURL || r.Method != "GET" || r.Header.Get("Authorization") != "Bearer fake-token" || r.Header.Get("ChatGPT-Account-Id") != "fake-account" || r.Header.Get("User-Agent") != "atuin-ai/phase3a" || r.Header.Get("Accept") != "application/json" || r.Header.Get("originator") != "" {
+				if r.URL.String() != ModelsURL || r.Method != "GET" || r.Header.Get("Authorization") != "Bearer fake-token" || r.Header.Get("ChatGPT-Account-Id") != "fake-account" || r.Header.Get("User-Agent") != UserAgent || r.Header.Get("Accept") != "application/json" || r.Header.Get("originator") != "" {
 					t.Error("diagnostic changed native request contract")
 				}
 				deadline, ok := r.Context().Deadline()

@@ -18,7 +18,7 @@ func mutationCalls(e *execFixture) []string {
 	var verbs []string
 	for _, c := range e.calls {
 		verb := c.Args[0]
-		if c.Path == "/usr/bin/systemctl" {
+		if c.Path == systemctl {
 			verb = c.Args[1]
 		}
 		switch verb {
@@ -253,7 +253,7 @@ func TestConfigRollbackUncertaintyBlocksPriorServiceRestore(t *testing.T) {
 				}
 				return a, nil
 			}
-			w.Configure = func() error {
+			w.Configure = func(string) error {
 				if uncertain {
 					return errors.Join(ErrCommitUncertain, ErrRollback)
 				}

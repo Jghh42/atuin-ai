@@ -5,32 +5,19 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+# make check and make build run in ci.yml; this workflow adds only the pinned
+# CLI and reference-oracle gates.
 jobs:
-  go-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          check-latest: false
-      - run: make check
-      - run: make build
   pinned-compatibility:
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     env:
       ATUIN_COMPAT_RUN_LABEL: atuin-phase8-ci-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          check-latest: false
+      - uses: ./.github/actions/setup-go
       - name: Bounded signed-OS build prerequisites (ephemeral hosted runner only)
         timeout-minutes: 8
         run: |
@@ -76,7 +63,7 @@ jobs:
         run: python3 -B tests/ci_bwrap_profile.py remove
       - name: Preserve synthetic build provenance
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: compatibility-build-provenance
           path: |
@@ -90,10 +77,8 @@ jobs:
   validation:
     name: Phase8 validation aggregate
     if: always()
-    needs: [go-check, pinned-compatibility]
+    needs: [pinned-compatibility]
     runs-on: ubuntu-latest
     steps:
       - name: Every required job must actually succeed
-        run: |
-          test '${{ needs.go-check.result }}' = success
-          test '${{ needs.pinned-compatibility.result }}' = success
+        run: test '${{ needs.pinned-compatibility.result }}' = success

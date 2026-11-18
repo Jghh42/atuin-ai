@@ -1,35 +1,39 @@
 # Documentation
 
-## Specifications
+## Using the server
 
-- [Atuin AI server API and compatibility specification](specs/atuin-ai-server-api.md)
+- [Init](init.md): attended setup, user services, Atuin configuration, removal.
+- [Operations](operations.md): configuration, limits, private state, shutdown
+  and troubleshooting.
+- [Authentication](authentication.md): device login, token refresh and the
+  credential security boundary.
+- [Reasoning continuation](reasoning-continuation.md): optional durable private
+  reasoning state.
+- [Packaging](packaging.md): release artifacts and the pinned installer.
+- [Model catalog policy](catalog-policy.md): the bundled Sol and Luna models.
 
-## Plans
+## Reference
 
-- [Go rewrite implementation plan](plans/implementation.md)
+- [Atuin AI server API specification](specs/atuin-ai-server-api.md)
+- [Compatibility suite](compatibility.md)
+- [Architecture decision records](decisions/README.md)
+- [Third-party provenance and pinned sources](provenance/README.md)
 
-## Phase 0 records
+## Probes
 
-- [Current authentication decision and validation checklist](authentication.md) — native Codex isolated live proof passed
-- [Deferred SIWC checklist](authentication-siwc-deferred.md) and [probe notes](siwc-proof.md) — organization policy denial
-- [Compatibility baseline and empty fixture inventory](compatibility.md)
-- [Third-party provenance and pinned revisions](provenance/README.md)
-- [Apache-2.0 project license](decisions/0003-project-license-proposal.md) — confirmed
+Opt-in tools under `cmd/` used to validate authentication choices. They are
+not part of the server.
 
-The [production server](operations.md) now composes native OAuth, discovery and
-inference in the independently reviewed [Phase 7 code checkpoint](plans/phase7-status.md),
-cleared for authorized direct-main delivery. Fresh production login/live lifecycle and eligible discovery are
-**NOT PASSED**. [Phase 8 synthetic compatibility](plans/phase8-ci-receipt.md)
-is delivered with both exact-HEAD workflows green; [Phase 9a packaging](packaging.md)
-code/local gates are independently cleared for delivery (hosted exact-HEAD CI
-pending, no public release), native Mac validation pending,
-and Phase 9b resource work unimplemented. An isolated SIWC probe exists but did
-not complete authorization. The isolated Codex probe passed login, text/tool replay and refresh/restart;
-see [live evidence](proofs/codex-phase0.md) and
-[ADR 0004](decisions/0004-pi-style-codex-authentication.md).
+- [Native Codex device-login proof](codex-proof.md)
+- [Deferred SIWC proof](siwc-proof.md) and [SIWC research checklist](authentication-siwc-deferred.md)
 
-## Architecture decisions
+## History
 
-Architecture decision records belong in [`decisions/`](decisions/README.md).
-Use zero-padded names such as `0001-upstream-authentication.md` and record the
-context, decision, alternatives, consequences, status, and date.
+[Phase plans, status receipts and live proofs](history/README.md) record how the
+project got here. They are kept for evidence and are not maintained.
+
+## Writing decisions
+
+Architecture decision records live in [`decisions/`](decisions/README.md). Use
+zero-padded names such as `0001-upstream-authentication.md` and record the
+context, decision, alternatives, consequences, status and date.

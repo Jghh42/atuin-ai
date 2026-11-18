@@ -7,7 +7,7 @@ has already explicitly authorized their own login, its automatic discovery and t
 serve/models workflow; ordinary bounded catalog reads in that workflow do NOT
 require a redundant new approval at each step.
 The user is now available; any production outcome must be recorded separately.
-Retained-probe success is [separate evidence](../proofs/codex-retained-probe-2026-10-16.md), not a
+Retained-probe success is [separate evidence](proofs/codex-retained-probe-2026-10-16.md), not a
 production or eligible-catalog pass. No credential import, candidate inference,
 eligibility expansion or Phase 8 test is part of this login handoff.
 

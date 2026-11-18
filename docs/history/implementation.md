@@ -7,7 +7,7 @@
 > lifecycle/both-model claims are not implied. Older phase receipts/prohibitions
 > below describe their historical checkpoints, not a current publication ban.
 >
-> **Catalog policy:** [bundled native Sol/Luna](bundled-catalog-policy.md)
+> **Catalog policy:** [bundled native Sol/Luna](../catalog-policy.md)
 > supersedes historical remote availability/replay gating and TTL plans below.
 > Earlier phase steps/results remain historical, not retroactive proof.
 
@@ -80,8 +80,9 @@ including a remote machine used over SSH, that:
 - has bounded concurrency and memory; and
 - ships first as one small local Go executable.
 
-There is no client-facing authentication in v1. The loopback-only listener is
-the security boundary. Configurable bind addresses, allowed-host policies,
+Superseded by [ADR 0006](../decisions/0006-required-local-client-token.md):
+every request requires an auto-generated local client Bearer token. The
+loopback-only listener remains. Configurable bind addresses, allowed-host policies,
 TLS/proxy deployment, containers, Kubernetes, and client Bearer authentication
 may be added later as one reviewed feature rather than partially implemented
 up front.
@@ -192,7 +193,7 @@ gates.
 - Codex app-server or Pi subprocess integration
 - Pi/Codex credential-file import, cookie collection, or credential scraping
 - configurable/non-loopback listening and allowed-host policies
-- client-facing Bearer authentication, TLS, and reverse-proxy deployment
+- TLS and reverse-proxy deployment (a local client token is required; ADR 0006)
 - containers, Kubernetes, privileged system services, and multireplica coordination
   (optional attended per-user LaunchAgent/systemd setup is now implemented)
 - arbitrary server-side tools
@@ -232,7 +233,8 @@ therefore a correctness decision, not merely schedule reduction.
 10. Initially support only models proven to work with stateless history replay.
     If opaque reasoning items are required, design bounded encrypted provider
     state separately rather than silently dropping required state.
-11. V1 listens on `127.0.0.1` only and has no Atuin-client authentication.
+11. V1 listens on `127.0.0.1` only and requires the local Atuin-client token
+    ([ADR 0006](../decisions/0006-required-local-client-token.md)).
     Any non-loopback listener is a later security feature, not a config toggle
     exposed by the initial implementation.
 12. The target default listener is `127.0.0.1:17391`, replacing the common
@@ -245,7 +247,7 @@ therefore a correctness decision, not merely schedule reduction.
 
 ### Configuration and bundled model catalog target
 
-The user-approved [policy correction](bundled-catalog-policy.md) replaces the
+The user-approved [policy correction](../catalog-policy.md) replaces the
 historical Phase 3a availability gate, not its recorded results. The no-config
 workflow is application login, `serve`, then Atuin configured with
 `endpoint = "http://127.0.0.1:17391"` and `endpoint_protocol = "oss"`.
@@ -420,7 +422,7 @@ encrypted-state design before enabling it.
 **Exit:** native device login, completed Codex text, multi-request tool
 continuation, and refresh are demonstrated on an intended model with this
 application's own credentials. These gates passed in the isolated native Go
-probe on `gpt-6.1-sol`; see [redacted live evidence](../proofs/codex-phase0.md).
+probe on `gpt-6.1-sol`; see [redacted live evidence](proofs/codex-phase0.md).
 Production integration remains unimplemented. No success is inferred from
 installed Pi, and the independent SIWC denial is not counted as a pass.
 

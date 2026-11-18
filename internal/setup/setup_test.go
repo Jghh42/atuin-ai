@@ -29,10 +29,21 @@ func (t *terminalFixture) Answer(context.Context) (string, error) {
 	return s, nil
 }
 
+// testToken is a synthetic, validly formatted local client token.
+const testToken = "aia1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+
 type authFixture struct {
-	ready              bool
-	loginErr, closeErr error
-	events             *[]string
+	ready                        bool
+	loginErr, closeErr, tokenErr error
+	events                       *[]string
+}
+
+func (a *authFixture) ClientToken() (string, error) {
+	*a.events = append(*a.events, "token")
+	if a.tokenErr != nil {
+		return "", a.tokenErr
+	}
+	return testToken, nil
 }
 
 func (a *authFixture) Status() credentials.Status {
@@ -79,7 +90,7 @@ func fixture(answers ...string) (Wizard, *authFixture, *serviceFixture, *[]strin
 	events := []string{}
 	a := &authFixture{events: &events}
 	s := &serviceFixture{events: &events}
-	w := Wizard{TTY: &terminalFixture{answers: answers}, OpenAuth: func() (Auth, error) { events = append(events, "open"); return a, nil }, Service: s, ConfigPreview: "synthetic config", Configure: func() error { events = append(events, "config"); return nil }}
+	w := Wizard{TTY: &terminalFixture{answers: answers}, OpenAuth: func() (Auth, error) { events = append(events, "open"); return a, nil }, Service: s, ConfigPreview: "synthetic config", Configure: func(string) error { events = append(events, "config"); return nil }}
 	return w, a, s, &events
 }
 func hasEvent(events []string, event string) bool {
@@ -228,7 +239,7 @@ func TestPartialSuccessAndUnsafeRestoration(t *testing.T) {
 	}
 	w, a, _, events = fixture("n", "y")
 	a.ready = true
-	w.Configure = func() error { return ErrTOML }
+	w.Configure = func(string) error { return ErrTOML }
 	if w.Run(context.Background()) == nil || hasEvent(*events, "install") {
 		t.Fatal(*events)
 	}

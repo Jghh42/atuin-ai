@@ -154,7 +154,7 @@ adaptation; the new Unix dependency is recorded in [dependencies](dependencies.m
 
 ## Bundled catalog reference (2026-10-17)
 
-The explicitly user-approved [policy correction](../plans/bundled-catalog-policy.md)
+The explicitly user-approved [policy correction](../catalog-policy.md)
 uses only public installed package data/code, not user profile/settings/auth/models
 files. Both installed packages identify version **1.1.0**. Public artifacts were
 read and hashed; paths below are relative to their package roots:

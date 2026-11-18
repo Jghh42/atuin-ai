@@ -9,7 +9,7 @@ v0.4.0 baseline described in the specification.
 
 Phase 3a adds the exact [native Codex discovery source pin](codex-discovery.md),
 retained upstream license/NOTICE, independently authored protocol/cache/tests,
-and [redacted live evidence](../proofs/codex-discovery-phase3a.md). No raw model
+and [redacted live evidence](../history/proofs/codex-discovery-phase3a.md). No raw model
 catalog or credential material is retained.
 
 ## Current inventory
@@ -20,7 +20,7 @@ catalog or credential material is retained.
 | Atuin client | Source-informed protocol/plan research; no code imported in Phase 0 | MIT; full license and Copyright (c) 2021 Ellie Huxtable retained in `LICENSES/Atuin-MIT.txt` |
 | OpenAI SIWC public documentation | Summarized/linked research in auth ADR/checklist, not vendored | No redistribution license inferred; not covered by the Apache/MIT source records |
 | Phase 2 decoder tests/fixtures | Independently recreated request/config/capability behavior, plus original boundary tests; no upstream implementation copied | Apache-2.0; per-case [fixture manifest](../../testdata/compat/manifest.json), attribution in `NOTICE` |
-| Phase 3 prompts, descriptions, schemas and safety | Original prose and implementation; source-informed schemas/behavior and independently recreated baseline cases | Apache-2.0; [Phase 3 checkpoint](../plans/phase3-status.md), per-case manifest, attribution in `NOTICE` |
+| Phase 3 prompts, descriptions, schemas and safety | Original prose and implementation; source-informed schemas/behavior and independently recreated baseline cases | Apache-2.0; [Phase 3 checkpoint](../history/phase3-status.md), per-case manifest, attribution in `NOTICE` |
 | Bubblewrap 0.11.1 | External test/build filesystem/PID namespace prerequisite; no source/binary vendored or server linkage | LGPL-2.0-or-later; [package/source/checksum and scope](phase8-tooling.md); historical HOME/XDG-only runs are not isolation evidence |
 | Phase 8 real CLI/oracle fixtures and build recipe | Independently recreated synthetic behavior; transformed oracle-only Dockerfile, no app source changes | [Per-case manifest](../../testdata/compat/phase8-manifest.json), [exact tooling/artifact provenance](phase8-tooling.md), MIT/Apache attribution in `NOTICE`; no new Go dependency |
 | Installed `@earendil-works/pi-ai` 1.1.0 | Source-only research for native Codex auth/inference decision; no implementation copied by the decision | MIT; artifact paths/hashes and future import requirements in [ADR 0004](../decisions/0004-pi-style-codex-authentication.md) |
@@ -41,7 +41,7 @@ Generated manifests contain source revision/tree/inventory, honest dirty/diff
 flags, build settings/toolchain hashes, actual linked package/module graphs,
 legal/member inventories and asset SHA256s. They are NOT independent attestation.
 [Unicode data attribution](unicode-data.md) separately retains version-correct
-full grants for uniseg Unicode15 and actual Go stdlib/vendor Unicode17 tables;
+full grants for uniseg Unicode 15 and actual Go stdlib/vendor Unicode 17 tables;
 MIT/Go BSD notices alone are insufficient. Source comparison rejects hidden
 index/sparse states and independently compares the full HEAD tree with bytes/
 normalized modes. Consumer verification fixes expected output/checksum/target/
@@ -49,7 +49,13 @@ legal sets independently of manifest claims and exercises rehashed mutations.
 No release is published. Dirty development output remains RELEASE BLOCKED;
 production live/catalog, native macOS and Phase 9b gates remain separate.
 
-## Offline resource evidence (Phase9b)
+## Go toolchain
+
+The exact toolchain pin and its advisory, official archive hashes and legal
+applicability review are in the [Go 1.27.4 security pin](go1274-security.md)
+(superseding [Go 1.27.3](go1273-security.md)).
+
+## Offline resource evidence (Phase 9b)
 
 [Resource/lifecycle provenance](resource-lifecycle.md) records independently
 authored offline external TLS/load/sampling programs, actual shipping binary

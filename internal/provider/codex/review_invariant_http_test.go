@@ -16,6 +16,9 @@ import (
 	"github.com/Jghh42/atuin-ai/internal/httpserver"
 )
 
+// reviewClientToken is a synthetic local client token for HTTP boundary tests.
+const reviewClientToken = "aia1_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+
 func TestReviewRequiredDoneHTTPBoundaryZeroToolFrames(t *testing.T) {
 	for _, mode := range []string{"content-missing", "content-null", "text-missing", "text-null", "part-text-missing", "status-reset"} {
 		t.Run(mode, func(t *testing.T) {
@@ -52,7 +55,7 @@ func TestReviewRequiredDoneHTTPBoundaryZeroToolFrames(t *testing.T) {
 				}
 				return wire + complete(final, reasonOutput(), fn("f", "backend", `{"file_path":"owned"}`))
 			})
-			server, e := httpserver.NewWithRuntime(config.Default(), nil, httpserver.Runtime{Credentials: f.manager, Catalog: catalog.New(f.manager, ""), Provider: f.client})
+			server, e := httpserver.NewWithRuntime(config.Default(), nil, httpserver.Runtime{ClientToken: reviewClientToken, Credentials: f.manager, Catalog: catalog.New(f.manager, ""), Provider: f.client})
 			if e != nil {
 				t.Fatal(e)
 			}
@@ -75,7 +78,9 @@ func TestReviewRequiredDoneHTTPBoundaryZeroToolFrames(t *testing.T) {
 				}
 			}()
 			client := http.Client{Timeout: 5 * time.Second}
-			response, e := client.Post("http://"+listener.Addr().String()+"/api/cli/chat", "application/json", strings.NewReader(`{"session_id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","messages":[{"role":"user","content":"owned"}],"config":{"capabilities":["client_v1_read_file"]}}`))
+			request, _ := http.NewRequest(http.MethodPost, "http://"+listener.Addr().String()+"/api/cli/chat", strings.NewReader(`{"session_id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","messages":[{"role":"user","content":"owned"}],"config":{"capabilities":["client_v1_read_file"]}}`))
+			request.Header.Set("Authorization", "Bearer "+reviewClientToken)
+			response, e := client.Do(request)
 			if e != nil {
 				t.Fatal(e)
 			}

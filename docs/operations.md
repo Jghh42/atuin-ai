@@ -1,321 +1,222 @@
-# Local server / Phase 9a packaging checkpoint
+# Operations
 
-[Binary packaging, installer policy, reproducibility and native Mac checklist](packaging.md).
-There is no public release/install endpoint yet. Packaging CI artifacts are
-DEVELOPMENT-only and release-blocked; cross-compilation is not native Mac proof.
+How to run, configure and troubleshoot the local server. For first-time setup
+use [`init`](init.md); for packaging and installation see [packaging](packaging.md).
 
-## Optional attended initialization
-
-Run `atuin-ai-server init [--config PATH] [--atuin-config PATH]` in your own
-terminal: local authentication first, optional user-service autostart second,
-optional surgical Atuin configuration last. All approvals default No; no TTY
-means no state/config mutation. Existing refreshable local login is retained
-without network validation. Stable executable is `~/.local/bin/atuin-ai-server`.
-macOS uses a LaunchAgent at GUI login (not boot); Linux uses systemd USER,
-without enabling linger. Unsupported sessions use foreground serve, never sudo.
-See [complete setup, lock/rollback rules, paths, start/stop/removal and native
-manual acceptance](init.md). The installer itself does not run setup.
-
-Requires Go **1.27.3** minimum. The exact `go.mod` patch is also the local
-Makefile and CI toolchain pin: Make exports `GOTOOLCHAIN=go1.27.3`, and CI verifies
-setup-go selected that exact release before pinning all subsequent commands.
-Normal automatic toolchain download is allowed; an older launcher is sufficient.
-This officially published security-patched release fixes GO-2026-6809 and retains
-the upstream fuzz coordinator race fix; see the [current verified security pin](provenance/go1273-security.md)
-and [historical fuzz diagnosis](plans/fuzz-toolchain-diagnosis.md).
-The 5-second smoke and 2-minute nightly campaigns are unchanged, with no error
-filter/retry wrapper. Build with `make build`, then run:
+## Commands
 
 ```sh
-# Attended live login only after explicit opt-in; production live gate NOT PASSED:
-./bin/atuin-ai-server auth login
-./bin/atuin-ai-server auth status
-# OPTIONAL remote metadata diagnosis only, with serve STOPPED; not a bundled availability test:
-./bin/atuin-ai-server auth diagnose # sanitized stderr JSON; NO refresh/inference
-./bin/atuin-ai-server serve # config is optional
-curl http://127.0.0.1:17391/api/cli/models # valid login required; returns bundled Sol/Luna without metadata GET
-# Stop serve before auth status/login/logout in a separate process:
-./bin/atuin-ai-server auth logout
+atuin-ai-server init [--config PATH] [--atuin-config PATH]   # attended setup
+atuin-ai-server serve [--config PATH]                         # run the server
+atuin-ai-server auth login|status|logout|diagnose             # server must be stopped
+atuin-ai-server token show|rotate                             # local client token
+atuin-ai-server version                                       # no config, state or network
 ```
 
-For identity without configuration, credentials, locks or network, run
-`./bin/atuin-ai-server version` (or `--version`). Only the packager injects
-reviewable source metadata; ordinary `make build` reports unidentified development.
+`auth login` shows the fixed activation URL and user code only on the
+controlling terminal (`/dev/tty`); there is no unattended, browser-cookie or
+credential-import path. A successful login reports that the bundled catalog is
+available; upstream acceptance is not verified until you chat.
 
-When manually creating configuration, use `umask 077`, create new directories
-0700 and files 0600. Do not chmod/rewrite existing files automatically. Phase 9a
-does NOT add config-loader permission enforcement; the credential store's existing
-strict checks remain unchanged. The installer never creates/edits either state.
+`auth status` reports local state only (logged in, logged out or reauthentication
+required, plus generation, auth epoch and expiry). It never refreshes or
+contacts the network.
 
-Configuration precedence: `serve --config PATH`, then `CHAT_CONFIG`, then
-`$XDG_CONFIG_HOME/atuin-ai/config.toml` (the platform's `os.UserConfigDir` on
-other systems). A missing default file uses built-in defaults; an explicitly
-selected missing file is an error. Files are read once with a 64 KiB bound;
-key validation and typed decoding use the same byte snapshot. Only `port` (default **17391**) and optional
-`default_model` are accepted. Remove obsolete `[[models]]`/alias mappings: they
-produce a migration error. Overrides must be exactly `gpt-6.1-sol` (default)
-or `gpt-6-luna`, not private/public alias mappings or arbitrary IDs.
+`auth diagnose` makes at most one bounded remote model-metadata request with an
+already-usable access token and prints a sanitized JSON report to stderr. It
+never refreshes, logs in, runs inference or changes state. Share only that
+report. See the [report contract](authentication.md#saved-login-model-diagnostics-native-no-refresh).
 
-The executable composes native Codex inference with one lifetime credential
-manager and one shared account/epoch-bound bundled catalog. It never imports
-isolated proof, Pi or Codex state. `auth login` displays the fixed activation URL
-and user code only to `/dev/tty`; no unattended/browser-cookie/import path exists.
-Saved login reports bundled availability with upstream acceptance not verified.
-Missing valid credentials or an unknown default override gives safe JSON 503.
-Both-model native/current Mac/production live gates still block release; see the
-[authorized catalog policy](plans/bundled-catalog-policy.md) and
-[authentication/security and opt-in steps](authentication.md).
+`auth logout` durably replaces local secrets with a counter-only tombstone. It
+does not revoke the session remotely or securely erase disk history.
 
-`GET /api/cli/models` returns Sol first/default and selectable Luna second;
-chat resolves unknown IDs to that same snapshot's known default. `httpserver.NewWithRuntime` accepts
-credentials, that catalog, and the native streaming provider. Catalog-only or
-uncredentialed library construction remains safely unavailable, never a
-fabricated provider. Invalid decoded requests return 400 (`invalid_request` or
-`conversation_too_large`); oversized bodies return 413 before catalog lookup. Other paths return JSON 404; unsupported methods
-on known routes return 405. See [decoder policies](compatibility.md).
+## Configuration
 
-Normal model listing performs no remote metadata request: no discovery worker,
-TTL, stale grace or remote enrichment. Every lookup still preflights application
-credentials. Logout/reauth/account change and failed rotating refresh publish
-unavailable/new state then synchronously invalidate local snapshots. Lifecycle
-revision checks reject obsolete credential lookups. Successful rotation preserves
-auth_epoch; fresh login advances it even for the same account. Inference is pinned
-to the snapshot's account/epoch and rejects later changes rather than rebinding.
-401/403 during inference fails closed after one generation, with no retry, model
-fallback or executable partial batch. Bundled membership is not entitlement.
-The 180000 estimated-input cap is unchanged. Pi's 272000 context/128000 max-output
-metadata is not a simultaneous input-plus-output promise. Luna live proof is
-pending; [historical discovery evidence](proofs/codex-discovery-phase3a.md) remains
-historical, not a current availability gate.
+The server reads the first of: `serve --config PATH`, `CHAT_CONFIG`, then
+`$XDG_CONFIG_HOME/atuin-ai/config.toml` (`os.UserConfigDir()` elsewhere). A
+missing default file means built-in defaults; a missing explicit file is an
+error. The file is read once, up to 64 KiB.
 
-## Private state and single-process operation
+Only two keys are accepted ([example](../config.example.toml)):
 
-Production records live under `os.UserConfigDir()/atuin-ai/credentials`, NOT the
-proof store (Linux default `~/.config/atuin-ai/credentials`; macOS
-`~/Library/Application Support/atuin-ai/credentials`). The final directory must
-be euid-owned 0700, records/lock regular 0600 without hard links; symlinked or
-unsafe writable ancestry is rejected. State uses descriptor-relative nofollow
-operations, strict bounded records and atomic synced replacement. There is no
-encryption/keyring claim; protect your account and filesystem/backups. A hostile
-same-UID process/root, network filesystems, Windows and multiple replicas are
-outside this boundary. Do not print or copy private state to diagnose errors.
+- `port`, default **17391**. The host is always `127.0.0.1`.
+- `default_model`, exactly `gpt-6.1-sol` (the default) or `gpt-6-luna`.
 
-`serve` and every separate `auth` command acquire the same nonblocking lifetime
-file lock. STOP the server before separate login/status/logout; lock contention
-fails rather than waiting or racing another refresh. Never unlink/replace the
-lock file to bypass contention. Shutdown retains the lock through cancellation
-and completion of rotating credential work. Concurrent Close callers all join
-the complete shared shutdown/store release and receive the same close result;
-becoming unavailable is not itself completion of shutdown.
+Obsolete `[[models]]` or alias mappings produce a migration error. Error
+messages are deliberately generic so parser output cannot leak secret values.
+Create configuration by hand with `umask 077`; the server does not chmod or
+rewrite it.
 
-`auth status` reports local login/unusable state and safe generation/auth_epoch/
-expiry only; it does not prove upstream acceptance or refresh the session.
-`auth diagnose` opens only EXISTING application state with the same lifetime
-lock and strict validation, without directory/lock creation, orphan cleanup or
-record/counter changes. It uses only already-usable access: near/expired access
-returns `refresh_required` without network; pending/unusable/locked state is
-unavailable. Otherwise at most one bounded native metadata GET uses the unchanged
-request/validation/selection contract. No OAuth, inference, retry, cache mutation
-or eligibility change. One stderr JSON report distinguishes HTTP/transport/body/
-schema/metadata/empty/missing-or-hidden-proven/override outcomes with enums,
-nullable counters/booleans only. Null means unknown, not zero. Diagnosis completion
-exits zero even on a non-success result. Share only the report, never raw responses,
-headers, URLs, state, account IDs, tokens or model metadata. See the exact
-[field and result contract](authentication.md#saved-login-model-diagnostics-native-no-refresh).
-`auth logout` durably replaces secrets with a counter-only tombstone; it does
-not revoke remotely or securely erase disk history. A durable secret-free intent
-precedes external token rotation. Ambiguous refresh/timeout/invalid_grant or
-post-rotation save failure blocks all further use across restart: explicitly
-log in again. A failed intent save sends NO refresh, so restart may safely retain
-the old session in that pre-side-effect case.
-There is no automatic old-token retry. Once tokens arrive, a detached bounded
-persistence operation finishes despite caller cancellation. Filesystem budgets
-are checked between syscalls, not a guarantee against a kernel-stalled fsync.
-New private continuation objects use opaque unexported payload pointers,
-including under invalid fmt verbs/containers and JSON/slog. Legacy credential
-formatter methods are not an arbitrary-formatting confidentiality boundary;
-never print private credentials/contexts. Intentional private-store JSON is unchanged. Duplicate-member
-validation follows Go's Unicode SimpleFold aliases, not lowercasing alone;
-persisted field names remain exact.
-Unsafe/corrupt state needs operator investigation, not guessed endpoints or
-manual token edits. [Full lifecycle invariants](authentication.md#rotation-and-restart-safety).
+## Models
 
-## Durable private reasoning continuation (development candidate)
+`GET /api/cli/models` returns Sol first (default) and Luna second without any
+remote request. Chat resolves unknown model IDs to the default. Listing still
+requires a valid application login; otherwise it returns JSON 503. Bundled
+membership is not proof of account entitlement. See the
+[catalog policy](catalog-policy.md).
 
-[Finite contract, private storage, diagnostics and attended recovery](reasoning-continuation.md)
-apply to the enabled candidate. The existing saved login/config and credential
-JSON stay unchanged. Normal runtime owns fixed `continuation-v1`; auth status/
-diagnosis and declined init never open/create/prune it. Snapshots are encrypted,
-but the separate local root key is plaintext: protect the whole namespace like
-credentials, not as secure erasure or protection from same-UID/root/backups.
-
-Retained protected exchanges require exact opaque IDs and full bound history;
-missing/corrupt/expired/policy/model/session/window-changed state fails before
-POST, without fallback. For transcript/window loss use `/new`; this does NOT
-repair a corrupt global key. Such repair requires explicitly attended new-binary
-logout/login with consent. Rollback to stable v0.1.0 retains the SAME login/config
-but needs a NEW conversation; old logout does not purge the new namespace.
-Four leases,2MiB sealed snapshot/128records/64MiB actual total and inherited24h
-expiry are hard finite limits, not universal all-turn support.
+Inference is pinned to the account and auth epoch it started with. A logout,
+reauthentication or account change during a turn rejects it rather than
+rebinding. Upstream 401/403 fails the turn with no retry or model fallback.
 
 ## HTTP boundary
 
-The port is configurable; the host is not. The listener is always IPv4
-`127.0.0.1`. Client authentication is absent, and Authorization headers are
-ignored. Do not expose this port with a proxy, SSH tunnel, port forward or
-container port publication. Loopback does not protect against other local
-processes/users or browser-origin attacks; this is a personal local process,
-not a multi-user security boundary.
+The listener is always IPv4 `127.0.0.1` on the configured port.
 
-At most 64 TCP connections are retained; further accepted connections are
-closed immediately without creating HTTP connection goroutines. The finite OS
-TCP backlog is separate. At most four chat requests are admitted, including
-body reads, with no waiting queue. Excess requests return 503 with `Retry-After: 1`. Each admitted body is
-limited to 4 MiB (including chunked bodies); larger bodies return 413. Headers
-have a 16 KiB configured limit and a five-second read deadline; full request
-reads have a 15-second deadline. Idle HTTP connections expire after 60 seconds.
-The initial HTTP write deadline is 310 seconds. SSE overrides it per frame and
-flush with a five-second deadline (`Runtime.WriteTimeout` is test-injectable).
-Unsupported deadline controllers fail closed; failed writes/flushes cancel
-upstream immediately without retries. The runner bounds generation to 300 seconds
-separately from downstream cancellation, permitting a generic terminal error on
-upstream timeout. The native provider also enforces 60-second inactivity, 1 MiB
-SSE events, 256 KiB arguments and 32 calls per response. Each chat makes exactly
-one upstream generation, never executes tools, and never automatically continues.
-Calls remain buffered until Stream succeeds and the whole batch passes schema,
-capability, mixed-terminal, ID-collision and danger checks. Local calls end with
-waiting_for_tools then done; suggestions end with done without waiting. Failures
-use one fixed generic error, never raw upstream/write details. Each frame is
-single-line JSON and flushed; session header and done agree. Usage includes all
-spec fields: unknown counts (including cache creation) and all costs are null;
-known counts, including explicit zero/cache reads, are preserved. No credits or
-prices are invented. See [Phase 6 policies/tests](plans/phase6-status.md).
+- Every request, on every path, needs exactly one
+  `Authorization: Bearer <client token>` header; otherwise the server returns
+  401 `unauthorized` before routing.
+- A `Host` name other than `127.0.0.1` or `localhost` gets 403
+  `forbidden_host` (DNS-rebinding defense in depth).
+- See [ADR 0006](decisions/0006-required-local-client-token.md) for the threat model.
 
-SIGINT/SIGTERM closes admission, allows active handlers up to five seconds to
-drain, then cancels handler contexts and forcibly closes connections. Startup
-and failures use JSON logs on stderr. Request bodies, headers, configuration
-contents and upstream credentials must never be logged. Native upstream transport
-uses HTTP/1 without connection pooling (six connections/host maximum), avoiding
-net/http raw unsolicited-idle-response/HTTP2 diagnostics; redirects are refused. Configuration failures
-are intentionally generic to avoid parser diagnostics exposing secret values.
+The token (`aia1_` plus 64 hex digits) is created on the first `serve`,
+`auth login` or `init` and stored as the 0600 `client-token` file in the
+private state directory. Atuin sends it from `[ai].api_token`; `init` writes it
+there when you accept the Atuin edit. `token show` prints it, even while the
+server runs. `token rotate` replaces it, needs the server stopped, and requires
+updating Atuin's `api_token`. Because the token also lives in Atuin's config,
+keep that file private and out of published dotfiles.
 
-## Generation failure diagnostics (development candidate)
+Do not expose the port through a proxy, SSH tunnel, port forward or container
+port. Anyone with the token can use your upstream account.
 
-New debug builds emit one `generation_failed` JSON stderr line for a selected
-failure that attempts the unchanged generic SSE terminal. Old v0.1.0 logs cannot
-recover the cause retrospectively. No retries, automatic tools,
-refresh-and-replay, model fallback or additional provider requests are added.
-The enabled reasoning candidate separately permits only closed handled/replayed
-success reports AFTER successful done/flush and complete cleanup (below).
-Early client cancellation and downstream-write-only failures do not report.
+Other responses: invalid chat requests return 400 (`invalid_request` or
+`conversation_too_large`); oversized bodies 413; unknown paths 404; wrong
+methods on known routes 405. See [decoder policies](compatibility.md).
 
-The **only seven keys** are standard `time`, `level`, `msg`, plus `phase`,
-`category`, `upstream_http_status`, `elapsed_ms`. Status is the actual rejected
-HTTP integer (100–599), or null when unavailable; null is not HTTP zero.
-Elapsed milliseconds are nonnegative, from immediately before prepared generation/streaming to the
-failure decision, excluding terminal flush and logger latency. Unknown enum
-values become `unknown`. No error text, body, header, URL/path, model/tool name,
-ID, prompt/history/arguments, usage or credential is attached.
+## Limits
 
-Phases are `request`, `credentials`, `transport`, `http`, `stream`, `turn`,
-`continuation`, `unknown`. Categories include:
+| Limit | Value |
+|---|---|
+| Retained TCP connections | 64 (extra connections are closed immediately) |
+| Concurrent chat requests | 4, no queue; extra requests get 503 with `Retry-After: 1` |
+| Request body | 4 MiB, including chunked bodies (413 above) |
+| Request headers | 16 KiB, read within 5 s; full request within 15 s |
+| Idle connection | 60 s |
+| SSE frame write and flush | 5 s each |
+| Generation | 300 s; 60 s upstream inactivity |
+| Upstream SSE frame | 1 MiB, including the final snapshot of the whole response |
+| Tool calls | 32 per response, 256 KiB arguments each |
+| Estimated input | 180000 tokens |
 
-- `request_invalid`, `credentials_unavailable`
-- `transport_failure`, `transport_timeout`
-- `http_unauthorized`, `http_forbidden`, `http_rate_limited`, `http_server_error`,
-  `http_rejected`
-- `stream_incomplete`, `stream_malformed`, `stream_read_failure`,
-  `stream_read_timeout`, `upstream_error`, `upstream_failed`,
-  `upstream_incomplete`, `refusal`, `unsupported_output`
-- `inactivity_timeout`, `generation_timeout`, `events_invalid`,
-  `tool_batch_invalid`, `history_call_id_collision`, `provider_failure`, `unknown`
+Each chat makes exactly one upstream generation, never runs tools itself and
+never continues automatically. Tool calls are buffered until the whole batch
+passes schema, capability, ID-collision and danger checks. Local calls end with
+`waiting_for_tools` then `done`. Failures use one fixed generic SSE error, never
+raw upstream details. Unknown usage counts and all costs are reported as null.
 
-Additional closed categories cover continuation unavailable/missing/expired/
-binding mismatch/corrupt/quota/projection unsupported/lifecycle changed, missing
-reasoning state/no visible output, and unsupported lifecycle output/content/
-channel/item/namespace. Exact labels are documented in
-[the implementation contract](../internal/provider/failure.go); no raw
-provider discriminator is appended. Optional successful
-`generation_reasoning_handled` / `generation_reasoning_replayed` use the SAME
-seven keys with phase `stream`, null HTTP status and categories
-`reasoning_handled`, `reasoning_replayed`, `reasoning_replayed_and_handled`.
-Ordinary success remains silent. Success elapsed ends at terminal decision;
-observers run only after done/flush, native cleanup, lease close, unlock/cancel.
+Upstream connections use HTTP/1 without pooling (at most six per host) and
+refuse redirects.
 
-These describe an observed failure branch, **not a root-cause or retryability
-guarantee**. Typed inspection has a total 64-node/edge budget, including joined
-breadth/cycles; information beyond that budget falls back safely. It never calls
-arbitrary Error/String/Is/As methods. Synchronous Unwrap/Timeout implementations
-are trusted to return; diagnostic inspection is not a sandbox for hostile code.
+## Private state
 
-Reporting is synchronous **after** the terminal write/flush attempt, callback
-mutex unlock, turn cancellation and provider body-close/watchdog joins. Observer
-and writer panics are contained without logging panic values or adding writes.
-This is **not nonblocking logging**: a permanently blocked trusted stderr writer
-can retain a handler and its admission slot after upstream cleanup. With all four
-slots retained, later chat requests receive busy. No worker/queue/goroutine or
-stderr flag workaround is introduced. Restore the local stderr destination (or
-stop the debug process) rather than assuming a hard-bound handler under log outage.
+State lives in `os.UserConfigDir()/atuin-ai/credentials`: Linux
+`~/.config/atuin-ai/credentials`, macOS
+`~/Library/Application Support/atuin-ai/credentials`. A symlinked config
+directory (common with dotfile managers) is resolved once before use.
 
-For colleague debugging, use only a separately verified development binary in
-foreground after stopping the old service, with the same saved login/config;
-leave the stable binary untouched. Only the user/colleague should initiate a
-fresh natural request. Ctrl-C stops the debug process; restart the old service to
-roll back. Do not run automated live probes or attempt credential/model fixes
-based only on a category. Ask for **only the `generation_failed` lines**, never a
-whole journal, request dump, credential file or provider transcript. With the
-reasoning candidate, share only those lines and the fixed handled/replayed lines
-when explicitly requested; these do not establish live inference acceptance.
+- The final directory must be owned by you with mode 0700.
+- Files (`lock`, `record.json`, `intent.json`, `client-token`) must be regular
+  0600 files with no hard links.
+- No ancestor directory may be a symlink, be owned by another non-root user, or
+  be group- or world-writable (unless it is a root-owned sticky directory such
+  as `/tmp`).
 
-Packaging/installer tests within `make check` additionally require Python3.9+,
-OpenSSL and **curl >=8.4.0**. They use real curl only against an ephemeral-CA
-loopback fixture with an isolated synthetic HOME/rc/netrc, never provider or
-release endpoints. Installer/outer bootstrap commands use `curl -q` FIRST to
-ignore user rc settings, and old curl fails before any download because older
-max-filesize cannot bound unknown-length transfers. [Contract and rationale](packaging.md).
+When a check fails, commands name the offending path and the fix, for example
+`credential state unavailable: /home/me/.config is writable by group or others;
+run: chmod go-w /home/me/.config`. On distributions with umask 002, directories
+you created yourself are often group-writable.
 
-Run `make check` for tests, race detector, vet, pinned staticcheck and
-vulnerability scanning plus five-second bounded fuzz smoke tests for the
-decoder, tool-batch validator, safety backstop and Responses SSE parser. `make build` creates the
-binary. Run longer fuzzing by selecting `FuzzDecode` in `./internal/atuin`,
-`FuzzValidateBatch` in `./internal/tools`, or `FuzzEscalate` in
-`./internal/safety`, for example:
-`go test ./internal/tools -run='^$' -fuzz=FuzzValidateBatch -fuzztime=1m -parallel=2`.
-The nightly workflow runs each target for two minutes. No live OAuth checks
-are run in CI.
+State is not encrypted at rest and there is no keyring integration. A hostile
+process running as your user, root, network filesystems, Windows and multiple
+replicas are outside the security boundary. Never print or copy private state
+to debug a problem, and never edit credentials by hand.
 
-## Offline shipping resource / lifecycle gate (Phase 9b)
+### One process at a time
 
-`make resource-test` runs fast fixture invariants. `make resource-isolation-test`
-requires actual narrow-mount network/PID namespaces and runs synthetic repository
-confidentiality, spawn rollback and CONNECT/TLS wire regressions (no real private
-files or provider calls). The whole working checkout is NEVER mounted; only
-required public inputs checked against the verified package inventory are copied
-to a private read-only snapshot. `make resource
-ARTIFACTS=/absolute/development-package OUT=/absolute/fresh-evidence` is the
-explicit HARD Linux gate (~7minutes, including real60s/300s defaults). Build the
-package with the existing `make package-dev` two-path flow first. Missing GNU
-time/OpenSSL/Bubblewrap0.11.1 or unusable mandatory network namespaces FAIL,
-never skip. No live provider/real credentials, host policy changes, production
-knobs or profiling endpoint. The measured shipping binary has default GC and no
-race instrumentation/forced GC; numeric companion heap/goroutine/write-error
-witnesses are separately labeled. [Exact workloads, bounds, cleanup, reporting
-and finite retention resolution](provenance/resource-lifecycle.md),
-[review checkpoint and preserved first failures](plans/phase9b-status.md).
-Only development package/numeric reports are uploaded by separate resource CI;
-synthetic resource success does not clear native Mac/live/catalog/release gates.
-Delivery/release MUST independently require ALL FOUR exact-HEAD families: Go
-checks, Packaging consistency, Phase8 validation aggregate AND Phase9b resource
-validation aggregate. Resource failure/skip/cancellation or a missing/partial
-receipt blocks acceptance even if compatibility aggregate is green. Actual
-branch required-check settings are external and have not been changed/claimed.
+`serve` and every `auth` command take the same non-blocking lock. If the server
+is running, other commands fail with `credential state unavailable: in use by
+another atuin-ai-server process (usually the running server); stop it first`.
+Never delete the lock file to get around this. `token show` reads without the
+lock and works while the server runs.
 
-## Synthetic pinned-CLI and differential gates (Phase 8)
+### Token refresh
 
-These local artifact-gated checks use synthetic accounts/backends. Initial
-HOME/XDG-only runs were not ancestor-isolation evidence; see the review record.
-Corrected runs require Bubblewrap 0.11.1 with usable unprivileged Linux
-user/PID/mount namespaces; missing/restricted prerequisites FAIL, not skip:
+Before every refresh the server durably records that the old session is about
+to be replaced, so a crash can never reuse a refresh token that may already
+have been rotated upstream.
+
+- **The request never left the machine** (offline, DNS failure, refused
+  connection, proxy or TLS handshake rejection): the old session is restored and
+  the next request retries. The current request gets 503.
+- **Anything ambiguous** (timeout after connecting, `invalid_grant`, malformed
+  reply, failure to save the new tokens): the session becomes unusable, also
+  after restart. Run `auth login` again.
+- **Saving the intent fails**: no refresh is sent. The running server treats the
+  session as unusable, but restarting it restores the old session.
+
+Once new tokens arrive, saving them finishes even if the caller cancels.
+Shutdown waits for in-progress refresh and save work before releasing the lock.
+Full invariants are in [authentication](authentication.md#rotation-and-restart-safety).
+
+## Reasoning continuation
+
+The normal runtime also keeps optional encrypted private reasoning state in a
+`continuation-v1` namespace beside the credentials. `auth status`, `auth
+diagnose` and a declined `init` never open it. The local root key is plaintext,
+so protect the namespace like credentials. If a conversation's state is lost,
+use `/new` in Atuin. Limits, recovery and rollback are in
+[reasoning continuation](reasoning-continuation.md).
+
+## Shutdown and logging
+
+SIGINT or SIGTERM stops admission, lets active handlers drain for up to five
+seconds, then cancels them and closes connections.
+
+Logs are JSON on stderr. Request bodies, headers, configuration contents and
+credentials are never logged.
+
+### Generation failure diagnostics
+
+A failed generation emits one `generation_failed` JSON line with exactly seven
+keys: `time`, `level`, `msg`, `phase`, `category`, `upstream_http_status` (null
+when there is none) and `elapsed_ms`. No error text, body, header, URL, model or
+tool name, ID, prompt, arguments, usage or credential is included. Phases and
+categories are closed enums defined in
+[`internal/provider/failure.go`](../internal/provider/failure.go); unknown values
+become `unknown`. With reasoning continuation, successful turns can also emit
+`generation_reasoning_handled` or `generation_reasoning_replayed` with the same
+keys.
+
+Categories describe the observed failure branch, not a root cause. Reporting
+happens synchronously after the terminal SSE write, so a permanently blocked
+stderr can hold a request slot; fix the log destination rather than restarting
+in a loop.
+
+When asking someone for help, share only the `generation_failed` lines, never
+a whole journal, request dump or credential file.
+
+## Development checks
+
+`make check` runs formatting, tests, the race detector, vet, staticcheck and
+nilness, govulncheck, five-second fuzz smoke tests and the packaging, resource
+and reasoning harness self-tests. Packaging tests need Python 3.9+, OpenSSL and
+curl 8.4.0+, and use only a loopback TLS fixture. Run a longer fuzz campaign
+with, for example:
+
+```sh
+go test ./internal/tools -run='^$' -fuzz=FuzzValidateBatch -fuzztime=1m -parallel=2
+```
+
+The nightly workflow runs each fuzz target for two minutes. CI never performs
+live OAuth.
+
+### Compatibility gates
+
+The pinned Atuin CLI end-to-end and reference-oracle differential tests use
+synthetic accounts and backends inside Bubblewrap 0.11.1 with Linux user, PID and
+mount namespaces. Missing prerequisites fail rather than skip.
 
 ```sh
 python3 tests/e2e/build-atuin.py /path/to/pinned-atuin /scratch/atuin-build
@@ -324,35 +225,24 @@ ATUIN_E2E_MANIFEST=/scratch/atuin-build/manifest.json \
 ATUIN_ORACLE_MANIFEST=/scratch/oracle/manifest.json make compatibility
 ```
 
-Use dedicated writable scratch outside the upstream source trees. Provisioning
-requires network and Linux amd64 build tooling; the test runs themselves use
-synthetic credentials/backends and isolated HOME/XDG/database/sandbox paths.
-Python stdlib supplies the actual PTY INSIDE a Bubblewrap filesystem/PID
-boundary. Host HOME, /tmp and ancestor context/project/skill files are not
-mounted; fixture metadata rejects symlinks/unapproved context before each
-launch. Build scripts use fresh complete source/toolchain/Cargo/target inputs,
-verify official cached archive checksums on every use and invalidate stale
-manifests; local consistency is not independent producer attestation.
-Default Atuin features/AI are preserved;
-no source patches or private stores are imported. Docker is an oracle-only test
-prerequisite; the Go deployment still has no container or new backend/bind knob.
-The oracle/fake CC service use an internal bridge with **no published ports**.
+Provisioning needs network access and Linux amd64 build tools; Docker is needed
+only for the oracle. CI runs both gates on every push and reports a
+`Phase8 validation aggregate` check. Details are in [compatibility](compatibility.md).
 
-`make e2e` and `make differential` run the gates separately and fail without
-artifact manifests. Ordinary `go test -v ./tests/...` prints explicit BLOCKED
-skips without them; neither a skip nor Go-only CI clears these gates. A separate
-PR/push/manual compatibility workflow runs both without live account secrets;
-its `Phase8 validation aggregate` depends on Go and actual compatibility jobs,
-rejecting failures, cancellations and skips. Administrators must require that
-check in branch/release policy; this repository change does not modify GitHub
-branch protection. First delivery CI demonstrated hosted namespace/tool and
-20-client success, but differential setup and aggregate failed; the focused
-Docker fix subsequently passed ALL compatibility jobs/cleanup/aggregate, but
-separate Go Checks failed the offline watchdog fixture. The reviewed fixture-only
-correction then passed BOTH exact-HEAD workflows at `a50af9a`: 20 CLI / 14 oracle,
-namespace/AppArmor probe, cleanup/aggregate and Go make-check/build ([receipt](plans/phase8-ci-receipt.md)). Owned-label watchdog and workflow-always cleanup
-remove only the exact run's containers/networks, never global prune.
-Keep the manifests/binary/source-built image for independent reproduction, not
-as production credentials or packaging. [Full evidence, known differences,
-retained initial failures and cleanup policy](plans/phase8-status.md).
-Production live/catalog and Phase 9 resource/release blockers remain in force.
+### Resource gates
+
+`make resource-test` checks fixture invariants quickly.
+`make resource-isolation-test` needs real network and PID namespaces.
+The full gate measures a development package against fixed memory, descriptor,
+cleanup and retention bounds (about seven minutes, using the real 60 s and 300 s
+timeouts):
+
+```sh
+make package-dev VERSION=v0.0.0-dev.local OUT=/abs/fresh-package
+make resource ARTIFACTS=/abs/fresh-package OUT=/abs/fresh-evidence
+```
+
+Workloads and bounds are recorded in
+[resource lifecycle](provenance/resource-lifecycle.md). A release needs all
+four CI families green on the exact commit: Go checks, packaging, the Phase 8
+compatibility aggregate and the Phase 9b resource aggregate.

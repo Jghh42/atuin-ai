@@ -12,6 +12,10 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+// MaxProviderEventBytes bounds every upstream SSE frame, including the final
+// response.completed snapshot that repeats all output. The per-call argument
+// and call-count limits therefore cannot all be reached at once: a response's
+// text and tool-call arguments together must fit in that one frame.
 const (
 	MaxRequestBodyBytes       = 4 << 20
 	MaxConcurrentChats        = 4

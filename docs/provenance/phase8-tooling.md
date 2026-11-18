@@ -235,7 +235,7 @@ Failure remains red; no skip/no-sandbox/relaxed-confinement fallback is present.
 The kernel profile load/unload was not executed at the preparation snapshot.
 First delivery CI subsequently PASSED actual hosted load/probe/removal and all
 20 CLI cases, while failing differential setup and the aggregate; see the
-[CI receipt](../plans/phase8-ci-receipt.md). No overall green is inferred. Mocked tests prove
+[CI receipt](../history/phase8-ci-receipt.md). No overall green is inferred. Mocked tests prove
 scope/partial-failure cleanup behavior; real parser `-Q -T` validates syntax
 without loading ANY kernel profile. An unresponsive/refusing runner stays blocked.
 
@@ -254,9 +254,9 @@ packages were downloaded/extracted into OWNED scratch only (no apt install):
 OS license texts retained under extracted `usr/share/doc`; these are external
 build tooling, not new Go/server dependencies. An owned Python wrapper points
 Meson at its extracted dist-packages; an owned-stage `usr/lib64` symlink resolves
-its libcap .pc's multiarch mismatch (build1 failure retained). Build2 found JSON
+its libcap .pc's multiarch mismatch (build 1 failure retained). Build 2 found JSON
 list/tuple inventory comparison in the NEW selector; canonical comparison plus a
-serialized positive regression fixed it. Fresh build3 succeeded:
+serialized positive regression fixed it. Fresh build 3 succeeded:
 `/home/pi/.cache/atuin-ai-phase8-bwrap-built3/manifest.json`, binary SHA256
 `901419f803d7d5ed8957652e43608cf1841cbf72d977ddd4427545422ef6636c`.
 

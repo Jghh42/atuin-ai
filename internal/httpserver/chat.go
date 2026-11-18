@@ -29,6 +29,9 @@ type Runtime struct {
 	// PreflightTimeout bounds credential/catalog availability before headers.
 	// Zero selects eight seconds; sources must honor context cancellation.
 	PreflightTimeout time.Duration
+	// ClientToken is the required local bearer token the Atuin CLI sends from
+	// [ai].api_token. It must be a valid generated credentials client token.
+	ClientToken string
 }
 
 func NewWithRuntime(cfg config.Config, logger *slog.Logger, runtime Runtime) (*Server, error) {

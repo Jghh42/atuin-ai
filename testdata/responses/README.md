@@ -26,7 +26,7 @@ the explicit lifecycle/completion identity policy; no real IDs are used.
 Lifecycle-output regressions use matching synthetic IDs: nonempty output fails
 closed, absent/empty output remains valid, and null/non-array output is rejected. Unknown additive metadata is
 ignored, but unknown execution/state channels fail closed. See the
-[Phase 5 policy](../../docs/plans/phase5-status.md).
+[Phase 5 policy](../../docs/history/phase5-status.md).
 
 Phase 6 sequence goldens in `internal/turn/runner_test.go`, exact SSE frame golden
 in `internal/httpserver/stream_test.go`, and generated fake Responses snapshots

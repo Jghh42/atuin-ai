@@ -32,9 +32,9 @@ Copyright (c) 2019 Oliver Kuederle.
 SHA-256: `a59885f5f0f3b3c07cf9444db5fe399b6f0791eac82055f7b85cc65500551039`.
 Module integrity is pinned in `go.sum`; include the license with binaries.
 **The MIT text is not sufficient for its generated Unicode data.** All six
-Unicode15 table sources require the separately retained full historical Unicode
-data/software grant and table attribution. The actual Go1.27.3 shipping graph
-also selects Unicode17 stdlib/IDNA/bidi/normalization tables and requires its
+Unicode 15 table sources require the separately retained full historical Unicode
+data/software grant and table attribution. The actual Go 1.27.4 shipping graph
+also selects Unicode 17 stdlib/IDNA/bidi/normalization tables and requires its
 Unicode License V3 grant. Both complete grants and specific table attribution
 are bundled, independently pinned and checked; [immutable authoritative sources,
 applicability and hashes](unicode-data.md). Earlier 9a artifacts without them
@@ -76,7 +76,7 @@ The old Staticcheck v0.7.0 export-data error and govulncheck v1.1.4 SSA panic
 were preserved before choosing compatible released tools. No runtime SDK module
 version, app dependency graph or go.sum is widened by these `go run ...@version`
 commands. Toolchain selection/first failure evidence and validation are in the
-[sourced diagnosis](../plans/fuzz-toolchain-diagnosis.md). Go itself and its standard library carry
+[sourced diagnosis](../history/fuzz-toolchain-diagnosis.md). Go itself and its standard library carry
 their upstream BSD-style license in the installed toolchain's `LICENSE`.
 Phase 9a packaging includes the exact toolchain LICENSE/PATENTS, stdlib-vendor
 license/patent texts and notice-bearing comment blocks from selected stdlib
@@ -85,13 +85,13 @@ Native `init` additionally links Go's `debug/buildinfo` (including object reader
 compression helpers and runtime/debug), `os/exec` and `os/user`; these are stdlib,
 not new modules/SDKs. Its reviewed source-notice union is **335056 bytes**, SHA256
 `99df598e700d9967c194f5993b5b1095c0f007a0a15d2c2dc07e89fffce9b265`
-(formerly321753 / `4ebe0243d4d9032fdc65b2447ecd71160aa6cad402ad7c6e780a7e6090124400`).
-The55 added source sections retain Go Authors BSD headers plus the full FreeBSD
+(formerly 321753 / `4ebe0243d4d9032fdc65b2447ecd71160aa6cad402ad7c6e780a7e6090124400`).
+The 55 added source sections retain Go Authors BSD headers plus the full FreeBSD
 ELF Polstra/O'Brien BSD-2-clause notice/disclaimer; no old sections changed or
 were removed. The producer already includes those bytes automatically from BOTH
-CGO0 target graphs; the independent consumer's exact reviewed hash/size pin is
+CGO_ENABLED=0 target graphs; the independent consumer's exact reviewed hash/size pin is
 updated, not relaxed. Go LICENSE/PATENTS, four stdlib-vendor pairs, Unicode table/
-license hashes and the24-entry legal asset set are unchanged. This is a legal
+license hashes and the 24-entry legal asset set are unchanged. This is a legal
 inventory correction for the new linked stdlib graph, not a license change.
 The shipping graph is checked for both targets against exactly TOML v1.5.0,
 uniseg v0.4.7 and x/sys v0.49.0. Their retained license texts must equal the

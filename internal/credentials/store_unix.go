@@ -56,43 +56,9 @@ func OpenDiagnosticStore(path string) (*DiskStore, error) {
 }
 
 func openStore(path string, diagnostic bool) (*DiskStore, error) {
-	if !filepath.IsAbs(path) || filepath.Clean(path) != path || path == "/" {
-		return nil, ErrStore
-	}
-	fd, err := unix.Open("/", unix.O_RDONLY|unix.O_DIRECTORY|unix.O_CLOEXEC, 0)
+	fd, err := openDirectory(path, !diagnostic)
 	if err != nil {
 		return nil, ErrStore
-	}
-	parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
-	for i, part := range parts {
-		next, e := unix.Openat(fd, part, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
-		if errors.Is(e, unix.ENOENT) && !diagnostic {
-			if e = unix.Mkdirat(fd, part, 0700); e == nil {
-				// Make newly created ancestry durable before relying on child state.
-				if unix.Fsync(fd) != nil {
-					unix.Close(fd)
-					return nil, ErrStore
-				}
-				next, e = unix.Openat(fd, part, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
-			}
-		}
-		unix.Close(fd)
-		if e != nil {
-			return nil, ErrStore
-		}
-		fd = next
-		var st unix.Stat_t
-		e = unix.Fstat(fd, &st)
-		uid := uint32(os.Geteuid())
-		sticky := st.Uid == 0 && st.Mode&unix.S_ISVTX != 0
-		safe := e == nil && (st.Uid == 0 || st.Uid == uid) && (st.Mode&0022 == 0 || sticky)
-		if i == len(parts)-1 {
-			safe = safe && st.Uid == uid && st.Mode&07777 == 0700
-		}
-		if !safe {
-			unix.Close(fd)
-			return nil, ErrStore
-		}
 	}
 	s := &DiskStore{dir: os.NewFile(uintptr(fd), "credential directory"), readOnly: diagnostic}
 	flags := unix.O_RDWR | unix.O_CREAT
@@ -122,6 +88,53 @@ func openStore(path string, diagnostic bool) (*DiskStore, error) {
 		return nil, ErrStore
 	}
 	return s, nil
+}
+
+// openDirectory walks descriptors from / without following symlinks and
+// returns the validated application directory, creating ancestry only on request.
+func openDirectory(path string, create bool) (int, error) {
+	if !filepath.IsAbs(path) || filepath.Clean(path) != path || path == "/" {
+		return -1, ErrStore
+	}
+	fd, err := unix.Open("/", unix.O_RDONLY|unix.O_DIRECTORY|unix.O_CLOEXEC, 0)
+	if err != nil {
+		return -1, ErrStore
+	}
+	parts := strings.Split(strings.TrimPrefix(path, "/"), "/")
+	for i, part := range parts {
+		next, e := unix.Openat(fd, part, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
+		if errors.Is(e, unix.ENOENT) && create {
+			if e = unix.Mkdirat(fd, part, 0700); e == nil {
+				// Make newly created ancestry durable before relying on child state.
+				if unix.Fsync(fd) != nil {
+					unix.Close(fd)
+					return -1, ErrStore
+				}
+				next, e = unix.Openat(fd, part, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
+			}
+		}
+		unix.Close(fd)
+		if e != nil {
+			if !create && errors.Is(e, unix.ENOENT) {
+				return -1, os.ErrNotExist
+			}
+			return -1, ErrStore
+		}
+		fd = next
+		var st unix.Stat_t
+		e = unix.Fstat(fd, &st)
+		uid := uint32(os.Geteuid())
+		sticky := st.Uid == 0 && st.Mode&unix.S_ISVTX != 0
+		safe := e == nil && (st.Uid == 0 || st.Uid == uid) && (st.Mode&0022 == 0 || sticky)
+		if i == len(parts)-1 {
+			safe = safe && st.Uid == uid && st.Mode&07777 == 0700
+		}
+		if !safe {
+			unix.Close(fd)
+			return -1, ErrStore
+		}
+	}
+	return fd, nil
 }
 func (s *DiskStore) open(name string, flags int, mode uint32) (*os.File, error) {
 	fd, e := unix.Openat(int(s.dir.Fd()), name, flags|unix.O_NOFOLLOW|unix.O_CLOEXEC|unix.O_NONBLOCK, mode)
@@ -226,15 +239,22 @@ func (s *DiskStore) atomic(ctx context.Context, name string, r Record) error {
 	if r.validate() != nil {
 		return ErrStore
 	}
+	b, e := json.Marshal(r)
+	if e != nil || len(b) > maxRecordBytes {
+		return ErrStore
+	}
+	return s.replace(ctx, name, b)
+}
+
+// replace durably writes b to name through an exclusive same-directory temporary
+// file, file sync, rename and directory sync. Orphaned temporaries are cleaned
+// on the next locked open.
+func (s *DiskStore) replace(ctx context.Context, name string, b []byte) error {
 	// Refuse unsafe existing destinations, even though rename never follows one.
 	f, e := s.open(name, unix.O_RDONLY, 0)
 	if e == nil {
 		f.Close()
 	} else if !errors.Is(e, unix.ENOENT) {
-		return ErrStore
-	}
-	b, e := json.Marshal(r)
-	if e != nil || len(b) > maxRecordBytes {
 		return ErrStore
 	}
 	var nonce [16]byte

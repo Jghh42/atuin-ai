@@ -90,9 +90,9 @@ func send(s string) step    { return step{"send": s} }
 func call(id, name, input string) testutil.Call {
 	return testutil.Call{ID: id, Name: name, Input: json.RawMessage(input)}
 }
-func runPTY(t *testing.T, binary, root, endpoint, prompt string, steps []step, extra ...map[string]any) {
+func runPTY(t *testing.T, binary, root string, n *testutil.Native, prompt string, steps []step, extra ...map[string]any) {
 	t.Helper()
-	plan := map[string]any{"binary": binary, "root": root, "endpoint": endpoint, "prompt": prompt, "steps": steps}
+	plan := map[string]any{"binary": binary, "root": root, "endpoint": n.URL, "api_token": n.Token, "prompt": prompt, "steps": steps}
 	for _, opts := range extra {
 		for k, v := range opts {
 			plan[k] = v
@@ -135,8 +135,8 @@ func assertGenerations(t *testing.T, n *testutil.Native, count int) {
 		t.Fatal("missing HTTP session witnesses")
 	}
 	for i, r := range client {
-		if r.Header.Get("Authorization") != "" {
-			t.Fatal("OSS CLI sent client authentication")
+		if got := r.Header.Values("Authorization"); len(got) != 1 || got[0] != "Bearer "+n.Token {
+			t.Fatal("pinned CLI did not send the configured client token")
 		}
 		if sessions[i] == "" || sessions[i] != sessions[0] {
 			t.Fatal("session response identity changed")
@@ -241,7 +241,7 @@ func TestPinnedCLI(t *testing.T) {
 		if e := os.Chmod(parent, 0777); e != nil {
 			t.Fatal(e)
 		}
-		runPTY(t, binary, root, n.URL, "synthetic first", []step{settled("SYNTHETIC_FIRST"), send("/model\r"), wait("Luna"), send("\x1b[B"), send("\r"), send("synthetic second\r"), settled("SYNTHETIC_SECOND"), send("\x1b")})
+		runPTY(t, binary, root, n, "synthetic first", []step{settled("SYNTHETIC_FIRST"), send("/model\r"), wait("Luna"), send("\x1b[B"), send("\r"), send("synthetic second\r"), settled("SYNTHETIC_SECOND"), send("\x1b")})
 		assertGenerations(t, n, 2)
 		client, up, models, _, _ := n.Captures()
 		for _, capture := range append(append([]testutil.Request(nil), client...), up...) {
@@ -282,8 +282,8 @@ func TestPinnedCLI(t *testing.T) {
 	t.Run("session-resume-new-process", func(t *testing.T) {
 		n := testutil.New(t, []testutil.Turn{{Text: "SYNTHETIC_BEFORE_RESTART"}, {Text: "SYNTHETIC_AFTER_RESTART"}}, true)
 		root := t.TempDir()
-		runPTY(t, binary, root, n.URL, "synthetic before restart", []step{settled("SYNTHETIC_BEFORE_RESTART"), send("\x1b")})
-		runPTY(t, binary, root, n.URL, "synthetic after restart", []step{settled("SYNTHETIC_AFTER_RESTART"), send("\x1b")})
+		runPTY(t, binary, root, n, "synthetic before restart", []step{settled("SYNTHETIC_BEFORE_RESTART"), send("\x1b")})
+		runPTY(t, binary, root, n, "synthetic after restart", []step{settled("SYNTHETIC_AFTER_RESTART"), send("\x1b")})
 		assertGenerations(t, n, 2)
 		_, up, _, _, _ := n.Captures()
 		for _, text := range []string{"synthetic before restart", "SYNTHETIC_BEFORE_RESTART", "synthetic after restart"} {
@@ -294,7 +294,7 @@ func TestPinnedCLI(t *testing.T) {
 	})
 	t.Run("suggestion-insert-not-execute", func(t *testing.T) {
 		n := testutil.New(t, []testutil.Turn{{Calls: []testutil.Call{call("suggest", "suggest_command", `{"command":"printf SYNTHETIC_SUGGESTION","description":"synthetic only","confidence":"high","danger":"low"}`)}}}, true)
-		runPTY(t, binary, t.TempDir(), n.URL, "synthetic suggestion", []step{wait("printf SYNTHETIC_SUGGESTION"), send("\t")}, map[string]any{"expected_result": "__atuin_ai_insert__:printf SYNTHETIC_SUGGESTION"})
+		runPTY(t, binary, t.TempDir(), n, "synthetic suggestion", []step{wait("printf SYNTHETIC_SUGGESTION"), send("\t")}, map[string]any{"expected_result": "__atuin_ai_insert__:printf SYNTHETIC_SUGGESTION"})
 		assertGenerations(t, n, 1)
 	})
 	cases := []struct {
@@ -336,7 +336,7 @@ func TestPinnedCLI(t *testing.T) {
 				opts["daemon"] = true
 				n.HistoryIDFile = filepath.Join(root, "history-id.txt")
 			}
-			runPTY(t, binary, root, n.URL, "synthetic "+c.name, steps, opts)
+			runPTY(t, binary, root, n, "synthetic "+c.name, steps, opts)
 			assertGenerations(t, n, 2)
 			for _, v := range c.calls {
 				expected := c.result
@@ -370,7 +370,7 @@ func TestPinnedCLI(t *testing.T) {
 	t.Run("edit_file-after-read", func(t *testing.T) {
 		n := testutil.New(t, []testutil.Turn{{Calls: []testutil.Call{call("read", "read_file", `{"file_path":"fixture.txt"}`)}}, {Calls: []testutil.Call{call("edit", "edit_file", `{"file_path":"fixture.txt","old_string":"SYNTHETIC_OLD","new_string":"SYNTHETIC_EDITED"}`)}}, {Text: "SYNTHETIC_FINISHED"}}, true)
 		root := t.TempDir()
-		runPTY(t, binary, root, n.URL, "synthetic edit", []step{wait("Allow"), send("\r"), wait("Allow this file for this session"), send("\r"), settled("SYNTHETIC_FINISHED"), send("\x1b")})
+		runPTY(t, binary, root, n, "synthetic edit", []step{wait("Allow"), send("\r"), wait("Allow this file for this session"), send("\r"), settled("SYNTHETIC_FINISHED"), send("\x1b")})
 		assertGenerations(t, n, 3)
 		assertResult(t, n, "edit", "")
 		assertResult(t, n, "read", "SYNTHETIC_OLD")
@@ -382,7 +382,7 @@ func TestPinnedCLI(t *testing.T) {
 	t.Run("buffered-tool-until-completion", func(t *testing.T) {
 		n := testutil.New(t, []testutil.Turn{{Text: "SYNTHETIC_BUFFER_WITNESS", Calls: []testutil.Call{call("buffer", "write_file", `{"file_path":"buffered.txt","content":"SYNTHETIC_BUFFERED"}`)}, Hold: true}, {Text: "SYNTHETIC_FINISHED"}}, true)
 		root := t.TempDir()
-		runPTY(t, binary, root, n.URL, "synthetic buffer", []step{wait("SYNTHETIC_BUFFER_WITNESS"), {"absent": "buffered.txt", "release": true}, step{"wait": "Allow", "fresh": true}, send("\r"), settled("SYNTHETIC_FINISHED"), send("\x1b")})
+		runPTY(t, binary, root, n, "synthetic buffer", []step{wait("SYNTHETIC_BUFFER_WITNESS"), {"absent": "buffered.txt", "release": true}, step{"wait": "Allow", "fresh": true}, send("\r"), settled("SYNTHETIC_FINISHED"), send("\x1b")})
 		assertGenerations(t, n, 2)
 		assertResult(t, n, "buffer", "")
 		n.AssertBuffered(t)
@@ -393,17 +393,17 @@ func TestPinnedCLI(t *testing.T) {
 	})
 	t.Run("provider-error-after-text", func(t *testing.T) {
 		n := testutil.New(t, []testutil.Turn{{Text: "SYNTHETIC_PARTIAL", Calls: []testutil.Call{call("never", "write_file", `{"file_path":"never.txt","content":"NEVER"}`)}, Fail: true}}, true)
-		runPTY(t, binary, t.TempDir(), n.URL, "synthetic error", []step{wait("SYNTHETIC_PARTIAL"), wait("Retry"), {"absent": "never.txt"}, send("\x1b")})
+		runPTY(t, binary, t.TempDir(), n, "synthetic error", []step{wait("SYNTHETIC_PARTIAL"), wait("Retry"), {"absent": "never.txt"}, send("\x1b")})
 		assertGenerations(t, n, 1)
 	})
 	t.Run("mixed-batch-never-executes", func(t *testing.T) {
 		n := testutil.New(t, []testutil.Turn{{Calls: []testutil.Call{call("mixed-write", "write_file", `{"file_path":"never.txt","content":"NEVER"}`), call("mixed-suggest", "suggest_command", `{"command":"printf synthetic","description":"synthetic","confidence":"high","danger":"low"}`)}}}, true)
-		runPTY(t, binary, t.TempDir(), n.URL, "synthetic invalid batch", []step{wait("Retry"), {"absent": "never.txt"}, send("\x1b")})
+		runPTY(t, binary, t.TempDir(), n, "synthetic invalid batch", []step{wait("Retry"), {"absent": "never.txt"}, send("\x1b")})
 		assertGenerations(t, n, 1)
 	})
 	t.Run("disconnect-cancels-upstream", func(t *testing.T) {
 		n := testutil.New(t, []testutil.Turn{{Text: "SYNTHETIC_CANCEL_WITNESS", Cancel: true}}, true)
-		runPTY(t, binary, t.TempDir(), n.URL, "synthetic cancel", []step{wait("SYNTHETIC_CANCEL_WITNESS"), send("\x03")})
+		runPTY(t, binary, t.TempDir(), n, "synthetic cancel", []step{wait("SYNTHETIC_CANCEL_WITNESS"), send("\x03")})
 		n.AwaitCancel()
 		assertGenerations(t, n, 1)
 	})
@@ -420,7 +420,7 @@ func TestPinnedCLI(t *testing.T) {
 				count = 1
 			}
 			root := t.TempDir()
-			runPTY(t, binary, root, n.URL, "synthetic oauth", steps)
+			runPTY(t, binary, root, n, "synthetic oauth", steps)
 			client, up, _, _, rot := n.Captures()
 			if len(client) != 1 || len(up) != count {
 				t.Fatal("credential preflight generated unexpectedly")
@@ -430,7 +430,7 @@ func TestPinnedCLI(t *testing.T) {
 			}
 			if state == "revoked" {
 				n.Login()
-				runPTY(t, binary, root, n.URL, "synthetic after explicit reauth", []step{settled("SYNTHETIC_AUTH_OK"), send("\x1b")})
+				runPTY(t, binary, root, n, "synthetic after explicit reauth", []step{settled("SYNTHETIC_AUTH_OK"), send("\x1b")})
 				client, up, _, exchanges, rot := n.Captures()
 				if len(client) != 2 || len(up) != 1 || exchanges != 2 || rot != 1 {
 					t.Fatal("explicit synthetic reauth did not restore real CLI inference")

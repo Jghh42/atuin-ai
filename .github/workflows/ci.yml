@@ -8,18 +8,10 @@ jobs:
   native-terminal:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          go-version-file: go.mod
-          check-latest: false
-          cache: true
-      - name: Verify and pin exact Go toolchain
-        run: |
-          toolchain="$(awk '$1 == "go" { print "go" $2; exit }' go.mod)"
-          test "$(GOTOOLCHAIN=local go env GOVERSION)" = "$toolchain"
-          printf 'GOTOOLCHAIN=%s\n' "$toolchain" >> "$GITHUB_ENV"
-          go version
+          persist-credentials: false
+      - uses: ./.github/actions/setup-go
       - name: Require native terminal regressions and PTY helper prerequisite
         run: |
           test "$(go env GOOS)" = darwin
@@ -37,19 +29,9 @@ jobs:
     steps:
       - name: Require native terminal checks
         run: test '${{ needs.native-terminal.result }}' = success
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          go-version-file: go.mod
-          check-latest: false
-          cache: true
-      - name: Verify and pin exact Go toolchain
-        run: |
-          toolchain="$(awk '$1 == "go" { print "go" $2; exit }' go.mod)"
-          test "$(GOTOOLCHAIN=local go env GOVERSION)" = "$toolchain"
-          printf 'GOTOOLCHAIN=%s\n' "$toolchain" >> "$GITHUB_ENV"
-          go version
-      - name: Formatting
-        run: test -z "$(gofmt -l cmd internal tests)"
+          persist-credentials: false
+      - uses: ./.github/actions/setup-go
       - run: make check
       - run: make build

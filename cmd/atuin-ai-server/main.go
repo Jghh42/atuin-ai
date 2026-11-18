@@ -26,12 +26,12 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	out := io.Writer(os.Stderr)
-	if len(os.Args) == 2 && (os.Args[1] == "version" || os.Args[1] == "--version") {
+	if len(os.Args) == 2 && (os.Args[1] == "version" || os.Args[1] == "--version") || len(os.Args) == 3 && os.Args[1] == "token" {
 		out = os.Stdout
 	}
 	if err := run(ctx, os.Args[1:], out); err != nil {
-		// Configuration parsers and OS errors may include file contents or paths.
-		// Only deliberately generic errors reach logs.
+		// Configuration parsers and OS errors may include file contents. Only
+		// errors written by this program (some naming a local path) reach logs.
 		slog.New(slog.NewJSONHandler(os.Stderr, nil)).Error("command failed", "reason", err.Error())
 		os.Exit(1)
 	}
@@ -60,8 +60,11 @@ func runWith(ctx context.Context, args []string, stderr io.Writer, deps commandD
 	if len(args) > 0 && args[0] == "auth" {
 		return runAuth(ctx, args[1:], stderr, deps)
 	}
+	if len(args) > 0 && args[0] == "token" {
+		return runToken(args[1:], stderr, deps)
+	}
 	if len(args) == 0 || args[0] != "serve" {
-		return errors.New("usage: atuin-ai-server init [--config PATH] [--atuin-config PATH] | serve [--config PATH] | auth login|status|logout|diagnose | version | --version")
+		return errors.New("usage: atuin-ai-server init [--config PATH] [--atuin-config PATH] | serve [--config PATH] | auth login|status|logout|diagnose | token show|rotate | version | --version")
 	}
 	flags := flag.NewFlagSet("serve", flag.ContinueOnError)
 	// Do not echo arbitrary command line values into logs.
@@ -78,11 +81,8 @@ func runWith(ctx context.Context, args []string, stderr io.Writer, deps commandD
 		return err
 	}
 	logger := slog.New(slog.NewJSONHandler(stderr, nil))
-	runtime, err := openRuntime(cfg, deps, false)
+	runtime, err := openRuntime(cfg, deps, serving)
 	if err != nil {
-		if errors.Is(err, credentials.ErrLocked) {
-			return credentials.ErrStore
-		}
 		return err
 	}
 	defer runtime.Close()
@@ -99,22 +99,41 @@ func runWith(ctx context.Context, args []string, stderr io.Writer, deps commandD
 	return server.Serve(ctx, listener)
 }
 
-func openRuntime(cfg config.Config, deps commandDeps, diagnostic bool, statusOnly ...bool) (*application.Runtime, error) {
-	path := deps.state
-	if path == "" {
-		var err error
-		path, err = application.StateDirectory()
-		if err != nil {
-			return nil, err
-		}
+type runtimeMode int
+
+const (
+	serving runtimeMode = iota
+	statusOnly
+	diagnostic
+)
+
+func statePath(deps commandDeps) (string, error) {
+	if deps.state != "" {
+		return deps.state, nil
 	}
-	if len(statusOnly) > 0 && statusOnly[0] {
-		return application.NewStatus(path, cfg, deps.transport)
+	return application.StateDirectory()
+}
+
+// openRuntime opens the credential store in the requested mode. A generic store
+// failure is replaced by one naming the offending path when it can be found.
+func openRuntime(cfg config.Config, deps commandDeps, mode runtimeMode) (*application.Runtime, error) {
+	path, err := statePath(deps)
+	if err != nil {
+		return nil, err
 	}
-	if diagnostic {
-		return application.NewDiagnostic(path, cfg, deps.transport)
+	var runtime *application.Runtime
+	switch mode {
+	case statusOnly:
+		runtime, err = application.NewStatus(path, cfg, deps.transport)
+	case diagnostic:
+		runtime, err = application.NewDiagnostic(path, cfg, deps.transport)
+	default:
+		runtime, err = application.New(path, cfg, deps.transport)
 	}
-	return application.New(path, cfg, deps.transport)
+	if err == credentials.ErrStore {
+		err = credentials.ExplainStore(path)
+	}
+	return runtime, err
 }
 func runAuth(ctx context.Context, args []string, out io.Writer, deps commandDeps) error {
 	if len(args) != 1 || (args[0] != "login" && args[0] != "status" && args[0] != "logout" && args[0] != "diagnose") {
@@ -144,14 +163,18 @@ func runAuth(ctx context.Context, args []string, out io.Writer, deps commandDeps
 			return err
 		}
 	}
-	runtime, err := openRuntime(cfg, deps, args[0] == "diagnose", args[0] == "status")
+	mode := serving
+	switch args[0] {
+	case "status":
+		mode = statusOnly
+	case "diagnose":
+		mode = diagnostic
+	}
+	runtime, err := openRuntime(cfg, deps, mode)
 	if err != nil {
 		if args[0] == "diagnose" {
 			configured := cfg.DefaultModel != ""
 			return writeDiagnostic(out, codex.DiagnosticReport{Stage: codex.StageCredentials, Result: codex.ResultCredentialUnavailable, DefaultOverrideConfigured: &configured})
-		}
-		if errors.Is(err, credentials.ErrLocked) {
-			return credentials.ErrStore
 		}
 		return err
 	}
@@ -192,6 +215,52 @@ func runAuth(ctx context.Context, args []string, out io.Writer, deps commandDeps
 		default:
 			return errors.New("authentication command failed")
 		}
+	}
+	return nil
+}
+
+// runToken prints the local client token the Atuin CLI must send as
+// [ai].api_token. show reads without the store lock so it works while the
+// server runs; it creates the token only when none exists yet.
+func runToken(args []string, out io.Writer, deps commandDeps) error {
+	if len(args) != 1 || (args[0] != "show" && args[0] != "rotate") {
+		return errors.New("usage: atuin-ai-server token show|rotate")
+	}
+	path, err := statePath(deps)
+	if err != nil {
+		return err
+	}
+	token, err := "", credentials.ErrNoClientToken
+	if args[0] == "show" {
+		token, err = credentials.ReadClientToken(path)
+	}
+	if errors.Is(err, credentials.ErrNoClientToken) {
+		runtime, e := openRuntime(config.Default(), deps, statusOnly)
+		if e != nil {
+			return e
+		}
+		if args[0] == "rotate" {
+			token, err = runtime.RotateClientToken()
+		} else {
+			token, err = runtime.ClientToken()
+		}
+		if closeErr := runtime.Close(); err == nil && closeErr != nil {
+			err = closeErr
+		}
+	}
+	if err != nil {
+		if errors.Is(err, credentials.ErrStore) {
+			return credentials.ExplainStore(path)
+		}
+		return credentials.ErrStore
+	}
+	if args[0] == "rotate" {
+		_, err = fmt.Fprintf(out, "New client token: %s\nSet it as [ai].api_token in your Atuin config (or rerun init), then start the server again.\n", token)
+	} else {
+		_, err = fmt.Fprintln(out, token)
+	}
+	if err != nil {
+		return errors.New("cannot write client token")
 	}
 	return nil
 }

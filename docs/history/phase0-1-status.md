@@ -19,7 +19,7 @@
   persisted credentials loaded by a separate process, streamed text and
   full-history synthetic tool continuation passed on `gpt-6.1-sol`. No opaque
   reasoning items were observed in that tool response; this proves only the
-  tested transcript/model. See [redacted evidence](../proofs/codex-phase0.md).
+  tested transcript/model. See [redacted evidence](proofs/codex-phase0.md).
 - **Refresh/restart passed:** one explicit refresh produced replacement tokens,
   saved atomically as generation 2. Fresh status/inference processes loaded the
   saved record and passed text and tool continuation again. This clears the

@@ -4,6 +4,7 @@ package httpserver
 import (
 	"bytes"
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Jghh42/atuin-ai/internal/atuin"
@@ -27,8 +29,8 @@ type Server struct {
 
 // New remains safely unavailable without explicit runtime dependencies. The
 // executable composes the production lifecycle via NewWithRuntime.
-func New(cfg config.Config, logger *slog.Logger) (*Server, error) {
-	return NewWithCatalog(cfg, logger, catalog.New(nil, cfg.DefaultModel))
+func New(cfg config.Config, logger *slog.Logger, token string) (*Server, error) {
+	return NewWithCatalog(cfg, logger, catalog.New(nil, cfg.DefaultModel), token)
 }
 
 type CatalogSource interface {
@@ -36,13 +38,13 @@ type CatalogSource interface {
 }
 
 // NewWithCatalog injects the same snapshot source for listing and chat resolution.
-func NewWithCatalog(cfg config.Config, logger *slog.Logger, source CatalogSource) (*Server, error) {
-	return newWithCatalog(cfg, logger, source, nil)
+func NewWithCatalog(cfg config.Config, logger *slog.Logger, source CatalogSource, token string) (*Server, error) {
+	return newWithCatalog(cfg, logger, source, token, nil)
 }
 
 // newWithCatalog retains the private decoder observer for boundary tests.
-func newWithCatalog(cfg config.Config, logger *slog.Logger, source CatalogSource, decoded func(atuin.Request)) (*Server, error) {
-	return newWithRuntime(cfg, logger, Runtime{Catalog: source}, decoded)
+func newWithCatalog(cfg config.Config, logger *slog.Logger, source CatalogSource, token string, decoded func(atuin.Request)) (*Server, error) {
+	return newWithRuntime(cfg, logger, Runtime{Catalog: source, ClientToken: token}, decoded)
 }
 
 func newWithRuntime(cfg config.Config, logger *slog.Logger, runtime Runtime, decoded func(atuin.Request)) (*Server, error) {
@@ -50,7 +52,7 @@ func newWithRuntime(cfg config.Config, logger *slog.Logger, runtime Runtime, dec
 	if source == nil {
 		return nil, errors.New("catalog source required")
 	}
-	return buildServer(cfg, logger, source, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return buildServer(cfg, logger, source, runtime.ClientToken, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		timeout := runtime.PreflightTimeout
 		if timeout <= 0 {
 			timeout = 8 * time.Second
@@ -110,13 +112,20 @@ func newWithRuntime(cfg config.Config, logger *slog.Logger, runtime Runtime, dec
 }
 
 // newServer accepts a chat implementation for deterministic boundary tests.
-func newServer(cfg config.Config, logger *slog.Logger, chat http.Handler) (*Server, error) {
-	return buildServer(cfg, logger, catalog.New(nil, cfg.DefaultModel), chat)
+func newServer(cfg config.Config, logger *slog.Logger, token string, chat http.Handler) (*Server, error) {
+	return buildServer(cfg, logger, catalog.New(nil, cfg.DefaultModel), token, chat)
 }
 
-func buildServer(cfg config.Config, logger *slog.Logger, source CatalogSource, chat http.Handler) (*Server, error) {
+// ErrClientToken reports a missing or malformed local client token. Every
+// server requires one; there is no unauthenticated mode.
+var ErrClientToken = errors.New("client token required")
+
+func buildServer(cfg config.Config, logger *slog.Logger, source CatalogSource, token string, chat http.Handler) (*Server, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
+	}
+	if !credentials.ValidClientToken(token) {
+		return nil, ErrClientToken
 	}
 	if logger == nil {
 		logger = slog.New(slog.NewJSONHandler(io.Discard, nil))
@@ -175,7 +184,7 @@ func buildServer(cfg config.Config, logger *slog.Logger, source CatalogSource, c
 	})
 	return &Server{http: &http.Server{
 		Addr:              net.JoinHostPort("127.0.0.1", strconv.Itoa(cfg.Port)),
-		Handler:           handler,
+		Handler:           authorize(token, handler),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      config.GenerationTimeout + 10*time.Second,
@@ -184,6 +193,34 @@ func buildServer(cfg config.Config, logger *slog.Logger, source CatalogSource, c
 		// Do not allow net/http diagnostics to include untrusted request details.
 		ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}, log: logger}, nil
+}
+
+// authorize runs before routing, like the reference server's middleware. A
+// browser page cannot learn the client token, so cross-site requests and DNS
+// rebinding are refused; the loopback Host check is defense in depth.
+func authorize(token string, next http.Handler) http.Handler {
+	expected := []byte("Bearer " + token)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !loopbackHost(r.Host) {
+			writeError(w, http.StatusForbidden, "forbidden_host", "Request host is not a loopback address")
+			return
+		}
+		values := r.Header.Values("Authorization")
+		if len(values) != 1 || subtle.ConstantTimeCompare([]byte(values[0]), expected) != 1 {
+			w.Header().Set("WWW-Authenticate", "Bearer")
+			writeError(w, http.StatusUnauthorized, "unauthorized", "Invalid or missing bearer token")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func loopbackHost(host string) bool {
+	name, _, err := net.SplitHostPort(host)
+	if err != nil {
+		name = host
+	}
+	return name == "127.0.0.1" || strings.EqualFold(name, "localhost")
 }
 
 func writeError(w http.ResponseWriter, status int, code, message string) {

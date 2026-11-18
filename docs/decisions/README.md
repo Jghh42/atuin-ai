@@ -15,15 +15,18 @@ Recorded Phase 0 decisions:
 4. [Native Pi-style Codex login initially; SIWC later](0004-pi-style-codex-authentication.md)
    — accepted; isolated login, text/tool replay and refresh/restart proof passed;
    the production lifecycle/composition is now the independently reviewed
-   [Phase 7 code checkpoint](../plans/phase7-status.md); production live gates
+   [Phase 7 code checkpoint](../history/phase7-status.md); production live gates
    remain NOT PASSED.
 
 5. [Bounded durable private provider continuation](0005-durable-provider-continuation.md)
    — accepted design; foundation primitives only, production reasoning acceptance
    and runtime wiring remain disabled pending independent code review.
 
-Future records may cover the localhost security boundary, supported released
-Atuin versions, and single-process credential persistence. Those are not
+6. [Required local client token](0006-required-local-client-token.md)
+   — accepted; every request needs the generated `[ai].api_token` bearer token.
+
+Future records may cover supported released Atuin versions and single-process
+credential persistence. Those are not
 implemented or proven by these Phase 0 documents.
 
 Use filenames such as `0001-upstream-authentication.md` and this structure:

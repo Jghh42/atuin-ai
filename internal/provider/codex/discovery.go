@@ -41,7 +41,7 @@ func (d Discovery) fetch(ctx context.Context, c credentials.Credential, report *
 	}
 	req.Header.Set("Authorization", "Bearer "+c.AccessToken)
 	req.Header.Set("ChatGPT-Account-Id", c.Identity.Account)
-	req.Header.Set("User-Agent", "atuin-ai/phase3a")
+	req.Header.Set("User-Agent", UserAgent)
 	req.Header.Set("Accept", "application/json")
 	client := &http.Client{Transport: d.Transport, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	res, err := client.Do(req)

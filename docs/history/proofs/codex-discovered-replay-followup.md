@@ -48,5 +48,5 @@ availability or a pass for another model.
 Stop live probing at this bounded failure. No model is enabled. Phase 4+ may
 continue with deterministic injected providers; live eligibility and production
 credential integration remain open gates. See
-[Phase 3a status](../plans/phase3a-status.md) and
+[Phase 3a status](../phase3a-status.md) and
 [original discovery evidence](codex-discovery-phase3a.md).
