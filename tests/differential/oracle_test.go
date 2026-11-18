@@ -60,10 +60,15 @@ func oracleRequest(t *testing.T, id, endpoint string, body []byte) (int, string,
 	}
 	return result.Status, result.Body, result.Session
 }
-func get(t *testing.T, base, path string) []byte {
+func get(t *testing.T, base, token, path string) []byte {
 	t.Helper()
 	c := http.Client{Timeout: 4 * time.Second}
-	r, e := c.Get(base + path)
+	req, e := http.NewRequest(http.MethodGet, base+path, nil)
+	if e != nil {
+		t.Fatal(e)
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	r, e := c.Do(req)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -165,7 +170,7 @@ func TestOriginalReferenceOracle(t *testing.T) {
 	n := testutil.New(t, turns, true)
 	var originalModels, nativeModels any
 	_, modelBody, _ := oracleRequest(t, fakeID, base+"/api/cli/models", nil)
-	if json.Unmarshal([]byte(modelBody), &originalModels) != nil || json.Unmarshal(get(t, n.URL, "/api/cli/models"), &nativeModels) != nil || !reflect.DeepEqual(originalModels, nativeModels) {
+	if json.Unmarshal([]byte(modelBody), &originalModels) != nil || json.Unmarshal(get(t, n.URL, n.Token, "/api/cli/models"), &nativeModels) != nil || !reflect.DeepEqual(originalModels, nativeModels) {
 		t.Fatal("exact model list/default differs")
 	}
 	for _, c := range cases {
