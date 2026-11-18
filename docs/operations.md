@@ -33,7 +33,8 @@ filter/retry wrapper. Build with `make build`, then run:
 # OPTIONAL remote metadata diagnosis only, with serve STOPPED; not a bundled availability test:
 ./bin/atuin-ai-server auth diagnose # sanitized stderr JSON; NO refresh/inference
 ./bin/atuin-ai-server serve # config is optional
-curl http://127.0.0.1:17391/api/cli/models # valid login required; returns bundled Sol/Luna without metadata GET
+curl -H "Authorization: Bearer $(./bin/atuin-ai-server token show)" \
+  http://127.0.0.1:17391/api/cli/models # valid login required; returns bundled Sol/Luna without metadata GET
 # Stop serve before auth status/login/logout in a separate process:
 ./bin/atuin-ai-server auth logout
 ```
@@ -161,11 +162,24 @@ expiry are hard finite limits, not universal all-turn support.
 ## HTTP boundary
 
 The port is configurable; the host is not. The listener is always IPv4
-`127.0.0.1`. Client authentication is absent, and Authorization headers are
-ignored. Do not expose this port with a proxy, SSH tunnel, port forward or
-container port publication. Loopback does not protect against other local
-processes/users or browser-origin attacks; this is a personal local process,
-not a multi-user security boundary.
+`127.0.0.1`. Every request, on every path, must carry exactly one
+`Authorization: Bearer <client token>` header; otherwise the server returns 401
+`unauthorized` before routing. Requests whose `Host` name is not `127.0.0.1` or
+`localhost` return 403 `forbidden_host` (DNS-rebinding defense in depth).
+[ADR 0006](decisions/0006-required-local-client-token.md) records the threat model.
+
+The token (`aia1_` plus 64 hex digits) is generated on first `serve`, login or
+`init` and stored as the 0600 `client-token` file in the private credential
+directory. Atuin sends it from `[ai].api_token`; `init` writes it there when you
+accept the Atuin edit. `token show` prints it (also while the server runs);
+`token rotate` replaces it and requires the server to be stopped, after which
+Atuin's `api_token` must be updated. The token also appears in Atuin's config,
+so keep that file private and out of published dotfiles.
+
+Do not expose this port with a proxy, SSH tunnel, port forward or container port
+publication. Anyone holding the token can use your upstream account; a hostile
+same-UID process or root can read it. This is a personal local process, not a
+multi-user service.
 
 At most 64 TCP connections are retained; further accepted connections are
 closed immediately without creating HTTP connection goroutines. The finite OS

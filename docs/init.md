@@ -217,8 +217,15 @@ Only these paths are authorized:
 [ai]
 enabled = true
 endpoint = "http://127.0.0.1:17391" # actual resolved server port, not hardcoded
-api_token = ""
+api_token = "aia1_..." # this server's generated local client token
 ```
+
+Init creates the client token after login succeeds or is retained, while it
+still holds the credential store and before any service starts, so a newly
+started service loads the same token. If you decline the Atuin edit, or the path
+is ambiguous, or the edit fails, init prints these three lines (including the
+token) on the private terminal for a manual edit. `atuin-ai-server token show`
+prints the token later. A declined login creates no token.
 
 `ai.model` remains **exactly as written**, including unknown choices or absence.
 All other values, comments and sections are retained. Validate UTF-8 BEFORE the

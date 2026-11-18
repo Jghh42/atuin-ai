@@ -86,7 +86,7 @@ func TestFailureLoggerBrokenWritersPreserveWire(t *testing.T) {
 			t.Fatal(err)
 		}
 		w := &deadlineRecorder{httptest.NewRecorder()}
-		s.http.Handler.ServeHTTP(w, httptest.NewRequest("POST", "/api/cli/chat", strings.NewReader(simpleBody)))
+		s.http.Handler.ServeHTTP(w, newRequest("POST", "/api/cli/chat", strings.NewReader(simpleBody)))
 		want := "event: status\ndata: {\"state\":\"processing\"}\n\nevent: status\ndata: {\"state\":\"thinking\"}\n\nevent: error\ndata: {\"message\":\"LLM request failed, please retry\",\"code\":\"upstream_error\"}\n\n"
 		if w.Body.String() != want {
 			t.Fatal("wire changed", w.Body.String())
@@ -123,7 +123,7 @@ func TestBlockedTrustedLoggerHoldsAdmissionAfterTerminalAndCleanup(t *testing.T)
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			s.http.Handler.ServeHTTP(ws[i], httptest.NewRequest("POST", "/api/cli/chat", strings.NewReader(simpleBody)))
+			s.http.Handler.ServeHTTP(ws[i], newRequest("POST", "/api/cli/chat", strings.NewReader(simpleBody)))
 		}(i)
 	}
 	// Four observer entries plus the first actual blocked JSON write.
@@ -150,7 +150,7 @@ func TestBlockedTrustedLoggerHoldsAdmissionAfterTerminalAndCleanup(t *testing.T)
 		}
 	}
 	extra := &deadlineRecorder{httptest.NewRecorder()}
-	s.http.Handler.ServeHTTP(extra, httptest.NewRequest("POST", "/api/cli/chat", strings.NewReader(simpleBody)))
+	s.http.Handler.ServeHTTP(extra, newRequest("POST", "/api/cli/chat", strings.NewReader(simpleBody)))
 	if extra.Code != 503 || !strings.Contains(extra.Body.String(), "busy") {
 		t.Fatal("blocked logger did not retain admission")
 	}
@@ -184,7 +184,7 @@ func TestEnabledObserverRepeatedNativeFailuresRecoverAdmission(t *testing.T) {
 	}
 	for range 24 {
 		w := &deadlineRecorder{httptest.NewRecorder()}
-		s.http.Handler.ServeHTTP(w, httptest.NewRequest("POST", "/api/cli/chat", strings.NewReader(simpleBody)))
+		s.http.Handler.ServeHTTP(w, newRequest("POST", "/api/cli/chat", strings.NewReader(simpleBody)))
 		if !strings.Contains(w.Body.String(), "event: error") || w.Code != 200 {
 			t.Fatal("failure admission not recovered")
 		}
@@ -196,7 +196,7 @@ func TestEnabledObserverRepeatedNativeFailuresRecoverAdmission(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			w := &deadlineRecorder{httptest.NewRecorder()}
-			s.http.Handler.ServeHTTP(w, httptest.NewRequest("POST", "/api/cli/chat", strings.NewReader(simpleBody)))
+			s.http.Handler.ServeHTTP(w, newRequest("POST", "/api/cli/chat", strings.NewReader(simpleBody)))
 			if w.Code != 200 || !strings.Contains(w.Body.String(), "event: done") {
 				t.Error("success admission not recovered")
 			}

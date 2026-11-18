@@ -13,6 +13,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/Jghh42/atuin-ai/internal/credentials"
 )
 
 type diagnosticLogWriter chan []byte
@@ -70,8 +72,15 @@ func TestServeComposesPrivacySafeGenerationObserver(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("startup timeout")
 	}
+	token, err := credentials.ReadClientToken(path)
+	if err != nil {
+		t.Fatal("serve did not create a client token")
+	}
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("http://127.0.0.1:%d/api/cli/chat", port), strings.NewReader(`{"messages":[{"role":"user","content":"SYNTHETIC-private-prompt"}]}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
 	client := http.Client{Timeout: 2 * time.Second}
-	resp, err := client.Post(fmt.Sprintf("http://127.0.0.1:%d/api/cli/chat", port), "application/json", strings.NewReader(`{"messages":[{"role":"user","content":"SYNTHETIC-private-prompt"}]}`))
+	resp, err := client.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -170,7 +170,7 @@ func TestOriginalReferenceOracle(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			status, body, header := testutil.PostWithSession(t, n.URL, c.Request)
+			status, body, header := testutil.PostWithSession(t, n.URL, n.Token, c.Request)
 			refStatus, refBody, refHeader := oracleRequest(t, fakeID, base+"/api/cli/chat", c.Request)
 			if status != 200 || refStatus != 200 {
 				t.Fatalf("HTTP differs: %d/%d", status, refStatus)

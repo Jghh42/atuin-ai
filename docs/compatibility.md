@@ -5,7 +5,7 @@ The pinned [source manifest](provenance/upstream-sources.json) and existing
 client/server/core research baseline. These are exact source commits, not a
 promise of support for a released Atuin version or all historical clients.
 The implementation plan's narrower v1 choices govern the new design: IPv4
-loopback only, no client Bearer auth, no server tools, one upstream generation
+loopback only, a required local client Bearer token, no server tools, one upstream generation
 per Atuin request, full-history replay and rejection of mixed suggestion/tool
 batches. Reference-server options described in the specification are not
 features implemented here.
@@ -204,8 +204,8 @@ HOME/XDG alone did not confine ancestor context discovery/embedded commands.
 No retrospective absence of reads/execution or incident is inferred. Corrected
 invocations run in an fd-pinned Bubblewrap filesystem/PID namespace (host
 ancestors/HOME not mounted), with fixture metadata/symlink checks before EACH
-launch, isolated HOME/ATUIN_HOME/XDG/database/sandbox paths; OSS and no client
-authentication are asserted. All seven tools are exercised by the actual CLI,
+launch, isolated HOME/ATUIN_HOME/XDG/database/sandbox paths; OSS mode and the
+configured client bearer token are asserted on every CLI request. All seven tools are exercised by the actual CLI,
 including positive captured-output retrieval through an isolated real daemon.
 Permissions, shell-hook insert versus execute, parallel correlation, full
 history/session reuse and process restart, revoked/expired credentials,

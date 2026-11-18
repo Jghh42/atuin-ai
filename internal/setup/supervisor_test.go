@@ -253,7 +253,7 @@ func TestConfigRollbackUncertaintyBlocksPriorServiceRestore(t *testing.T) {
 				}
 				return a, nil
 			}
-			w.Configure = func() error {
+			w.Configure = func(string) error {
 				if uncertain {
 					return errors.Join(ErrCommitUncertain, ErrRollback)
 				}

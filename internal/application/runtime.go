@@ -23,6 +23,7 @@ type Runtime struct {
 	Continuation *continuation.Store
 	Catalog      *catalog.Cache
 	HTTP         httpserver.Runtime
+	store        *credentials.DiskStore
 	transport    *http.Transport
 	discovery    codex.Discovery
 	defaultModel string
@@ -120,6 +121,18 @@ func newWithOptions(path string, cfg config.Config, opts Options, diagnostic boo
 		}
 		return nil, e
 	}
+	// Every serving-capable runtime requires the local client token; the HTTP
+	// server refuses to start without one.
+	var token string
+	if private != nil {
+		if token, e = store.ClientToken(); e != nil {
+			_ = manager.Close()
+			if owned != nil {
+				owned.CloseIdleConnections()
+			}
+			return nil, credentials.ErrStore
+		}
+	}
 	// Bind once, before exposing either source. No dynamic cache/source rebind.
 	discovery := codex.Discovery{Transport: transport}
 	cache = catalog.New(manager, cfg.DefaultModel)
@@ -128,7 +141,26 @@ func newWithOptions(path string, cfg config.Config, opts Options, diagnostic boo
 	if private != nil {
 		generation = codex.NewPrepared(native, manager, private)
 	}
-	return &Runtime{Manager: manager, Continuation: private, Catalog: cache, HTTP: httpserver.Runtime{Credentials: manager, Catalog: cache, Provider: generation}, transport: owned, discovery: discovery, defaultModel: cfg.DefaultModel}, nil
+	return &Runtime{Manager: manager, Continuation: private, Catalog: cache, HTTP: httpserver.Runtime{Credentials: manager, Catalog: cache, Provider: generation, ClientToken: token}, store: store, transport: owned, discovery: discovery, defaultModel: cfg.DefaultModel}, nil
+}
+
+// ClientToken returns the local Atuin client bearer token, creating it on first
+// use. Diagnostic runtimes are read-only and never create it.
+func (r *Runtime) ClientToken() (string, error) {
+	if r.HTTP.ClientToken != "" {
+		return r.HTTP.ClientToken, nil
+	}
+	return r.store.ClientToken()
+}
+
+// RotateClientToken replaces the token. Callers hold the exclusive store lock,
+// so no running server can still be using the old token.
+func (r *Runtime) RotateClientToken() (string, error) {
+	token, e := r.store.RotateClientToken()
+	if e == nil && r.HTTP.ClientToken != "" {
+		r.HTTP.ClientToken = token
+	}
+	return token, e
 }
 func (r *Runtime) Close() error {
 	e := r.Manager.Close()

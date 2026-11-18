@@ -22,8 +22,11 @@ Recorded Phase 0 decisions:
    — accepted design; foundation primitives only, production reasoning acceptance
    and runtime wiring remain disabled pending independent code review.
 
-Future records may cover the localhost security boundary, supported released
-Atuin versions, and single-process credential persistence. Those are not
+6. [Required local client token](0006-required-local-client-token.md)
+   — accepted; every request needs the generated `[ai].api_token` bearer token.
+
+Future records may cover supported released Atuin versions and single-process
+credential persistence. Those are not
 implemented or proven by these Phase 0 documents.
 
 Use filenames such as `0001-upstream-authentication.md` and this structure:

@@ -170,7 +170,7 @@ class Confinement(unittest.TestCase):
                     (root / 'escape').symlink_to('/host/private')
                 else:
                     (root / 'TERMINAL.md').write_text('!`touch /fixture/EXECUTED`')
-                process = self.launch(root, driver, {'root': '/fixture', 'binary': '/atuin', 'endpoint': 'http://127.0.0.1:9', 'steps': []})
+                process = self.launch(root, driver, {'root': '/fixture', 'binary': '/atuin', 'endpoint': 'http://127.0.0.1:9', 'api_token': 'aia1_' + '0' * 64, 'steps': []})
                 out, err = process.communicate(timeout=8)
                 self.assertNotEqual(process.returncode, 0, out)
                 self.assertIn(b'denied', err)
@@ -181,7 +181,7 @@ class Confinement(unittest.TestCase):
             root = pathlib.Path(name)
             launcher = pathlib.Path(__file__).parent / 'e2e' / 'confinement.py'
             plan = {'root': name, 'binary': str(pathlib.Path('/usr/bin/true').resolve()),
-                    'endpoint': 'http://127.0.0.1:9', 'steps': [], 'test_pause': 'preparation'}
+                    'endpoint': 'http://127.0.0.1:9', 'api_token': 'aia1_' + '0' * 64, 'steps': [], 'test_pause': 'preparation'}
             code = 'import json,subprocess,sys,time; p=subprocess.Popen([sys.executable,"-I",sys.argv[1]],stdin=subprocess.PIPE); p.stdin.write(sys.argv[2].encode()); p.stdin.close(); print("WRAPPER="+str(p.pid),flush=True); time.sleep(60)'
             supervisor = subprocess.Popen([sys.executable, '-I', '-c', code, str(launcher), json.dumps(plan)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             wrapper_fd = None
@@ -229,7 +229,7 @@ class Confinement(unittest.TestCase):
             for hard in (False, True):
                 with self.subTest(stage=stage, hard=hard), tempfile.TemporaryDirectory() as name:
                     root = pathlib.Path(name)
-                    process = self.launch(root, driver, {'root': '/fixture', 'binary': '/atuin', 'endpoint': 'http://127.0.0.1:9', 'steps': [], 'test_pause': stage})
+                    process = self.launch(root, driver, {'root': '/fixture', 'binary': '/atuin', 'endpoint': 'http://127.0.0.1:9', 'api_token': 'aia1_' + '0' * 64, 'steps': [], 'test_pause': stage})
                     try:
                         self.assertTrue(select.select([process.stdout], [], [], 8)[0])
                         self.assertIn(b'READY', process.stdout.readline())

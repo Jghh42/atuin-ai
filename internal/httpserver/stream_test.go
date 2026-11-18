@@ -39,7 +39,7 @@ func testRuntime(t *testing.T, p provider.Provider) Runtime {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return Runtime{Catalog: fixedCatalog{snapshot}, Provider: p, Credentials: credentials.SourceFunc(func(context.Context) (credentials.Credential, error) {
+	return Runtime{ClientToken: testToken, Catalog: fixedCatalog{snapshot}, Provider: p, Credentials: credentials.SourceFunc(func(context.Context) (credentials.Credential, error) {
 		return credentials.Credential{AccessToken: "private", Identity: credentials.Identity{Provider: "codex", Account: "private"}}, nil
 	})}
 }
@@ -59,7 +59,7 @@ const simpleBody = `{"messages":[{"role":"user","content":"hi"}],"session_id":"`
 
 func postStream(t *testing.T, base, body string) (*http.Response, string) {
 	t.Helper()
-	resp, err := http.Post(base+"/api/cli/chat", "application/json", strings.NewReader(body))
+	resp, err := authorizedPost(base+"/api/cli/chat", "application/json", strings.NewReader(body))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -283,7 +283,7 @@ func TestDisconnectCancelsProvider(t *testing.T) {
 		close(stopped)
 		return provider.Usage{}, ctx.Err()
 	})))
-	resp, err := http.Post(ts.URL+"/api/cli/chat", "application/json", strings.NewReader(simpleBody))
+	resp, err := authorizedPost(ts.URL+"/api/cli/chat", "application/json", strings.NewReader(simpleBody))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -320,7 +320,7 @@ func TestSlowTCPClientWriteDeadline(t *testing.T) {
 	if tcp, ok := conn.(*net.TCPConn); ok {
 		_ = tcp.SetReadBuffer(1024)
 	}
-	fmt.Fprintf(conn, "POST /api/cli/chat HTTP/1.1\r\nHost: localhost\r\nContent-Length: %d\r\nContent-Type: application/json\r\n\r\n%s", len(simpleBody), simpleBody)
+	fmt.Fprintf(conn, "POST /api/cli/chat HTTP/1.1\r\nHost: localhost\r\nAuthorization: Bearer %s\r\nContent-Length: %d\r\nContent-Type: application/json\r\n\r\n%s", testToken, len(simpleBody), simpleBody)
 	// Read only headers, then stop consuming the large streaming response.
 	reader := bufio.NewReader(conn)
 	for {

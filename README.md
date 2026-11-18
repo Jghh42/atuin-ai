@@ -34,8 +34,10 @@ with ChatGPT (SIWC) and public Responses inference are deferred for later.
   device login; no Pi/Codex subprocess or credential-file import.
 - Support headless/SSH development with browser device approval and no callback
   tunnel. Add independently registered SIWC/public Responses as a later feature.
-- Listen only on IPv4 loopback in the first version, with no client-facing
-  authentication or remote-host deployment surface.
+- Listen only on IPv4 loopback in the first version, with no remote-host
+  deployment surface. Every request must carry an auto-generated local client
+  token, which Atuin sends from `[ai].api_token`
+  ([ADR 0006](docs/decisions/0006-required-local-client-token.md)).
 - Preserve Atuin's local tool and permission boundary.
 - Run as a small Go binary with bounded memory and concurrency.
 - Maintain a compatibility suite derived from the upstream server, core, and
@@ -44,8 +46,7 @@ with ChatGPT (SIWC) and public Responses inference are deferred for later.
 ## Non-goals for the first version
 
 - A hosted multi-user or remote-access service.
-- Configurable/non-loopback binding, client Bearer auth, TLS, containers, or
-  Kubernetes deployment.
+- Configurable/non-loopback binding, TLS, containers, or Kubernetes deployment.
 - Arbitrary server-side tools, MCP, or web tools.
 - Atuin Hub billing and usage endpoints.
 - Chat Completions, browser cookies, credential scraping, or private endpoints
@@ -137,7 +138,9 @@ make build
 ./bin/atuin-ai-server auth login
 ./bin/atuin-ai-server auth status # stop serve before separate auth commands
 ./bin/atuin-ai-server serve # optional --config config.example.toml
-curl http://127.0.0.1:17391/api/cli/models # valid login required; no metadata GET
+# Every request needs the local client token (set it as Atuin [ai].api_token):
+curl -H "Authorization: Bearer $(./bin/atuin-ai-server token show)" \
+  http://127.0.0.1:17391/api/cli/models # valid login required; no metadata GET
 ```
 
 See [native init setup](docs/init.md) for optional macOS/Linux user services,

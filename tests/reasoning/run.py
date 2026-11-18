@@ -38,6 +38,8 @@ INPUTS = ('tests/reasoning/run.py', 'tests/e2e/pty_driver.py',
           'tests/build_support.py', 'testdata/prompts/default.golden',
           'testdata/tools/suggest_command.json', 'testdata/tools/write_file.json')
 MIB = 1 << 20
+# Local client bearer token, loaded after helper setup creates it.
+AUTH = {}
 PRIVATE = 'SYNTHETIC_REASONING_PRIVATE_2817'
 
 
@@ -251,7 +253,7 @@ class Server:
             require(self.process.poll() is None,'server startup failed')
             try:
                 conn=http.client.HTTPConnection('127.0.0.1',17391,timeout=.2)
-                conn.request('GET','/api/cli/models');response=conn.getresponse();response.read();conn.close()
+                conn.request('GET','/api/cli/models',headers=AUTH);response=conn.getresponse();response.read();conn.close()
                 if response.status == 200:
                     self.mark_baseline()
                     return
@@ -297,7 +299,7 @@ class Server:
 
 def wire_request(body,port=17391):
     conn=http.client.HTTPConnection('127.0.0.1',port,timeout=15)
-    conn.request('POST','/api/cli/chat',body,{'Content-Type':'application/json'})
+    conn.request('POST','/api/cli/chat',body,{'Content-Type':'application/json',**AUTH})
     response=conn.getresponse();data=response.read();session=response.getheader('X-Atuin-AI-Session-Id');conn.close()
     require(response.status==200,'actual chat HTTP status '+str(response.status))
     require(PRIVATE.encode() not in data,'private reasoning in public SSE')
@@ -362,11 +364,13 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
             # Existing PTY driver release action advances its output checkpoint.
             # No native plan is released/retried by this synchronization hook.
             self.send_response(204);self.send_header('Content-Length','0');self.end_headers();return
-        conn=http.client.HTTPConnection('127.0.0.1',17391,timeout=10);conn.request('GET',self.path);r=conn.getresponse();data=r.read();self.send_response(r.status);self.send_header('Content-Type','application/json');self.end_headers();self.wfile.write(data);conn.close()
+        require(self.headers.get_all('Authorization')==[AUTH['Authorization']],'actual CLI omitted client token')
+        conn=http.client.HTTPConnection('127.0.0.1',17391,timeout=10);conn.request('GET',self.path,headers=AUTH);r=conn.getresponse();data=r.read();self.send_response(r.status);self.send_header('Content-Type','application/json');self.end_headers();self.wfile.write(data);conn.close()
     def do_POST(self):
         owner=self.server
         try:
             require(self.path=='/api/cli/chat','closed proxy routes')
+            require(self.headers.get_all('Authorization')==[AUTH['Authorization']],'actual CLI omitted client token')
             length=int(self.headers.get('Content-Length','0'));require(0<length<=4*MIB,'CLI body bounds')
             body=self.rfile.read(length);request=json.loads(body);index=len(owner.requests);owner.requests.append(request)
             require(index<len(owner.plans),'no CLI retry or fallback')
@@ -378,7 +382,7 @@ class ProxyHandler(http.server.BaseHTTPRequestHandler):
                     expected+=mapped_results(request,owner.plans[prior].calls,owner.ids[prior])
                 owner.plans[index].expected=expected
             owner.fixture.add_reasoning(owner.plans[index])
-            conn=http.client.HTTPConnection('127.0.0.1',17391,timeout=15);conn.request('POST',self.path,body,{'Content-Type':'application/json'});r=conn.getresponse();require(r.status==200,'actual CLI server request')
+            conn=http.client.HTTPConnection('127.0.0.1',17391,timeout=15);conn.request('POST',self.path,body,{'Content-Type':'application/json',**AUTH});r=conn.getresponse();require(r.status==200,'actual CLI server request')
             session=r.getheader('X-Atuin-AI-Session-Id');owner.sessions.append(session)
             self.send_response(200);self.send_header('Content-Type','text/event-stream');self.send_header('X-Atuin-AI-Session-Id',session);self.end_headers();packet=bytearray();ids=[]
             while True:
@@ -411,7 +415,7 @@ def cli_proof(server,fixture,work,credentials):
            ReasoningPlan('cli-2','REASONING_COMPLETE',reasoning=True)]
     proxy=Proxy(server,fixture,plans,credentials);thread=threading.Thread(target=proxy.serve_forever);thread.start()
     try:
-        plan={'binary':'/atuin','root':'/fixture','endpoint':'http://127.0.0.1:9997','prompt':'REASON_CHAIN',
+        plan={'binary':'/atuin','root':'/fixture','endpoint':'http://127.0.0.1:9997','api_token':AUTH['Authorization'].removeprefix('Bearer '),'prompt':'REASON_CHAIN',
               'steps':[{'wait':'Always allow in this directory'},{'send':'\u001b[B'},{'send':'\r','release':True},
                        {'wait':'(?s)(?:✓.*Allow|Allow.*✓)','fresh':True},{'send':'\r'},
                        {'wait':'(?s)REASONING_COMPLETE.*Responded in'},{'send':'\u001b'}]}
@@ -584,6 +588,7 @@ def inner(args):
     (work/'server.toml').write_text('port = 17391\ndefault_model = "gpt-6.1-sol"\n')
     subprocess.run(['/helper','setup',str(work/'fake.json')],env=env,check=True,capture_output=True,timeout=10)
     credentials=work/'config'/'atuin-ai'/'credentials'/'record.json'
+    AUTH['Authorization']='Bearer '+(credentials.parent/'client-token').read_text().strip()
     fixture=ReasoningFixture(tls,fake);env['HTTPS_PROXY']='http://127.0.0.1:'+str(fixture.port)
     server=None
     try:

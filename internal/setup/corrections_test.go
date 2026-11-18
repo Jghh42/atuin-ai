@@ -83,7 +83,7 @@ func TestConfigureRollsBackAllAppliedWritesAndRefusesConcurrentTarget(t *testing
 					}
 					return nil
 				}}
-				err := ConfigureAtuin(files, path, 19222)
+				err := ConfigureAtuin(files, path, 19222, testToken)
 				if !errors.Is(err, ErrCommitUncertain) || errors.Is(err, ErrRollback) {
 					t.Fatal("primary/rollback outcome incorrect", err)
 				}
@@ -115,7 +115,7 @@ func TestConfigureRollsBackAllAppliedWritesAndRefusesConcurrentTarget(t *testing
 			}
 			return nil
 		}}
-		if err := ConfigureAtuin(files, path, 17391); !errors.Is(err, ErrRollback) || !errors.Is(err, ErrCommitUncertain) {
+		if err := ConfigureAtuin(files, path, 17391, testToken); !errors.Is(err, ErrRollback) || !errors.Is(err, ErrCommitUncertain) {
 			t.Fatal("concurrent rollback refusal hidden", err)
 		}
 		b, e := os.ReadFile(path)
@@ -135,7 +135,7 @@ func TestConfigureRollsBackAllAppliedWritesAndRefusesConcurrentTarget(t *testing
 			}
 			return nil
 		}}
-		err := ConfigureAtuin(files, path, 17391)
+		err := ConfigureAtuin(files, path, 17391, testToken)
 		if !errors.Is(err, ErrCommitUncertain) || !errors.Is(err, ErrRollback) {
 			t.Fatal("persistent uncertainty hidden", err)
 		}
@@ -169,7 +169,7 @@ func TestNewConfigRollbackRemoveSyncUncertaintyBlocksRestoration(t *testing.T) {
 		return a, nil
 	}
 	var configErr error
-	w.Configure = func() error { configErr = ConfigureAtuin(files, path, 17391); return configErr }
+	w.Configure = func(string) error { configErr = ConfigureAtuin(files, path, 17391, testToken); return configErr }
 	if w.Run(context.Background()) == nil || !errors.Is(configErr, ErrCommitUncertain) || !errors.Is(configErr, ErrRollback) {
 		t.Fatal("new-config removal durability uncertainty hidden", configErr)
 	}
@@ -267,7 +267,7 @@ func TestAtuinActivePathEvidence(t *testing.T) {
 				target = filepath.Join(configRoot, "config.toml")
 			}
 			if kind != "unknown-empty" {
-				if e := ConfigureAtuin(DiskFiles{}, target, 17391); e != nil {
+				if e := ConfigureAtuin(DiskFiles{}, target, 17391, testToken); e != nil {
 					t.Fatal(e)
 				}
 			}
@@ -283,7 +283,7 @@ func TestAtuinActivePathEvidence(t *testing.T) {
 	home := filepath.Join(root, "home")
 	xdg := filepath.Join(root, "xdg")
 	active := filepath.Join(xdg, "atuin", "config.toml")
-	if e := ConfigureAtuin(DiskFiles{}, active, 17391); e != nil {
+	if e := ConfigureAtuin(DiskFiles{}, active, 17391, testToken); e != nil {
 		t.Fatal(e)
 	}
 	if path, e := ResolveAtuin("", home, xdg, "", "", DiskFiles{}); e != nil || path != active {
@@ -295,7 +295,7 @@ func TestTOMLUTF8TypesCommentsAndNaN(t *testing.T) {
 		// A comment before [ai] ensures removing UTF8 validation would let the
 		// decoder's BOM stripping bypass it, rather than failing only table scanning.
 		data := append(append([]byte(nil), prefix...), []byte("# synthetic\n[ai]\nenabled=false\n")...)
-		if _, e := PatchAtuin(data, 17391); e == nil {
+		if _, e := PatchAtuin(data, 17391, testToken); e == nil {
 			t.Fatal("UTF16 BOM accepted before UTF8 check")
 		}
 	}
@@ -305,7 +305,7 @@ func TestTOMLUTF8TypesCommentsAndNaN(t *testing.T) {
 		if e := os.WriteFile(path, []byte(text), 0600); e != nil {
 			t.Fatal(e)
 		}
-		if e := ConfigureAtuin(DiskFiles{}, path, 17391); !errors.Is(e, ErrTOML) {
+		if e := ConfigureAtuin(DiskFiles{}, path, 17391, testToken); !errors.Is(e, ErrTOML) {
 			t.Fatal("invalid authorized type accepted")
 		}
 		b, _ := os.ReadFile(path)
@@ -315,11 +315,11 @@ func TestTOMLUTF8TypesCommentsAndNaN(t *testing.T) {
 		}
 	}
 	original := "number=nan\nvalues=[nan, {x=nan}]\n[ai]\nmodel='unknown' # exact\n"
-	patched, e := PatchAtuin([]byte(original), 17391)
+	patched, e := PatchAtuin([]byte(original), 17391, testToken)
 	if e != nil || !strings.Contains(string(patched), "number=nan\nvalues=[nan, {x=nan}]\n") {
 		t.Fatal("unchanged NaN comparison failed", e)
 	}
-	again, e := PatchAtuin(patched, 17391)
+	again, e := PatchAtuin(patched, 17391, testToken)
 	if e != nil || !bytes.Equal(patched, again) {
 		t.Fatal("NaN config not idempotent")
 	}

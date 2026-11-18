@@ -18,6 +18,8 @@ var ErrSetup = errors.New("init incomplete; see terminal instructions (no privat
 type Auth interface {
 	Status() credentials.Status
 	Login(context.Context, func(credentials.DevicePrompt) error) error
+	// ClientToken returns the local Atuin client token, creating it on first use.
+	ClientToken() (string, error)
 	Close() error
 }
 
@@ -37,12 +39,15 @@ type Service interface {
 }
 
 type Wizard struct {
-	TTY           Terminal
-	OpenAuth      func() (Auth, error)
-	Service       Service
-	Configure     func() error
+	TTY      Terminal
+	OpenAuth func() (Auth, error)
+	Service  Service
+	// Configure writes the client token into Atuin's [ai].api_token.
+	Configure     func(token string) error
 	ConfigPreview string
 	PrepareConfig func() (string, error)
+	// Port is the server port shown in manual Atuin configuration instructions.
+	Port int
 }
 
 func ask(ctx context.Context, t Terminal, text string) (bool, error) {
@@ -159,6 +164,16 @@ func (w Wizard) Run(ctx context.Context) (result error) {
 	} else {
 		fmt.Fprintln(t, "Existing local login retained (upstream acceptance not checked).")
 	}
+	// Create the token while this process still holds the store, so a service
+	// started below loads the same token instead of racing to create one.
+	token, tokenErr := auth.ClientToken()
+	if tokenErr != nil {
+		fmt.Fprintln(t, "Cannot create the local client token; no service or Atuin configuration changes. Investigate private directory permissions.")
+		return ErrSetup
+	}
+	manual := func() {
+		fmt.Fprintf(t, "To configure Atuin manually, set these keys in its config (retain model; use OSS protocol):\n%s\n", ManualAtuinConfig(w.Port, token))
+	}
 	// Close is a barrier, not a defer after supervisor startup.
 	if auth.Close() != nil {
 		auth = nil
@@ -206,6 +221,7 @@ func (w Wizard) Run(ctx context.Context) (result error) {
 		preview, err := w.PrepareConfig()
 		if err != nil {
 			fmt.Fprintln(t, "Atuin path unavailable or ambiguous; select --atuin-config PATH. Authentication and valid service retained; init partially complete.")
+			manual()
 			return ErrSetup
 		}
 		w.ConfigPreview = preview
@@ -216,16 +232,19 @@ func (w Wizard) Run(ctx context.Context) (result error) {
 		return err
 	}
 	if yes {
-		if configErr := w.Configure(); configErr == nil {
+		if configErr := w.Configure(token); configErr == nil {
 			fmt.Fprintln(t, "Atuin configuration ready; only ai.enabled, ai.endpoint and ai.api_token authorized. ai.model retained.")
 		} else {
 			if errors.Is(configErr, ErrRollback) {
 				safeRestore = false
 				fmt.Fprintln(t, "Atuin rollback is uncertain; automatic prior-service restoration is blocked. Investigate the private backup locally.")
 			}
-			fmt.Fprintln(t, "Atuin configuration failed; any applied change was restored only when comparison and durability checks succeeded. Check the private backup if present. Select an unambiguous --atuin-config path or edit [ai] manually: enabled=true, endpoint=the displayed localhost URL, api_token=empty. Retain model and use OSS protocol. Authentication and valid service setup are retained.")
+			fmt.Fprintln(t, "Atuin configuration failed; any applied change was restored only when comparison and durability checks succeeded. Check the private backup if present. Select an unambiguous --atuin-config path or edit [ai] manually. Authentication and valid service setup are retained.")
+			manual()
 			partial = true
 		}
+	} else {
+		manual()
 	}
 	if partial {
 		fmt.Fprintln(t, "Init partially complete; independent successful steps retained.")

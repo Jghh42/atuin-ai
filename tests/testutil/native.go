@@ -62,6 +62,7 @@ type Native struct {
 	Runtime                      *application.Runtime
 	HistoryIDFile                string // Task-owned synthetic fixture, set before starting CLI.
 	URL                          string
+	Token                        string // Local client token the server requires.
 }
 
 func New(t *testing.T, turns []Turn, login bool) *Native {
@@ -76,6 +77,7 @@ func New(t *testing.T, turns []Turn, login bool) *Native {
 		t.Fatal(err)
 	}
 	n.Runtime = r
+	n.Token = r.HTTP.ClientToken
 	t.Cleanup(func() { _ = r.Close() })
 	if login {
 		n.Login()
@@ -338,15 +340,21 @@ func (n *Native) RoundTrip(r *http.Request) (*http.Response, error) {
 }
 
 // Post sends only a synthetic request and never logs response bodies or tokens.
-func Post(t *testing.T, base string, body []byte) (int, string) {
+func Post(t *testing.T, base, token string, body []byte) (int, string) {
 	t.Helper()
-	status, text, _ := PostWithSession(t, base, body)
+	status, text, _ := PostWithSession(t, base, token, body)
 	return status, text
 }
-func PostWithSession(t *testing.T, base string, body []byte) (int, string, string) {
+func PostWithSession(t *testing.T, base, token string, body []byte) (int, string, string) {
 	t.Helper()
 	c := http.Client{Timeout: 8 * time.Second}
-	r, e := c.Post(base+"/api/cli/chat", "application/json", strings.NewReader(string(body)))
+	req, e := http.NewRequest(http.MethodPost, base+"/api/cli/chat", strings.NewReader(string(body)))
+	if e != nil {
+		t.Fatal(e)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	r, e := c.Do(req)
 	if e != nil {
 		t.Fatal(e)
 	}

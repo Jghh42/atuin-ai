@@ -26,7 +26,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	out := io.Writer(os.Stderr)
-	if len(os.Args) == 2 && (os.Args[1] == "version" || os.Args[1] == "--version") {
+	if len(os.Args) == 2 && (os.Args[1] == "version" || os.Args[1] == "--version") || len(os.Args) == 3 && os.Args[1] == "token" {
 		out = os.Stdout
 	}
 	if err := run(ctx, os.Args[1:], out); err != nil {
@@ -60,8 +60,11 @@ func runWith(ctx context.Context, args []string, stderr io.Writer, deps commandD
 	if len(args) > 0 && args[0] == "auth" {
 		return runAuth(ctx, args[1:], stderr, deps)
 	}
+	if len(args) > 0 && args[0] == "token" {
+		return runToken(args[1:], stderr, deps)
+	}
 	if len(args) == 0 || args[0] != "serve" {
-		return errors.New("usage: atuin-ai-server init [--config PATH] [--atuin-config PATH] | serve [--config PATH] | auth login|status|logout|diagnose | version | --version")
+		return errors.New("usage: atuin-ai-server init [--config PATH] [--atuin-config PATH] | serve [--config PATH] | auth login|status|logout|diagnose | token show|rotate | version | --version")
 	}
 	flags := flag.NewFlagSet("serve", flag.ContinueOnError)
 	// Do not echo arbitrary command line values into logs.
@@ -192,6 +195,60 @@ func runAuth(ctx context.Context, args []string, out io.Writer, deps commandDeps
 		default:
 			return errors.New("authentication command failed")
 		}
+	}
+	return nil
+}
+
+var errTokenServerRunning = errors.New("cannot rotate the client token while the server is running; stop it first")
+
+// runToken prints the local client token the Atuin CLI must send as
+// [ai].api_token. show reads without the store lock so it works while the
+// server runs; it creates the token only when none exists yet.
+func runToken(args []string, out io.Writer, deps commandDeps) error {
+	if len(args) != 1 || (args[0] != "show" && args[0] != "rotate") {
+		return errors.New("usage: atuin-ai-server token show|rotate")
+	}
+	path := deps.state
+	if path == "" {
+		var err error
+		if path, err = application.StateDirectory(); err != nil {
+			return err
+		}
+	}
+	token, err := "", credentials.ErrNoClientToken
+	if args[0] == "show" {
+		token, err = credentials.ReadClientToken(path)
+	}
+	if errors.Is(err, credentials.ErrNoClientToken) {
+		runtime, e := openRuntime(config.Default(), deps, false, true)
+		if e != nil {
+			if errors.Is(e, credentials.ErrLocked) {
+				if args[0] == "rotate" {
+					return errTokenServerRunning
+				}
+				return credentials.ErrStore
+			}
+			return e
+		}
+		if args[0] == "rotate" {
+			token, err = runtime.RotateClientToken()
+		} else {
+			token, err = runtime.ClientToken()
+		}
+		if closeErr := runtime.Close(); err == nil && closeErr != nil {
+			err = closeErr
+		}
+	}
+	if err != nil {
+		return credentials.ErrStore
+	}
+	if args[0] == "rotate" {
+		_, err = fmt.Fprintf(out, "New client token: %s\nSet it as [ai].api_token in your Atuin config (or rerun init), then start the server again.\n", token)
+	} else {
+		_, err = fmt.Fprintln(out, token)
+	}
+	if err != nil {
+		return errors.New("cannot write client token")
 	}
 	return nil
 }
