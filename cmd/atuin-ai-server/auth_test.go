@@ -82,7 +82,7 @@ func TestAuthCommandsPersistedLoginDiscoveryFailureStatusAndLogout(t *testing.T)
 	if e != nil {
 		t.Fatal(e)
 	}
-	if e := runWith(context.Background(), []string{"auth", "logout"}, io.Discard, deps); e != credentials.ErrStore {
+	if e := runWith(context.Background(), []string{"auth", "logout"}, io.Discard, deps); e != credentials.ErrLocked {
 		t.Fatal("separate command bypassed lifetime lock", e)
 	}
 	running.Close()

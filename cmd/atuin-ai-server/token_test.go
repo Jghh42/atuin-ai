@@ -52,7 +52,7 @@ func TestTokenShowAndRotate(t *testing.T) {
 	if show() != first {
 		t.Fatal("show while running")
 	}
-	if e := runWith(context.Background(), []string{"token", "rotate"}, &bytes.Buffer{}, deps); e != errTokenServerRunning {
+	if e := runWith(context.Background(), []string{"token", "rotate"}, &bytes.Buffer{}, deps); e != credentials.ErrLocked {
 		t.Fatal("rotate bypassed the running server", e)
 	}
 	running.Close()

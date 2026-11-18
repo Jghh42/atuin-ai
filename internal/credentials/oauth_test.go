@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -232,5 +233,22 @@ func TestOAuthNoRedirectAndFiniteDeadline(t *testing.T) {
 	})}
 	if _, e := c.login(context.Background(), func(DevicePrompt) error { return nil }); e == nil || calls != 1 {
 		t.Fatal("redirect followed or accepted")
+	}
+}
+
+func TestRealConnectFailureIsClassifiedUnsent(t *testing.T) {
+	l, e := net.Listen("tcp", "127.0.0.1:0")
+	if e != nil {
+		t.Fatal(e)
+	}
+	closed := l.Addr().String()
+	l.Close()
+	transport := NewTransport()
+	transport.Proxy = nil
+	transport.DialContext = func(ctx context.Context, network, _ string) (net.Conn, error) {
+		return (&net.Dialer{}).DialContext(ctx, network, closed)
+	}
+	if _, _, e := (OAuthClient{Transport: transport}).post(context.Background(), "/oauth/token", "text/plain", ""); e != errNotSent {
+		t.Fatal("refused connection not classified as unsent", e)
 	}
 }

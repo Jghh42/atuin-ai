@@ -97,13 +97,13 @@ func runInit(ctx context.Context, args []string, deps commandDeps) error {
 	wizard := setup.Wizard{
 		TTY: tty,
 		OpenAuth: func() (setup.Auth, error) {
-			r, err := openRuntime(cfg, deps, false, true)
+			r, err := openRuntime(cfg, deps, statusOnly)
 			if err != nil {
 				return nil, err
 			}
 			// Read status without opening private continuation state. Only an
 			// explicit YES may reopen the lifecycle-capable runtime for login.
-			return &initAuth{Runtime: r, open: func() (*application.Runtime, error) { return openRuntime(cfg, deps, false) }}, nil
+			return &initAuth{Runtime: r, open: func() (*application.Runtime, error) { return openRuntime(cfg, deps, serving) }}, nil
 		},
 		Service: service,
 		PrepareConfig: func() (string, error) {

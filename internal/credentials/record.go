@@ -2,7 +2,6 @@ package credentials
 
 import (
 	"errors"
-	"fmt"
 	"time"
 )
 
@@ -13,12 +12,19 @@ var (
 	ErrUnavailable = errors.New("application login required")
 	ErrReauth      = errors.New("application reauthentication required; stop server and log in again")
 	ErrStore       = errors.New("credential state unavailable; check private directory and stop other application processes")
-	// ErrLocked distinguishes genuine flock contention without changing public error text.
-	ErrLocked  = fmt.Errorf("%w", ErrStore)
-	ErrOAuth   = errors.New("codex authorization failed")
-	ErrDenied  = errors.New("codex authorization denied")
-	ErrExpired = errors.New("codex device authorization expired")
+	// ErrLocked is genuine flock contention; it still matches errors.Is(e, ErrStore).
+	ErrLocked  error = storeProblem{"in use by another atuin-ai-server process (usually the running server); stop it first"}
+	ErrOAuth         = errors.New("codex authorization failed")
+	ErrDenied        = errors.New("codex authorization denied")
+	ErrExpired       = errors.New("codex device authorization expired")
 )
+
+// storeProblem is an actionable ErrStore for interactive commands. It still
+// matches errors.Is(e, ErrStore) so lifecycle handling is unchanged.
+type storeProblem struct{ msg string }
+
+func (p storeProblem) Error() string      { return "credential state unavailable: " + p.msg }
+func (storeProblem) Is(target error) bool { return target == ErrStore }
 
 // Record is private application state, never a status or API response.
 // Generation advances on every durable lifecycle transaction; AuthEpoch advances

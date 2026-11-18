@@ -177,6 +177,11 @@ func (m *Manager) rotate(old Record, f *refreshFlight) {
 	// Intent is durable before the ONLY external refresh attempt. Any ambiguous
 	// transport/malformed/invalid_grant/save failure leaves it unusable on restart.
 	replacement, e := m.oauth.refresh(ctx, old)
+	if e == errNotSent {
+		// The old refresh token never left this machine (offline, DNS, refused
+		// connection), so durably restore it and let a later request retry.
+		replacement, e, err = old, nil, ErrUnavailable
+	}
 	if e != nil {
 		_ = m.purge() // successful Begin; terminal unusable state
 		err = ErrReauth

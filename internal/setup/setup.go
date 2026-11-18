@@ -136,7 +136,11 @@ func (w Wizard) Run(ctx context.Context) (result error) {
 		auth, e = w.OpenAuth()
 	}
 	if e != nil {
-		fmt.Fprintln(t, "Cannot open application state; investigate permissions/corruption or stop a foreground server. Do not remove locks or edit credentials.")
+		if e == credentials.ErrStore {
+			fmt.Fprintln(t, "Cannot open application state; investigate permissions/corruption or stop a foreground server. Do not remove locks or edit credentials.")
+		} else {
+			fmt.Fprintf(t, "Cannot open application state (%v). Do not remove locks or edit credentials.\n", e)
+		}
 		return ErrSetup
 	}
 	if !auth.Status().LoggedIn {

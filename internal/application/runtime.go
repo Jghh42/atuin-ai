@@ -34,6 +34,11 @@ func StateDirectory() (string, error) {
 	if e != nil {
 		return "", credentials.ErrStore
 	}
+	// Dotfile managers often symlink ~/.config. Resolve it once; the store still
+	// walks the resolved path without following links and checks every component.
+	if resolved, e := filepath.EvalSymlinks(dir); e == nil {
+		dir = resolved
+	}
 	return filepath.Join(dir, "atuin-ai", "credentials"), nil
 }
 

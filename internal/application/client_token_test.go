@@ -51,3 +51,20 @@ func TestOnlyServingRuntimesCreateClientToken(t *testing.T) {
 		t.Fatal("serving token not persisted", e)
 	}
 }
+
+func TestStateDirectoryResolvesSymlinkedConfigHome(t *testing.T) {
+	root := t.TempDir()
+	if e := os.Mkdir(filepath.Join(root, "dotfiles"), 0700); e != nil {
+		t.Fatal(e)
+	}
+	if e := os.Symlink(filepath.Join(root, "dotfiles"), filepath.Join(root, "config")); e != nil {
+		t.Fatal(e)
+	}
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(root, "config"))
+	t.Setenv("HOME", root)
+	path, e := StateDirectory()
+	real, _ := filepath.EvalSymlinks(root)
+	if e != nil || path != filepath.Join(real, "dotfiles", "atuin-ai", "credentials") {
+		t.Fatal("symlinked config directory not resolved", path, e)
+	}
+}

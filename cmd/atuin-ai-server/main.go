@@ -30,8 +30,8 @@ func main() {
 		out = os.Stdout
 	}
 	if err := run(ctx, os.Args[1:], out); err != nil {
-		// Configuration parsers and OS errors may include file contents or paths.
-		// Only deliberately generic errors reach logs.
+		// Configuration parsers and OS errors may include file contents. Only
+		// errors written by this program (some naming a local path) reach logs.
 		slog.New(slog.NewJSONHandler(os.Stderr, nil)).Error("command failed", "reason", err.Error())
 		os.Exit(1)
 	}
@@ -81,11 +81,8 @@ func runWith(ctx context.Context, args []string, stderr io.Writer, deps commandD
 		return err
 	}
 	logger := slog.New(slog.NewJSONHandler(stderr, nil))
-	runtime, err := openRuntime(cfg, deps, false)
+	runtime, err := openRuntime(cfg, deps, serving)
 	if err != nil {
-		if errors.Is(err, credentials.ErrLocked) {
-			return credentials.ErrStore
-		}
 		return err
 	}
 	defer runtime.Close()
@@ -102,22 +99,41 @@ func runWith(ctx context.Context, args []string, stderr io.Writer, deps commandD
 	return server.Serve(ctx, listener)
 }
 
-func openRuntime(cfg config.Config, deps commandDeps, diagnostic bool, statusOnly ...bool) (*application.Runtime, error) {
-	path := deps.state
-	if path == "" {
-		var err error
-		path, err = application.StateDirectory()
-		if err != nil {
-			return nil, err
-		}
+type runtimeMode int
+
+const (
+	serving runtimeMode = iota
+	statusOnly
+	diagnostic
+)
+
+func statePath(deps commandDeps) (string, error) {
+	if deps.state != "" {
+		return deps.state, nil
 	}
-	if len(statusOnly) > 0 && statusOnly[0] {
-		return application.NewStatus(path, cfg, deps.transport)
+	return application.StateDirectory()
+}
+
+// openRuntime opens the credential store in the requested mode. A generic store
+// failure is replaced by one naming the offending path when it can be found.
+func openRuntime(cfg config.Config, deps commandDeps, mode runtimeMode) (*application.Runtime, error) {
+	path, err := statePath(deps)
+	if err != nil {
+		return nil, err
 	}
-	if diagnostic {
-		return application.NewDiagnostic(path, cfg, deps.transport)
+	var runtime *application.Runtime
+	switch mode {
+	case statusOnly:
+		runtime, err = application.NewStatus(path, cfg, deps.transport)
+	case diagnostic:
+		runtime, err = application.NewDiagnostic(path, cfg, deps.transport)
+	default:
+		runtime, err = application.New(path, cfg, deps.transport)
 	}
-	return application.New(path, cfg, deps.transport)
+	if err == credentials.ErrStore {
+		err = credentials.ExplainStore(path)
+	}
+	return runtime, err
 }
 func runAuth(ctx context.Context, args []string, out io.Writer, deps commandDeps) error {
 	if len(args) != 1 || (args[0] != "login" && args[0] != "status" && args[0] != "logout" && args[0] != "diagnose") {
@@ -147,14 +163,18 @@ func runAuth(ctx context.Context, args []string, out io.Writer, deps commandDeps
 			return err
 		}
 	}
-	runtime, err := openRuntime(cfg, deps, args[0] == "diagnose", args[0] == "status")
+	mode := serving
+	switch args[0] {
+	case "status":
+		mode = statusOnly
+	case "diagnose":
+		mode = diagnostic
+	}
+	runtime, err := openRuntime(cfg, deps, mode)
 	if err != nil {
 		if args[0] == "diagnose" {
 			configured := cfg.DefaultModel != ""
 			return writeDiagnostic(out, codex.DiagnosticReport{Stage: codex.StageCredentials, Result: codex.ResultCredentialUnavailable, DefaultOverrideConfigured: &configured})
-		}
-		if errors.Is(err, credentials.ErrLocked) {
-			return credentials.ErrStore
 		}
 		return err
 	}
@@ -199,8 +219,6 @@ func runAuth(ctx context.Context, args []string, out io.Writer, deps commandDeps
 	return nil
 }
 
-var errTokenServerRunning = errors.New("cannot rotate the client token while the server is running; stop it first")
-
 // runToken prints the local client token the Atuin CLI must send as
 // [ai].api_token. show reads without the store lock so it works while the
 // server runs; it creates the token only when none exists yet.
@@ -208,26 +226,17 @@ func runToken(args []string, out io.Writer, deps commandDeps) error {
 	if len(args) != 1 || (args[0] != "show" && args[0] != "rotate") {
 		return errors.New("usage: atuin-ai-server token show|rotate")
 	}
-	path := deps.state
-	if path == "" {
-		var err error
-		if path, err = application.StateDirectory(); err != nil {
-			return err
-		}
+	path, err := statePath(deps)
+	if err != nil {
+		return err
 	}
 	token, err := "", credentials.ErrNoClientToken
 	if args[0] == "show" {
 		token, err = credentials.ReadClientToken(path)
 	}
 	if errors.Is(err, credentials.ErrNoClientToken) {
-		runtime, e := openRuntime(config.Default(), deps, false, true)
+		runtime, e := openRuntime(config.Default(), deps, statusOnly)
 		if e != nil {
-			if errors.Is(e, credentials.ErrLocked) {
-				if args[0] == "rotate" {
-					return errTokenServerRunning
-				}
-				return credentials.ErrStore
-			}
 			return e
 		}
 		if args[0] == "rotate" {
@@ -240,6 +249,9 @@ func runToken(args []string, out io.Writer, deps commandDeps) error {
 		}
 	}
 	if err != nil {
+		if errors.Is(err, credentials.ErrStore) {
+			return credentials.ExplainStore(path)
+		}
 		return credentials.ErrStore
 	}
 	if args[0] == "rotate" {

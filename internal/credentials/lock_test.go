@@ -6,12 +6,13 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 func TestOnlyActualContentionHasLockedSentinel(t *testing.T) {
 	first, path := testStore(t)
-	if _, err := OpenStore(path); !errors.Is(err, ErrLocked) || !errors.Is(err, ErrStore) || err.Error() != ErrStore.Error() {
+	if _, err := OpenStore(path); !errors.Is(err, ErrLocked) || !errors.Is(err, ErrStore) || !strings.Contains(err.Error(), "running server") {
 		t.Fatal("real contention not distinguished")
 	}
 	first.Close()

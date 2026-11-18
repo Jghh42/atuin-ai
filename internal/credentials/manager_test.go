@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -228,6 +229,47 @@ func TestPersistenceCompletesAfterCallerCancellation(t *testing.T) {
 	saved, e := again.Load()
 	if e != nil || saved.Refresh != "replacement" || saved.Access != c.AccessToken {
 		t.Fatal("rotation lost after caller cancellation")
+	}
+}
+func TestUnsentRefreshKeepsSessionForRetry(t *testing.T) {
+	for name, failure := range map[string]error{
+		"dns":     &net.OpError{Op: "dial", Err: &net.DNSError{Err: "no such host", Name: "auth.openai.com"}},
+		"refused": &net.OpError{Op: "dial", Err: errors.New("connection refused")},
+		"proxy":   &net.OpError{Op: "proxyconnect", Err: errors.New("connection refused")},
+	} {
+		t.Run(name, func(t *testing.T) {
+			s, path := testStore(t)
+			seed(t, s, activeRecord(testNow.Add(time.Second)))
+			offline := true
+			m := manager(t, s, roundTripFunc(func(r *http.Request) (*http.Response, error) {
+				if offline {
+					return nil, failure
+				}
+				if e := r.ParseForm(); e != nil || r.PostForm.Get("refresh_token") != "refresh-original" {
+					t.Error("retry did not reuse the unsent refresh token")
+				}
+				return reply(200, tokenJSON("account-test", "refresh-replacement", testNow.Add(time.Hour))), nil
+			}), nil)
+			if _, e := m.Current(context.Background()); e != ErrUnavailable {
+				t.Fatal("unsent refresh not reported as transient", e)
+			}
+			if status := m.Status(); !status.LoggedIn || status.ReauthenticationRequired {
+				t.Fatal("unsent refresh logged out")
+			}
+			m.Close()
+			again, e := OpenStore(path)
+			if e != nil {
+				t.Fatal(e)
+			}
+			if r, e := again.Load(); e != nil || r.State != "active" || r.Refresh != "refresh-original" {
+				t.Fatal("restored session not durable", e)
+			}
+			offline = false
+			m2 := manager(t, again, m.oauth.Transport, nil)
+			if c, e := m2.Current(context.Background()); e != nil || c.Identity.Account != "account-test" {
+				t.Fatal("retry after reconnect failed", e)
+			}
+		})
 	}
 }
 func TestCloseCancelsRefreshWithoutStrandingWaiters(t *testing.T) {
