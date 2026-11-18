@@ -49,7 +49,13 @@ legal sets independently of manifest claims and exercises rehashed mutations.
 No release is published. Dirty development output remains RELEASE BLOCKED;
 production live/catalog, native macOS and Phase 9b gates remain separate.
 
-## Offline resource evidence (Phase9b)
+## Go toolchain
+
+The exact toolchain pin and its advisory, official archive hashes and legal
+applicability review are in the [Go 1.27.4 security pin](go1274-security.md)
+(superseding [Go 1.27.3](go1273-security.md)).
+
+## Offline resource evidence (Phase 9b)
 
 [Resource/lifecycle provenance](resource-lifecycle.md) records independently
 authored offline external TLS/load/sampling programs, actual shipping binary

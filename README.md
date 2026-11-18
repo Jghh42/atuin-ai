@@ -107,9 +107,9 @@ configuration, limits, private state and troubleshooting.
 
 ## Development
 
-The exact toolchain is **Go 1.27.3**, pinned in `go.mod` and enforced by Make
+The exact toolchain is **Go 1.27.4**, pinned in `go.mod` and enforced by Make
 and CI; normal toolchain auto-download works. See the
-[security pin record](docs/provenance/go1273-security.md).
+[security pin record](docs/provenance/go1274-security.md).
 
 ```sh
 make check    # format, tests, race, vet, lint, vulnerabilities, fuzz smoke, harness self-tests

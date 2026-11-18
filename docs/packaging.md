@@ -28,7 +28,7 @@ unit tests plus 32 rehashed mutations run before AND after the unchanged full
 resource gate. Separate reasoning CLI/restart/storage stress and packaged init
 no-TTY/private-controlling-PTY explicit-login-decline gates are additional.
 
-Actual Go 1.27.3 target-selected stdlib/vendor/Unicode legal bytes are measured
+Actual Go 1.27.4 target-selected stdlib/vendor/Unicode legal bytes are measured
 before considering strict-pin changes; encryption imports do not justify guessed
 notice growth. The current selected-source notice bundle remains 335056 bytes,
 with unchanged reviewed hash/vendor grants/Unicode tables: no legal pin or
@@ -38,7 +38,7 @@ new native Mac claim, release authorization or independent producer attestation.
 
 ## Build / examine locally
 
-Requires Git, Python 3.9+ stdlib, and the exact official **Go 1.27.3** toolchain
+Requires Git, Python 3.9+ stdlib, and the exact official **Go 1.27.4** toolchain
 pinned by `go.mod` (normal verified Go toolchain/module downloads are allowed).
 Commands must run against trusted source/tooling on a local owned filesystem.
 
@@ -111,7 +111,7 @@ exactly TOML, uniseg and x/sys. JWT is a separate proof dependency, not linked o
 included as a shipping module/license. The root NOTICE retains historical proof
 attribution without claiming linkage. Separate full Unicode data grants and
 specific table attribution are mandatory: uniseg's six Unicode 15.0.0 tables,
-and Go 1.27.3's selected Unicode 17.0.0 stdlib/vendor tables. Version-selected
+and Go 1.27.4's selected Unicode 17.0.0 stdlib/vendor tables. Version-selected
 table names/versions/hashes and reviewed grant hashes are completeness gates.
 [Exact immutable license sources and applicability](provenance/unicode-data.md).
 
@@ -290,7 +290,7 @@ validation; no Go SDK is required (optional `go version -m` only).
 1. In an owned scratch directory, `shasum -a 256 ARCHIVE` and compare the exact
    supplied digest; inspect `tar -tzf ARCHIVE`. Manually extract this verified,
    trusted archive, retain its legal texts, relocate/copy the binary and run
-   `./atuin-ai-server version` / `--version`. Expect darwin/arm64, Go 1.27.3,
+   `./atuin-ai-server version` / `--version`. Expect darwin/arm64, Go 1.27.4,
    explicit development tag/revision/hash and honest dirty=true if applicable.
    Do not auto-bypass Gatekeeper. If macOS refuses execution, report only the
    safe outcome; no `xattr -d` or security-policy changes are prescribed.

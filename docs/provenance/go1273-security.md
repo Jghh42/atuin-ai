@@ -1,4 +1,6 @@
-# Current Go 1.27.3 security pin (2026-10-27)
+# Go 1.27.3 security pin (2026-10-27)
+
+> Superseded by the [Go 1.27.4 pin](go1274-security.md).
 
 The current exact minimum/Make/CI/package/consumer pin is **Go 1.27.3**.
 Historical v0.1.0 and phase receipts remain Go 1.27.2 records; their tags/assets

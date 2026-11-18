@@ -33,7 +33,7 @@ SHA-256: `a59885f5f0f3b3c07cf9444db5fe399b6f0791eac82055f7b85cc65500551039`.
 Module integrity is pinned in `go.sum`; include the license with binaries.
 **The MIT text is not sufficient for its generated Unicode data.** All six
 Unicode 15 table sources require the separately retained full historical Unicode
-data/software grant and table attribution. The actual Go 1.27.3 shipping graph
+data/software grant and table attribution. The actual Go 1.27.4 shipping graph
 also selects Unicode 17 stdlib/IDNA/bidi/normalization tables and requires its
 Unicode License V3 grant. Both complete grants and specific table attribution
 are bundled, independently pinned and checked; [immutable authoritative sources,
