@@ -238,6 +238,10 @@ func (w Wizard) Run(ctx context.Context) (result error) {
 	if yes {
 		if configErr := w.Configure(token); configErr == nil {
 			fmt.Fprintln(t, "Atuin configuration ready; only ai.enabled, ai.endpoint and ai.api_token authorized. ai.model retained.")
+		} else if errors.Is(configErr, ErrAtuinReadable) {
+			fmt.Fprintln(t, "Atuin configuration is readable by other users and was not changed; it would expose the client token. Run chmod 600 on the path shown above and rerun init, or add the lines below yourself after making it private.")
+			manual()
+			partial = true
 		} else {
 			if errors.Is(configErr, ErrRollback) {
 				safeRestore = false

@@ -70,14 +70,15 @@ func TestConfigureAtuinPrivateBackupNoopAndModes(t *testing.T) {
 	path := filepath.Join(root, "config.toml")
 	files := DiskFiles{}
 	original := []byte("# kept\n[ai]\nmodel='future-model'\napi_token='SYNTHETIC-ONLY'\n")
-	if e := os.WriteFile(path, original, 0640); e != nil {
+	// An unusual owner-only mode is preserved; readable modes are refused separately.
+	if e := os.WriteFile(path, original, 0400); e != nil {
 		t.Fatal(e)
 	}
 	if e := ConfigureAtuin(files, path, 17392, testToken); e != nil {
 		t.Fatal(e)
 	}
 	st, _ := os.Stat(path)
-	if st.Mode().Perm() != 0640 {
+	if st.Mode().Perm() != 0400 {
 		t.Fatal("mode changed")
 	}
 	names, _ := filepath.Glob(filepath.Join(root, ".atuin-ai-backup-*"))

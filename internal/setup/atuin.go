@@ -20,6 +20,10 @@ import (
 
 const MaxAtuinBytes = 64 << 10
 
+// ErrAtuinReadable refuses to write the client token into an existing Atuin
+// config that other local users can read; the token authenticates to the server.
+var ErrAtuinReadable = errors.New("atuin configuration is readable by other users; make it private before adding the client token")
+
 var ErrTOML = errors.New("unsupported Atuin TOML layout or protocol; edit the three [ai] keys manually, retaining model")
 
 func randomName() (string, error) {
@@ -445,6 +449,10 @@ func ConfigureAtuin(files Files, path string, port int, token string) error {
 	old, e := files.Read(path, MaxAtuinBytes)
 	if e != nil {
 		return e
+	}
+	// Replace keeps an existing file's mode, so check before writing anything.
+	if old.Exists && old.Mode&0077 != 0 {
+		return ErrAtuinReadable
 	}
 	data, e := PatchAtuin(old.Data, port, token)
 	if e != nil {

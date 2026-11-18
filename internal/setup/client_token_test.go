@@ -1,7 +1,11 @@
 package setup
 
 import (
+	"bytes"
 	"context"
+	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -79,5 +83,50 @@ func TestWizardTokenFailureMakesNoChanges(t *testing.T) {
 	a.tokenErr = credentials.ErrStore
 	if e := w.Run(context.Background()); e != ErrSetup || hasEvent(*events, "install") || hasEvent(*events, "config") || !hasEvent(*events, "close") {
 		t.Fatal(e, *events)
+	}
+}
+
+func TestConfigureAtuinRefusesConfigReadableByOthers(t *testing.T) {
+	for _, mode := range []os.FileMode{0644, 0640, 0604} {
+		root := privateRoot(t)
+		path := filepath.Join(root, "config.toml")
+		original := []byte("[ai]\nmodel = 'kept'\n")
+		if e := os.WriteFile(path, original, 0600); e != nil {
+			t.Fatal(e)
+		}
+		if e := os.Chmod(path, mode); e != nil {
+			t.Fatal(e)
+		}
+		if e := ConfigureAtuin(DiskFiles{}, path, 17391, testToken); !errors.Is(e, ErrAtuinReadable) {
+			t.Fatalf("mode %o: %v", mode, e)
+		}
+		after, _ := os.ReadFile(path)
+		backups, _ := filepath.Glob(filepath.Join(root, ".atuin-ai-*"))
+		if !bytes.Equal(after, original) || len(backups) != 0 {
+			t.Fatalf("mode %o: readable config was modified", mode)
+		}
+	}
+	// A new config file is created owner-only.
+	root := privateRoot(t)
+	path := filepath.Join(root, "config.toml")
+	if e := ConfigureAtuin(DiskFiles{}, path, 17391, testToken); e != nil {
+		t.Fatal(e)
+	}
+	if st, e := os.Stat(path); e != nil || st.Mode().Perm() != 0600 {
+		t.Fatal("new config not private", e)
+	}
+}
+
+func TestWizardExplainsReadableAtuinConfig(t *testing.T) {
+	w, a, _, _ := fixture("", "y")
+	a.ready = true
+	w.Port = 19222
+	w.Configure = func(string) error { return ErrAtuinReadable }
+	if e := w.Run(context.Background()); e != ErrSetup {
+		t.Fatal(e)
+	}
+	out := w.TTY.(*terminalFixture).String()
+	if !strings.Contains(out, "readable by other users") || !strings.Contains(out, "chmod 600") || !strings.Contains(out, ManualAtuinConfig(19222, testToken)) {
+		t.Fatalf("missing guidance:\n%s", out)
 	}
 }

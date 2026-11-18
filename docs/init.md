@@ -240,8 +240,10 @@ endpoint_protocol refuse rather than lose content. Unsupported layouts need a
 manual three-key edit, preserving model; Hub protocol must be resolved manually.
 No history, sync, permissions, profile or shell file is touched.
 
-Existing safe regular single-link owned targets retain their mode; new config is
-0600 in new 0700 directories. Symlinks/unsafe ancestors fail with manual instructions.
+Existing safe regular single-link owned targets retain their mode, but a target
+readable by group or others is refused unchanged because it would expose the
+client token: run `chmod 600` on it and rerun init. New config is 0600 in new
+0700 directories. Symlinks/unsafe ancestors fail with manual instructions.
 Changed existing files receive an exclusive same-directory `.atuin-ai-backup-*`
 **0600** copy before atomic synced replacement; backups may contain old API tokens
 and must stay private. Noop runs create no backup. Inode/content is compared
