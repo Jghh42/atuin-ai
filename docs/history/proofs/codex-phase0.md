@@ -2,7 +2,7 @@
 
 - Date: 2026-10-16 (UTC)
 - Environment: Linux amd64, Go 1.26.9, isolated native Go proof harness
-- Decision: [ADR 0004](../decisions/0004-pi-style-codex-authentication.md)
+- Decision: [ADR 0004](../../decisions/0004-pi-style-codex-authentication.md)
 - Model tested: `gpt-6.1-sol`
 - Account context: user intended the target Business workspace; no account or
   workspace identifiers retained and no independent plan-entitlement claim made.

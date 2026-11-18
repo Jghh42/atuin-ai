@@ -59,7 +59,7 @@ directory contents) established these Unicode 17 tables:
 
 Their Version/UnicodeVersion constants are **17.0.0**. The vendor directories
 also retain `tables15.0.0.go` alternatives, but `!go1.27` excludes those; the
-selected `go1.27` files are Unicode17. The [Unicode17 UCD ReadMe](https://www.unicode.org/Public/17.0.0/ucd/ReadMe.txt)
+selected `go1.27` files are Unicode 17. The [Unicode 17 UCD ReadMe](https://www.unicode.org/Public/17.0.0/ucd/ReadMe.txt)
 says **© 2025 Unicode®, Inc.**, SHA256
 `9fe1a90bd32659d7953616283dc2bffaa165518aae9ace026040c42c559ba606`.
 No CLDR language tables are selected in the shipping graph.
@@ -79,9 +79,9 @@ none are treated as substitutes for the separate Unicode grant.
 
 The [security-pin review](go1273-security.md) independently remeasured both shipping
 targets using actual Go 1.27.3 selected source files and compared them byte-for-byte
-with Go 1.27.2. All four Unicode17 tables above, Go LICENSE/PATENTS, every selected
+with Go 1.27.2. All four Unicode 17 tables above, Go LICENSE/PATENTS, every selected
 stdlib-vendor legal grant and the extracted selected-source notice bundle are
-unchanged. Both Unicode grants and uniseg Unicode15 tables remain unchanged.
+unchanged. Both Unicode grants and uniseg Unicode 15 tables remain unchanged.
 The earlier Go 1.27.2 measurements above remain historical evidence; current
 packager/consumer table provenance keys name exactly Go 1.27.3. No new Unicode
 version, guessed copyright year, notice omission or relaxed hash pin is introduced.

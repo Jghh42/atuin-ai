@@ -3,7 +3,7 @@
 This candidate enables durable private continuation in the normal native runtime.
 It is not a release, native Mac execution, live inference/account entitlement, or
 universal model/private-Codex compatibility claim. Final independent full-feature
-code review and delivery gates remain separate. [ADR0005](decisions/0005-durable-provider-continuation.md)
+code review and delivery gates remain separate. [ADR 0005](decisions/0005-durable-provider-continuation.md)
 and [exact public schema/provenance](provenance/reasoning-continuation.md) define
 the supported finite contract. No SDK runtime or copied SDK implementation is used.
 
@@ -53,11 +53,11 @@ DONE presence/metadata is authoritative and cannot be erased by final omission.
 
 Reasoning DONE checkpoints keep only fixed digests/IDs, not one large raw payload
 per item. All final replay bytes come from the bounded completed frame;128 separate
-large DONE frames followed by EOF/cancellation cannot accumulate128 encrypted blobs.
+large DONE frames followed by EOF/cancellation cannot accumulate 128 encrypted blobs.
 Bounds precede hidden summary/content index arithmetic, including empty paths.
 Ordinary slots also retain ONLY bounded per-kind data: message ID/kind plus fixed
 identity/checkpoint digests, never inapplicable name/call_id/arguments/content/raw
-metadata fields. Function-only names/IDs/arguments remain under existing32call/
+metadata fields. Function-only names/IDs/arguments remain under existing 32call/
 64name/256ID/256KiB argument limits. Raw legacy comparisons are preserved through
 domain-separated length-delimited identity/retransmission digests. Payload digests
 exclude text/content BYTES but authenticate their required presence/TYPE; missing
@@ -84,7 +84,7 @@ Protect this namespace like credentials; never share it for diagnosis.
 Snapshots retain only required provider items/reasoning/IDs/raw arguments,
 discarded leading text and authenticated public-history/span references. They do
 not archive user messages, results, contexts, instructions, tokens or raw SSE.
-Private record/envelope layout2 explicitly rejects old unreleased layout1;
+Private record/envelope layout 2 explicitly rejects old unreleased layout 1;
 there is no guessed migration. Key.bundle and credential JSON formats remain
 unchanged; projection/policy version advances. Each latest snapshot contains its own complete ancestry; there is no mutable
 session-latest pointer, plaintext whole-store cache or background retention worker.
@@ -92,7 +92,7 @@ session-latest pointer, plaintext whole-store cache or background retention work
 Hard limits are 2MiB **sealed including envelope**, 128 segments/1024 items/
 4096 parts+spans, 1MiB discarded leading text, 128 records, 64MiB actual total
 (including key/pending/crash residue), 132 scanned entries and four scope leases.
-Absolute lifetime is at most24h and inherits the oldest segment expiry; access or
+Absolute lifetime is at most 24h and inherits the oldest segment expiry; access or
 copy never renews it. Clock rollback over one minute fails closed. TTL is an
 authorization bound; stopped-runtime files are not erased by a timer.
 
@@ -164,11 +164,11 @@ shipping/companion stress checks failed/handled/replayed cycles, subsequent
 success, four near-limit scopes and unchanged memory/FD/heap/goroutine budgets.
 The corrected stress sampler fails closed on every read/thread/zero-coverage/join
 failure and requires successful per-PID baseline/final VmRSS+VmHWM observations;
-periodic20ms requests are not a guarantee of gap-free sampling. Four extra
-concurrent128×900KiB reasoning-DONE sequences PLUS four concurrent128-frame
+periodic 20ms requests are not a guarantee of gap-free sampling. Four extra
+concurrent 128×900KiB reasoning-DONE sequences PLUS four concurrent 128-frame
 ordinary-DONE streams (300KiB name+300KiB call_id+256KiB inapplicable arguments
 per frame) terminate without completed/tools and obey
-the SAME256MiB memory ceiling; companion post-GC checks remain separate. Earlier
+the SAME 256MiB memory ceiling; companion post-GC checks remain separate. Earlier
 fb9 passing stress receipts predate the corrected gate and are historical, not
 corrected-code clearance or evidence that a sampler failure actually happened.
 These synthetic receipts do not establish the cause of an earlier real-machine

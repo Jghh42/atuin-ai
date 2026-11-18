@@ -93,7 +93,7 @@ It is not subscription-login validation.
   neither implementation nor successful live proof.
 - Subsequent isolated probe validation passed fresh device login, streamed
   text, harmless tool continuation and refresh/restart on `gpt-6.1-sol`; see
-  [live evidence](../proofs/codex-phase0.md). That clears the revised Phase 0
+  [live evidence](../history/proofs/codex-phase0.md). That clears the revised Phase 0
   exit, not production integration. Credentials are retained privately; cleanup
   and remote revocation are not claimed. Existing Pi login is not the evidence.
 

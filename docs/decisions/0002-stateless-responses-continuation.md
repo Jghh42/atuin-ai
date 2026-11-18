@@ -70,6 +70,6 @@ one successful text response proves multi-turn support. The live proof must
 continue a tool call in a new request without `previous_response_id`, verify
 completion, and record whether additional state was needed. The isolated Codex
 probe passed on `gpt-6.1-sol` without opaque reasoning items in the tested tool
-response; see [live evidence](../proofs/codex-phase0.md). This does not prove other
+response; see [live evidence](../history/proofs/codex-phase0.md). This does not prove other
 models/transcripts, production integration or deferred SIWC. This ADR implements
 no server behavior.

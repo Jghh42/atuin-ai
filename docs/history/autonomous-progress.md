@@ -85,7 +85,7 @@ delivery; no extra live provider/auth checks are requested for this task.
 
 ## Current bundled catalog correction — 2026-10-17
 
-User-approved [bundled native Sol/Luna policy](bundled-catalog-policy.md) replaces
+User-approved [bundled native Sol/Luna policy](../catalog-policy.md) replaces
 historical discovery availability gating, not old test outcomes. Sol is first/
 default; Luna is selectable for authorized development with live proof pending.
 Valid application credentials and identity/lifecycle pinning remain required.
@@ -96,7 +96,7 @@ complete acceptance passed for source `a1af55411682264e09d1004e5ca8c53f8ef57f0c4
 Development-only commit/push is authorized; no tag or GitHub Release. The separate
 private retained-credential verifier has not produced live results: both-model
 native/current Mac/production gates remain open. [Acceptance receipt and immutable
-artifact boundary](bundled-catalog-policy.md#review-and-independent-acceptance-receipt).
+artifact boundary](../catalog-policy.md#review-and-independent-acceptance-receipt).
 Base `7981bb43647dacbab2a4b3d77c07a80cca5c4b98` had all four CI families GREEN:
 Go39015864252, package39015864170, compat39015864214, resources39015864201.
 Those receipts do not validate this uncommitted patch. Older progress below is
@@ -107,7 +107,7 @@ and delivery before moving on. This file distinguishes code from live gates.
 
 | Phase | Status / evidence |
 | --- | --- |
-| 0 | Historical isolated native login, `gpt-6.1-sol` streamed text/tool full-history replay and refresh/restart PASSED; production integration not implied. [Evidence](../proofs/codex-phase0.md). Independent SIWC alternative remains blocked. |
+| 0 | Historical isolated native login, `gpt-6.1-sol` streamed text/tool full-history replay and refresh/restart PASSED; production integration not implied. [Evidence](proofs/codex-phase0.md). Independent SIWC alternative remains blocked. |
 | 1–2 | Historical bounded shell and decoder completed; static catalog/8080 assumptions now superseded by Phase 3a, not retroactively claimed discovery behavior. [Phase 2](phase2-status.md). |
 | 3 | Prompts/tools/safety implemented, no tool emission. [Checkpoint](phase3-status.md). |
 | 3a | Independently reviewed implementation checkpoint, cleared for authorized direct-main delivery. Native HTTP discovery/required-field decoding demonstrated, but eligible live catalog **NOT PASSED**: returned catalog omits replay-proven `gpt-6.1-sol`. Injected tests and independent verification pass. Production credential wiring deferred to 7; full phase exit is not claimed. [Checkpoint](phase3a-status.md). |
@@ -382,7 +382,7 @@ generation 3; a NEW process passed post-refresh text/tool/replay/call correlatio
 Exactly six inference generations total, no retries, no login/logout/discovery
 and no repository/runtime changes from that probe check. This is coordinator-
 supplied sanitized evidence, not a repeat run by the documentation writer.
-[Evidence](../proofs/codex-retained-probe-2026-10-16.md).
+[Evidence](proofs/codex-retained-probe-2026-10-16.md).
 
 It is NOT fresh production login, production refresh/store validation or an
 eligible-catalog pass. Both production live lifecycle and live eligible catalog
@@ -480,7 +480,7 @@ also passed full check/build and repeated race tests. No new review findings.
 - `go run ./cmd/codex-proof discover --approve-live`: exit 1, **NOT PASSED**
   eligible-catalog gate. Historical safe report: native HTTP 200; required
   field/type decoding succeeded (not full metadata validation); one model;
-  integer priority; proven model absent. [Redacted evidence](../proofs/codex-discovery-phase3a.md).
+  integer priority; proven model absent. [Redacted evidence](proofs/codex-discovery-phase3a.md).
 
 Source pin: OpenAI Codex `96eb400d1231f0199e96f640c740096087cf3e9b`, hashes and
 retained license/NOTICE in [provenance](../provenance/codex-discovery.md).
@@ -494,7 +494,7 @@ isolated native credential. It failed before text proof completed (all proof
 booleans false); no tool/continuation proof passed, no candidate ID was retained,
 and no model was enabled. No retries or alternate candidates were attempted.
 The precise initial failure classification was not retained and is not guessed.
-The live gate remains **NOT PASSED**. [Bounded replay evidence](../proofs/codex-discovered-replay-followup.md).
+The live gate remains **NOT PASSED**. [Bounded replay evidence](proofs/codex-discovered-replay-followup.md).
 Follow-up `make check`, `make build`, and `git diff --check`: PASS.
 
 ## Open blockers / decisions

@@ -83,7 +83,7 @@ raw ExecStart struct path/argv printer:
 Environment assignment values do not perform dollar expansion. Their unit
 encoding keeps `$` literal; their SHOW representation may quote/escape it as
 `\$`. The bounded string-array decoder accepts literal escaped dollar/backtick,
-without any expansion. The synthetic quoter is tested against official flags0
+without any expansion. The synthetic quoter is tested against official flags 0
 snapshot vectors. This is not a general shell or arbitrary command decoder.
 
 ## Exact reviewed public file hashes

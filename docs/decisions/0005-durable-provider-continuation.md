@@ -34,7 +34,7 @@ No dependency graph, mutable session-latest pointer or whole-store plaintext cac
 Private values contain only unexported opaque payload pointers, with no public
 payload fields. Constructors clone mutable bytes/slices and nested ownership;
 only deliberate trusted codec/accessor paths read payloads. Formatter methods
-alone are insufficient: Go1.27 invalid `%w` diagnostics bypass them recursively.
+alone are insufficient: Go 1.27 invalid `%w` diagnostics bypass them recursively.
 Adversarial tests therefore cover values/pointers/nil/zero and nested containers,
 ordinary/invalid verbs, JSON and both slog handlers, including raw-byte decimal/
 hex/base64 encodings and private identities/custom value contexts. Unsupported
@@ -93,7 +93,7 @@ Overflow/interleaving is a protected projection failure, not legacy normalizatio
 
 ### Review corrections: finite ordinary metadata and checkpoint memory
 
-Private unreleased record/envelope layout2 (aic-record2/aic-sea2) rejects layout1;
+Private unreleased record/envelope layout 2 (aic-record2/aic-sea2) rejects layout 1;
 projection/policy versions advance without changing key.bundle/credential JSON or
 public handles. Required completed message status/empty annotations, nullable
 phase and supported empty logprobs are preserved by explicit codec metadata.
@@ -106,23 +106,23 @@ lost during protected replay. Exact same-pin public schema facts are in provenan
 
 Reasoning DONE retains only bounded identity/digest checkpoints, never one large
 encrypted/summary/content snapshot per slot. Completed replay data comes from the
-single bounded final frame; four128×900KiB-DONE streams followed by EOF remain
-within the unchanged256MiB production budget. All hidden indices are bounded
+single bounded final frame; four 128×900KiB-DONE streams followed by EOF remain
+within the unchanged 256MiB production budget. All hidden indices are bounded
 BEFORE arithmetic/lookup/empty-text fast paths. These are CODE corrections, not
-new architecture or a weakening of shared128part/frame/storage limits.
+new architecture or a weakening of shared 128part/frame/storage limits.
 Ordinary slots likewise construct only bounded per-kind checkpoints, never retain
 inapplicable message call strings/arguments/raw slices; legacy identity/ADDED
 retransmission comparisons survive as domain-separated fixed digests. Required
 text/content presence and TYPE are authenticated separately from excluded payload
 bytes. All authoritative DONE failures accumulate; all metadata failure flags
 are monotonic ORs, so missing later fields cannot clear an earlier invalid value.
-Four additional ordinary128-frame composite-DONE streams share the SAME budget.
-These parser-only corrections do not change private layout2/key/credential formats.
+Four additional ordinary 128-frame composite-DONE streams share the SAME budget.
+These parser-only corrections do not change private layout 2/key/credential formats.
 
 ### Storage, resources and time
 
-All directories are euid-owned exactly0700; files are regular, single-link,
-euid-owned exactly0600. Use descriptor-relative nofollow/nonblocking opens and
+All directories are euid-owned exactly 0700; files are regular, single-link,
+euid-owned exactly 0600. Use descriptor-relative nofollow/nonblocking opens and
 fstat. Only fixed key, canonical random snapshot and owned pending filenames;
 never a client/provider path. Unknown/unsafe entries are not deleted recursively.
 Read-only diagnostics never acquire/create/prune the continuation child.
@@ -136,7 +136,7 @@ Prune authenticated expired records then oldest creation/snapshot tie-break when
 capacity requires it, one plaintext record at a time. No access-time LRU writes.
 24h absolute expiry is MINIMUM inherited expiry, never renewed by access/copy.
 
-Accept checked UTC millisecond years2020..9999. Persist increasing high-water
+Accept checked UTC millisecond years 2020..9999. Persist increasing high-water
 BEFORE protected use; effective time is max(wall,persisted,in-process atomic floor).
 Rollback >1minute fails closed. This cannot detect unobserved clock manipulation
 or restored whole-filesystem backups. TTL is authorization, not background secure
@@ -177,7 +177,7 @@ and closes dependent resources BEFORE releasing credential flock.
 
 The pinned client automatically windows at **200000 serialized UTF8 BYTES**,
 freezing one first turn plus whole-turn tail. Strict full-prefix binding can fail
-BEFORE24h/size limits when that window changes a retained protected prefix.
+BEFORE 24h/size limits when that window changes a retained protected prefix.
 Changed policy/capability/model/session or edited retained history also fails
 before POST. Require genuinely NEW chat, never ignore window markers, match an
 arbitrary suffix or infer a safe reset from a new user message. No universal

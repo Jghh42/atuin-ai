@@ -37,7 +37,7 @@ retry, model fallback, executable partial batches or invented completion.
 ## Metadata and proof boundaries
 
 Public installed Pi AI 1.1.0 built-in data contains both exact IDs with
-`contextWindow: 272000`, `maxTokens: 128000`; [artifact hashes and attribution](../provenance/pi-codex.md#bundled-catalog-reference-2026-10-17).
+`contextWindow: 272000`, `maxTokens: 128000`; [artifact hashes and attribution](provenance/pi-codex.md#bundled-catalog-reference-2026-10-17).
 These are reference metadata, not permission, entitlement or a capacity promise.
 The existing **180000 estimated-input-token cap is unchanged**. It does not
 promise simultaneous 180k input plus 128k output. Original concise descriptions
@@ -103,4 +103,4 @@ generations, peak four, and **zero automatic remote catalogs**. The old 15 reque
 were first-list discovery in 15 fresh process/cache lifetimes; local bundled
 metadata removes those GETs rather than replacing workloads or padding counts.
 Explicit positive/negative TLS catalog wire tests remain separate and intact.
-See [resource provenance](../provenance/resource-lifecycle.md).
+See [resource provenance](provenance/resource-lifecycle.md).

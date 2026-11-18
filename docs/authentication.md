@@ -1,6 +1,6 @@
 # Authentication: initial Codex path and deferred SIWC
 
-> **Current policy:** [bundled Sol/Luna catalog](plans/bundled-catalog-policy.md)
+> **Current policy:** [bundled Sol/Luna catalog](catalog-policy.md)
 > supersedes historical remote-discovery availability gating below. Valid
 > application credentials remain mandatory. Luna is a development option with
 > live proof pending; both-model native/current Mac/production gates block release.
@@ -20,7 +20,7 @@ fold fixes plus formatter hardening. Both independent re-reviews cleared those
 fixes with no new blockers; independent post-fix verification also passed. Fresh
 production login/live lifecycle is **NOT PASSED**, and the live eligible catalog
 remains **NOT PASSED**. The isolated [`cmd/codex-proof`](codex-proof.md) outcomes,
-including a [fresh retained-session recheck](proofs/codex-retained-probe-2026-10-16.md),
+including a [fresh retained-session recheck](history/proofs/codex-retained-probe-2026-10-16.md),
 are PROBE evidence only; no proof-store or third-party credentials are imported. The SIWC harness is a separate deferred experiment.
 
 ## Attended setup
@@ -82,7 +82,7 @@ it for missing login only after explicit YES. New-binary attended logout also
 removes safely owned continuation data without parsing a corrupt key; failures
 remain failures, not durable-deletion success claims.
 
-For a changed/omitted protected transcript or automatic200000-byte CLI window,
+For a changed/omitted protected transcript or automatic 200000-byte CLI window,
 start a NEW chat (`/new`). This cannot repair global key corruption/loss with
 existing records; stop serve and use attended new-binary logout/login with
 consent. No automatic reauthentication/manual credential edits. Stable v0.1.0
@@ -105,12 +105,15 @@ source unavailability during closing does not mean shutdown is already complete.
 
 Before ANY external refresh, a secret-free `intent.json` is atomically written,
 file-synced, renamed and directory-synced. It overrides the old token record on
-restart. There is exactly one refresh attempt: timeout/cancellation, ambiguous
-transport failures, invalid_grant, account change, missing/unchanged replacement
-refresh token or post-rotation persistence failure require explicit reauthentication.
-If intent persistence fails BEFORE HTTP, no refresh was sent; restart may safely
-retain the prior session in that case. Old refresh tokens are NEVER retried
-after an ambiguous rotation. The intent also
+restart. There is exactly one refresh attempt per intent. Timeout/cancellation,
+ambiguous transport failures, invalid_grant, account change, missing/unchanged
+replacement refresh token or post-rotation persistence failure require explicit
+reauthentication. Failures that provably happened before any request byte
+reached the authorization server (DNS, connect, proxy CONNECT or TLS handshake
+rejection) are not ambiguous: the old session is durably restored under the
+intent's generation and a later request retries it. If intent persistence fails
+BEFORE HTTP, no refresh was sent; restart may safely retain the prior session in
+that case. Old refresh tokens are NEVER retried after an ambiguous rotation. The intent also
 covers explicit login and logout. Starting fresh login makes the previous local
 session unavailable even if approval is subsequently cancelled.
 
@@ -252,7 +255,7 @@ source review before any request/validation change, never guessed header probes.
 - [x] Obtain explicit approval for a fresh, isolated device login and small
   ChatGPT Business plan usage. Keep existing Pi/Codex sessions untouched.
 - [x] Complete fresh isolated device login and save credentials; a separate
-  process loaded the saved record. See [live evidence](proofs/codex-phase0.md).
+  process loaded the saved record. See [live evidence](history/proofs/codex-phase0.md).
 - [x] Complete streamed text through an explicit successful terminal event on
   `gpt-6.1-sol`. Cancellation/error paths have fake-server/unit coverage; this
   is not a live cancellation test.
@@ -284,7 +287,7 @@ The user is now available and has authorized their own login, its automatic
 discovery and the initial serve/models workflow. Both security-fix re-reviews
 and independent post-fix verification are cleared; the coordinator will invite
 the user to run the flow in their own terminal. No outcome is inferred here.
-[Exact bounded attended login/catalog commands](plans/phase7-attended-login-handoff.md)
+[Exact bounded attended login/catalog commands](history/phase7-attended-login-handoff.md)
 are instructions, not executed-test evidence. The user must type login in their
 OWN controlling terminal without capture or sharing the device code. The handoff
 keeps unavailable discovery blocked and does not start Phase 8 real-CLI testing.

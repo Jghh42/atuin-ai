@@ -1,6 +1,6 @@
 # Phase 7 — production native Codex credential lifecycle
 
-> **Current catalog correction (2026-10-17):** [authorized bundled Sol/Luna policy](bundled-catalog-policy.md)
+> **Current catalog correction (2026-10-17):** [authorized bundled Sol/Luna policy](../catalog-policy.md)
 > supersedes discovery-driven runtime availability below. Credential preflight,
 > lifecycle revisions and account/epoch inference pinning remain mandatory.
 > Login no longer requests metadata and reports upstream acceptance unverified.
@@ -313,7 +313,7 @@ commit/CI result belongs in its delivery report, not inside its own commit.
   [Bounded attended login steps](phase7-attended-login-handoff.md) are prepared
   for the coordinator's user-owned-terminal invitation. Any later live outcomes
   are recorded separately, not inferred here. The separately authorized
-  [fresh retained-PROBE recheck](../proofs/codex-retained-probe-2026-10-16.md)
+  [fresh retained-PROBE recheck](proofs/codex-retained-probe-2026-10-16.md)
   passed six generations and one refresh (generation 2 → 3), with no login,
   logout or discovery. Neither it nor historical Phase 0 clears production gates.
 - **Live eligible catalog: NOT PASSED.** The catalog omitted replay-proven

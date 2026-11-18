@@ -6,24 +6,24 @@ Bubblewrap selector. Companion TCP partial-write witnessing adapts this project'
 `internal/httpserver/native_cancel_test.go` / `native_cancel_trace_test.go`
 method, not an upstream implementation. No new dependency, vendored provider,
 Pi/Codex subprocess, production profiling endpoint or runtime flag is introduced.
-[Checkpoint / first failures](../plans/phase9b-status.md).
+[Checkpoint / first failures](../history/phase9b-status.md).
 
 ## Independent local acceptance / source-identity boundary
 
 BOTH focused measurement/isolation reviews CLEARED the corrected closed-eight-
 input snapshot, constructor rollback, actual wire/confidentiality tests, CI
 failure propagation and finite retention/sampling claims. Independent make-check/
-build/diff,10+10 tests/helper+http race20, BOTH-target/TWO-path package, ENTIRE
-resource FULL PASS and postrun36 tests/32 mutations/shipping smoke/current
+build/diff,10+10 tests/helper+http race 20, BOTH-target/TWO-path package, ENTIRE
+resource FULL PASS and postrun 36 tests/32 mutations/shipping smoke/current
 consumer verification PASSED on source inventory
 `08573867a21ea1d37fe03d43ef95e4fe6a3f3c7bfa093392afa810094beb0046`.
 The immutable prior-input artifacts are `dist/phase9b-independent-final-package/`
 and `dist/phase9b-independent-final-evidence/`; exact hashes and measurements are
-in the [acceptance receipt](../plans/phase9b-status.md). Earlier unsafe5fb snapshots
+in the [acceptance receipt](../history/phase9b-status.md). Earlier unsafe 5fb snapshots
 remain superseded; the intentionally interrupted verifier RUNNING report is NOT
 converted into a full PASS.
 
-This documentation receipt changes holistic source identity. Never relabel085
+This documentation receipt changes holistic source identity. Never relabel 085
 artifacts as a later commit: exact-HEAD CI must build/measure its OWN source and
 DEVELOPMENT artifact. Local independent acceptance does not imply hosted CI,
 native Mac execution, production live/catalog or release/publication acceptance.
@@ -33,8 +33,8 @@ profiling endpoint or timeout change is part of this receipt.
 
 ## Reproduce (Linux amd64)
 
-Requires exact Go1.27.3, Python3.9+ stdlib, OpenSSL, GNU `/usr/bin/time`, and
-usable unprivileged Bubblewrap0.11.1 user/PID/mount/**network** namespaces.
+Requires exact Go 1.27.3, Python 3.9+ stdlib, OpenSSL, GNU `/usr/bin/time`, and
+usable unprivileged Bubblewrap 0.11.1 user/PID/mount/**network** namespaces.
 Missing or restricted prerequisites **FAIL**, never green-skip:
 
 ```sh
@@ -53,8 +53,8 @@ there is no custom resource-build variant. Source changes require a fresh
 package; never edit a manifest or relabel an earlier snapshot.
 
 The explicit `--case` diagnostic selector always produces **PARTIAL**, even if
-its cases pass. Full `make resource` includes real60s inactivity +300s generation
-cases, so takes about7minutes. Do not put that duration in every Go unit test.
+its cases pass. Full `make resource` includes real 60s inactivity +300s generation
+cases, so takes about 7minutes. Do not put that duration in every Go unit test.
 The separate `Offline shipping resource gates` PR/push/manual CI job provisions
 checksum-pinned Bubblewrap in a private prefix, uses Phase8's exact-path hosted-
 job-only AppArmor userns setup when needed, always removes that profile, and
@@ -121,7 +121,7 @@ no host HOME, global CA, privileged host mount, broad permission bypass or host
 namespace policy change is used.
 
 Private CA keys/certs and fake JWT/account metadata are generated at runtime
-under0700 scratch (keys0600), never committed/uploaded. Short-lived setup helper
+under 0700 scratch (keys 0600), never committed/uploaded. Short-lived setup helper
 calls the reviewed Manager.Login using a deny-default synthetic RoundTripper
 with exact device/exchange payload checks; no network transport exists there.
 It closes the real durable secure store before shipping `serve` acquires the
@@ -135,9 +135,9 @@ Each first warms native login-record load, local bundled catalog, real TLS chat 
 64KiB output. No shipping forced GC or race instrumentation.
 
 - Normal:16384 decoded history characters,65536 output bytes per request.
-- Near:exactly4193280 wire bytes (4MiB-1KiB), roughly699k decoded meaningful
+- Near:exactly 4193280 wire bytes (4MiB-1KiB), roughly 699k decoded meaningful
   history characters, mostly JSON `\u0061` escapes. Valid JSON/transcript,
-  below180000 estimated tokens; not whitespace, malformed/rejected padding or
+  below 180000 estimated tokens; not whitespace, malformed/rejected padding or
   a purely synthetic provider helper. Distinct histories for all four requests.
 - Four requests stop ONE BYTE short of their bodies. Owned server socket RX
   and driver TX queue consumption witnesses precede a fifth request's503/busy,
@@ -147,20 +147,20 @@ Each first warms native login-record load, local bundled catalog, real TLS chat 
 - Fixture next sends bounded call argument events and text. All four clients
   observe their projected text after preceding argument events, while fixture
   still holds all four completion snapshots. Only then release completions.
-  The100ms dwell is solely for20ms sampling AFTER observable barriers, never a
+  The 100ms dwell is solely for 20ms sampling AFTER observable barriers, never a
   substitute for joins/dispatch/cancellation evidence.
-- Near completed event is1047552 bytes (1MiB-1KiB),32 schema-valid write_file
-  calls, one argument about254KiB and31 about15KiB, plus~300KiB text, fitting the
+- Near completed event is 1047552 bytes (1MiB-1KiB),32 schema-valid write_file
+  calls, one argument about 254KiB and 31 about 15KiB, plus~300KiB text, fitting the
   ACTUAL one-event final snapshot budget. No local tools are executed. Counts,
   per-call maximum, frame/projected/request/provider bytes are reported.
-- Separate hard rejects:valid4194305-byte request413/no generation; over1MiB SSE
-  event, over256KiB arguments and33calls produce exactly one terminal error,
+- Separate hard rejects:valid4194305-byte request 413/no generation; over 1MiB SSE
+  event, over 256KiB arguments and 33calls produce exactly one terminal error,
   no done/executable calls/retry. These are not near-limit successes.
 
 ## Lifetime / cancellation / retention
 
-Shipping process:5+5 warmups, then100 successful completions AND100 actual client
-TCP disconnects, plus one finite16MiB-output nonreading client. Companion process
+Shipping process:5+5 warmups, then 100 successful completions AND 100 actual client
+TCP disconnects, plus one finite 16MiB-output nonreading client. Companion process
 independently repeats the same counts. Every request has exactly one generation;
 all fixture handlers, samplers and child processes are joined. Ownership is
 registered IMMEDIATELY after spawn, before PID discovery/descriptor wrapping/
@@ -171,29 +171,29 @@ sampler start, actual Thread.start, spawn and second-pipe failures; assert group
 FD/sampler cleanup and an unrelated process remains alive. Fresh-state file
 metadata must stay unchanged (no transcripts), owned FD/socket counts cannot grow.
 
-Disconnect cleanup is bounded to1s from the OBSERVED client socket close to
+Disconnect cleanup is bounded to 1s from the OBSERVED client socket close to
 external upstream EOF. Shipping nonreading evidence bounds default backpressure
-completion around5s but does NOT invent an observed server write error. The
+completion around 5s but does NOT invent an observed server write error. The
 companion's test-only TCP listener bounds send buffering and records actual
 partial `net.Conn.Write` timeout start/end/deadline/requested/written bytes.
 Inherited-pipe witness confirms DEFAULT five-second deadline and upstream close
-within1s from that observed error. Realtime nanoseconds are same-host; monotonic
+within 1s from that observed error. Realtime nanoseconds are same-host; monotonic
 elapsed clocks separately bound the scenario. Existing accelerated real-TCP unit
 cancellation tests remain additional evidence, not default-duration substitutes.
 
-Real shipping timeout cases:HTTPS response HEADERS OPEN/body idle until60-second
-inactivity; comment heartbeat every1s until300-second generation deadline. Each
+Real shipping timeout cases:HTTPS response HEADERS OPEN/body idle until 60-second
+inactivity; comment heartbeat every 1s until 300-second generation deadline. Each
 must yield one generic terminal error, no done/retry, upstream close and a joined
 handler. Both signals separately cover authenticated idle, empty idle, owned-
 socket-consumed empty partial body, and four active generations; listener must
-refuse admission within1s, process exit/drain <=6s and a new process reacquire
+refuse admission within 1s, process exit/drain <=6s and a new process reacquire
 the same lifetime store lock. No unrelated host process is signaled.
 
 Companion alone uses runtime.NumGoroutine, runtime/metrics and MemStats after
-matched forced-GC snapshots at warmed baseline and EVERY10 paired cycles through
-100. Goroutine allowance2, heap512KiB/512objects, FD/socket allowance0 are fixed
-small jitter/cache bounds, independent of the256MiB RSS gate. End-to-baseline and
-sustained monotone-tail growth beyond these bounds fail. Raw11-snapshot sequences
+matched forced-GC snapshots at warmed baseline and EVERY 10 paired cycles through
+100. Goroutine allowance 2, heap 512KiB/512objects, FD/socket allowance 0 are fixed
+small jitter/cache bounds, independent of the 256MiB RSS gate. End-to-baseline and
+sustained monotone-tail growth beyond these bounds fail. Raw 11-snapshot sequences
 are retained; nonzero bounded heap changes are explicitly visible, not claimed
 as zero-byte retention or proof of a plateau. The prior +399-object sequence trends
 up despite dips; it does NOT establish that growth eventually stops. Exact
@@ -208,9 +208,9 @@ FD/socket/thread snapshots only—NEVER companion heap/goroutine numbers.
 
 `run.py` observes GNU time's single server child PID, samples ONLY that PID's
 `/proc/PID/status` VmRSS/VmHWM/Threads and owned fd/socket inode counts with a
-REQUESTED20ms period, NOT a guaranteed interval. Each process report records
+REQUESTED 20ms period, NOT a guaranteed interval. Each process report records
 `max_observed_sample_interval_ms` from actual sample timestamps (e.g. prior near
-sampling had~53.5ms gaps); fixed20ms wording must not imply those gaps were absent.
+sampling had~53.5ms gaps); fixed 20ms wording must not imply those gaps were absent.
 It does not dump other processes, socket addresses or request bodies. GNU
 `time -v` supplies independent final kernel maxRSS of the post-exec server child.
 Outer wrapper wait4 usage is recorded as **NOT_SERVER**, because direct Python
@@ -227,7 +227,7 @@ Report includes kernel/CPU/affinity/page size/physical RAM, own cgroup ancestor
 limits, rlimits, Go pin, package build flags/environment, binary/helper/Bubblewrap
 hashes, source inventory, numeric requests/concurrency/bytes, all hard/soft
 outcomes, cancellation/timeout/signal/restart/retention sequences and cleanup.
-Full suite must have exactly446 generations +0 automatic remote catalogs, peak4 concurrency and
+Full suite must have exactly 446 generations +0 automatic remote catalogs, peak 4 concurrency and
 zero active fixture handlers after cleanup. The bundled policy removes the old
 15 metadata GETs (one per fresh process/cache lifetime), without changing any
 446-generation workload, barrier, timeout or budget. Explicit positive/negative
@@ -240,7 +240,7 @@ attestation. Final exact source/package hashes belong in generated manifests
 and the external review handoff, avoiding a self-referential source inventory.
 CA/fake state/scratch and owned child processes disappear before return. Only
 safe numeric evidence and legally complete development assets may be uploaded.
-Independent review and local full085 verification are CLEARED/PASSED, within
+Independent review and local full 085 verification are CLEARED/PASSED, within
 the stated finite resolution. Native Mac execution, real-account/provider/live
 eligible discovery, ALL FOUR exact-HEAD hosted CI families and explicit
 publication approval remain separate release gates.
@@ -249,8 +249,8 @@ publication approval remain separate release gates.
 
 `make reasoning-resource BINARY=/absolute/development-linux-binary
 CLI=/absolute/pinned-atuin OUT=/absolute/fresh-evidence` is an ADDITIONAL gate,
-not a modification/substitute for the original446/0catalog/4peak/23-process suite
-or its real60s/300s default timeouts. It uses a distinct fd-pinned read-only set
+not a modification/substitute for the original 446/0catalog/4peak/23-process suite
+or its real 60s/300s default timeouts. It uses a distinct fd-pinned read-only set
 of eight required public inputs, no checkout/private HOME mount, and a fresh
 loopback-only/no-route namespace plus denied remote-connect witness. The same
 production composition, native HTTPS CONNECT/TLS fake, synthetic saved login and
@@ -259,32 +259,32 @@ default transport/timeouts are used. No real provider/auth/service operations.
 Shipping exercises eight missing-state failures, eight handled executable batches,
 eight inherited executable replays, FOUR subsequent terminal successes, then four
 simultaneous near-limit scopes across two protected generations. Initial request
-wire is4MiB-1024; each near output has600k encrypted bytes,200k discarded leading
-bytes and160k raw escaped Unicode arguments. Unicode grapheme estimation retains
-the unchanged180000 ceiling; second self-contained snapshots approach2MiB.
+wire is 4MiB-1024; each near output has 600k encrypted bytes,200k discarded leading
+bytes and 160k raw escaped Unicode arguments. Unicode grapheme estimation retains
+the unchanged 180000 ceiling; second self-contained snapshots approach 2MiB.
 Exact original items/args/results/order are checked, including no-new-reasoning
 protected inheritance. Disk totals/record limits and zero residual native activity
-are asserted. Max sampled VmRSS/VmHWM remains under256MiB, warmed normal HWM64MiB,
+are asserted. Max sampled VmRSS/VmHWM remains under 256MiB, warmed normal HWM 64MiB,
 and descriptors return to baseline. Four ADDITIONAL concurrent requests each
-send128 distinct900KiB encrypted DONE snapshots then EOF, never completed/tools;
-checkpoint state stays fixed-size rather than retaining128 payloads. Each current
+send 128 distinct 900KiB encrypted DONE snapshots then EOF, never completed/tools;
+checkpoint state stays fixed-size rather than retaining 128 payloads. Each current
 shipping/companion workload additionally exercises four simultaneous ordinary
-message-DONE streams,128frames each with300KiB inapplicable name+300KiB call_id+
-256KiB arguments; each is below1MiB and ends EOF/no tools. Individual per-field
+message-DONE streams,128frames each with 300KiB inapplicable name+300KiB call_id+
+256KiB arguments; each is below 1MiB and ends EOF/no tools. Individual per-field
 128-frame regressions account ALL reachable slot-owned bytes, not reasoning only.
-The current shipping/companion workload is44 generations. No shipping forced GC/race/GOMEMLIMIT tuning.
+The current shipping/companion workload is 44 generations. No shipping forced GC/race/GOMEMLIMIT tuning.
 The fail-closed sampler propagates every thread/read/permission/early-exit failure,
 requires nonzero per-actual-PID baseline and final VmRSS/VmHWM samples covering
 workload boundaries, and asserts bounded join termination on all cleanup paths.
-Periodic20ms is a requested cadence only, not a continuity guarantee. Current
+Periodic 20ms is a requested cadence only, not a continuity guarantee. Current
 kernel VmHWM observations bound the measured process peak. Nine mandatory fast
 synthetic sampler regressions run in normal make check, without new workload or
 budget allowances. Older fb9 stress passes did not establish this corrected gate;
 no claim is made that their sampler actually failed.
 
-A separately labeled resource-helper companion runs the same44-generation workload
+A separately labeled resource-helper companion runs the same 44-generation workload
 and post-cycle success, using existing test-only pipe GC snapshots to compare
-heap<=24MiB and baseline growth<=512KiB/512objects, goroutine growth<=2, FD growth0.
+heap<=24MiB and baseline growth<=512KiB/512objects, goroutine growth<=2, FD growth 0.
 Readiness refuses unprimed metrics, so removing/moving startup telemetry priming
 cannot emit READY and silently undercount the baseline. There is no production
 profiling/metrics endpoint or decrypted whole-store cache.

@@ -3,13 +3,13 @@
 `atuin-ai-server init [--config PATH] [--atuin-config PATH]` is the canonical
 setup command. There is no `install` alias or service-management CLI. The initial
 experimental **v0.1.0 is planned, not yet published at this checkpoint**;
-[release readiness and evidence](plans/release-v0.1.0.md) supersede earlier blanket
+[release readiness and evidence](history/release-v0.1.0.md) supersede earlier blanket
 release prohibitions. The user confirmed native macOS LaunchAgent startup,
 completed init and Atuin use on e27. **Real Linux systemd-user setup is still
 untested**, offered for an attended post-release laptop test. Synthetic service
 tests and cross-builds are not native Linux evidence.
 
-Earlier [review/acceptance receipts and failures](plans/init-status.md) remain
+Earlier [review/acceptance receipts and failures](history/init-status.md) remain
 historical, immutable evidence, not the identity of new release artifacts.
 Every new native attempt requires fresh explicit service/config/backup consent.
 [Exact v258 contract references and fixture boundaries](provenance/systemd-init.md).
@@ -81,7 +81,7 @@ Consent covers copying the current executable atomically to
   exit, 10-second throttle, umask 077. No LaunchDaemon or privileged domain.
 - **Linux:** `$XDG_CONFIG_HOME/systemd/user/atuin-ai-server.service`, falling back
   to `~/.config/systemd/user`. Enable under `default.target`, start in the USER
-  manager, restart on failure with 10-second delay, 3 starts/60 seconds, UMask0077.
+  manager, restart on failure with 10-second delay, 3 starts/60 seconds, UMask=0077.
   No system unit or automatic linger. A user manager normally starts at login;
   unattended boot persistence requires a **separate operator decision** about
   `loginctl enable-linger USER`, not something init runs or recommends via sudo.
@@ -92,7 +92,7 @@ INCLUDING the captured default `XDG_CONFIG_HOME=HOME/.config`; a user manager's
 different inherited value cannot silently select another application store.
 Supervisor commands have a minimal allowlisted environment (Linux runtime directory
 and user DBus socket included), fixed absolute executables/verbs, no shell,
-unchanged15-second budgets and16KiB TOTAL private stdout/stderr cap. Typed results
+unchanged 15-second budgets and 16KiB TOTAL private stdout/stderr cap. Typed results
 separate exit status, startup failure, cancellation and overflow; raw outputs are
 redacted and never printed. Cancellation targets only the new owned process group.
 No credentials are forwarded as environment variables. XML is escaped; systemd
@@ -194,7 +194,7 @@ stop it with Ctrl-C/SIGTERM before separate auth commands.
 Atuin **18.19** on macOS uses `~/.config/atuin/config.toml` (or
 `$XDG_CONFIG_HOME/atuin/config.toml`), **not** Go's macOS UserConfigDir. Official
 source `fb33978d9439ba7e97123c1adc932c6a74e3c8ae`, common utils config_dir
-lines109–113, has no ATUIN_CONFIG_DIR override in that common function. The
+lines 109–113, has no ATUIN_CONFIG_DIR override in that common function. The
 repository's newer pinned Atuin `4ca8b77c8a526b8c294eb864a2b74c95c685c983` source (`atuin-common/src/dirs.rs`,
 config_path/try_atuin_home) recognizes ATUIN_CONFIG_DIR, ATUIN_HOME and ~/.atuin.
 These are not silently treated as equivalent installed versions.
@@ -203,13 +203,13 @@ An explicit `--atuin-config` selects the file. Otherwise, safely inspect dedupli
 existing candidates from absolute explicit env roots, ~/.atuin, XDG and legacy
 ~/.config. Multiple existing files require an explicit path (even when newer
 Atuin would apply precedence). A sole existing candidate is NOT proof it is active:
-for example, a legacy file may be ignored when XDG points elsewhere, and18.19 does
+for example, a legacy file may be ignored when XDG points elsewhere, and 18.19 does
 not automatically use ~/.atuin. Without an installed-version probe, automatic
-selection requires BOTH known18.19 and pinned-newer resolution rules to agree on
+selection requires BOTH known 18.19 and pinned-newer resolution rules to agree on
 that sole existing path. Otherwise (including no existing file/new-file creation),
 require `--atuin-config PATH` for the installed version. No existing file is
 silently shadowed or edited merely because it is the only candidate. For the
-known18.19 macOS setup, explicitly select `$HOME/.config/atuin/config.toml`.
+known 18.19 macOS setup, explicitly select `$HOME/.config/atuin/config.toml`.
 
 Only these paths are authorized:
 
@@ -229,7 +229,7 @@ prints the token later. A declined login creates no token.
 
 `ai.model` remains **exactly as written**, including unknown choices or absence.
 All other values, comments and sections are retained. Validate UTF-8 BEFORE the
-TOML decoder (both UTF-16 BOM byte orders refuse). Bounded64KiB input/output,
+TOML decoder (both UTF-16 BOM byte orders refuse). Bounded 64KiB input/output,
 string/aggregate-aware statement spans and a NaN-aware semantic before/after
 comparison guard the surgical edit; there is no whole-file reencode. Existing
 authorized keys must have the expected scalar types (enabled boolean; endpoint/
@@ -241,7 +241,7 @@ manual three-key edit, preserving model; Hub protocol must be resolved manually.
 No history, sync, permissions, profile or shell file is touched.
 
 Existing safe regular single-link owned targets retain their mode; new config is
-0600 in new0700 directories. Symlinks/unsafe ancestors fail with manual instructions.
+0600 in new 0700 directories. Symlinks/unsafe ancestors fail with manual instructions.
 Changed existing files receive an exclusive same-directory `.atuin-ai-backup-*`
 **0600** copy before atomic synced replacement; backups may contain old API tokens
 and must stay private. Noop runs create no backup. Inode/content is compared
@@ -265,7 +265,7 @@ application login; do not import Pi, proof or another application's credentials.
    with both optional changes declined. A valid local login must be retained
    without device login, refresh or remote discovery. An expired refreshable
    record must not be replaced just for init. Never share private state/codes.
-2. Use `--atuin-config "$HOME/.config/atuin/config.toml"` for the known18.19 file.
+2. Use `--atuin-config "$HOME/.config/atuin/config.toml"` for the known 18.19 file.
    Review paths/semantics; consent to service only if desired. Verify launchctl
    print reports a running PID and localhost models responds normally. Stop/start
    with the commands above, and verify it no longer depends on the downloaded
@@ -285,8 +285,8 @@ application login; do not import Pi, proof or another application's credentials.
    controlling). Do not capture an attended login or run provider probes for this
    setup test. Linux service execution is a separate native user-manager test.
 
-Synthetic tests and CGO0 cross-builds are **not native LaunchAgent/systemd
+Synthetic tests and CGO_ENABLED=0 cross-builds are **not native LaunchAgent/systemd
 execution evidence**. Initial experimental release authorization now exists;
-publication still requires the [separate frozen release gates](plans/release-v0.1.0.md).
+publication still requires the [separate frozen release gates](history/release-v0.1.0.md).
 Do not weaken service ownership checks, retry unknown states or use sudo to make
 an unsupported Linux manager/GUI session appear successful.

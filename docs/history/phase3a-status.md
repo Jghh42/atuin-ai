@@ -1,7 +1,7 @@
 # Phase 3a checkpoint — discovered catalog, not production login
 
 > **Superseded availability policy (2026-10-17):** the user approved a
-> [bundled known Sol/Luna catalog](bundled-catalog-policy.md). Historical discovery
+> [bundled known Sol/Luna catalog](../catalog-policy.md). Historical discovery
 > outcomes below remain unchanged; remote replay-proof selection is now explicit
 > diagnosis only, not normal listing availability. Both-model native/current Mac/
 > production live gates remain release blockers. No retrospective proof is claimed.
@@ -44,7 +44,7 @@ lifecycle is included. This is not release ready.
 
 Exact OpenAI Codex commit and SHA-256 pins, retained license/NOTICE and design
 choices: [provenance](../provenance/codex-discovery.md).
-[Live evidence](../proofs/codex-discovery-phase3a.md): HTTP 200, required schema
+[Live evidence](proofs/codex-discovery-phase3a.md): HTTP 200, required schema
 field/type subset decoded, one model, no replay-proven `gpt-6.1-sol`. Historical
 `schema_validated:true` did not establish full metadata enum/ID/bounds/duplicate
 validation; this claim is corrected in the evidence, and shared full metadata
@@ -59,7 +59,7 @@ selected at most one actual visible candidate and failed before text proof
 completed. No alternate candidates/retries, local tool execution, raw metadata
 retention or eligibility expansion occurred. The exact initial failure cause
 was not retained; no unsupported inference is made from it. The live gate
-remains **NOT PASSED**. [Follow-up evidence](../proofs/codex-discovered-replay-followup.md).
+remains **NOT PASSED**. [Follow-up evidence](proofs/codex-discovered-replay-followup.md).
 
 ## Validation
 

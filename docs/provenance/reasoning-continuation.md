@@ -29,7 +29,7 @@ Generated types establish public shapes, not event ordering/private extensions.
 | response_reasoning_summary_text_done_event.py |c7c2ac5812e4b9999bf5059c39f73d6bbd983024|895/29|10–29|
 | response_reasoning_text_delta_event.py |c75caacedb4c7ce26d84b36b7dc600c9ea197de4|902/29|10–29|
 | response_reasoning_text_done_event.py |4dc39bb122aad9a031056ad0407d59513f34365a|842/29|10–29|
-| response_output_item.py |cd738d6512db45c24762619f665a8d9579f41d4b|11314/365|333–365 (reasoning342)|
+| response_output_item.py |cd738d6512db45c24762619f665a8d9579f41d4b|11314/365|333–365 (reasoning 342)|
 
 ### Independently fetched ordinary item schema (same immutable SDK pin)
 
@@ -86,7 +86,7 @@ this changes no sealed/public-history/key/credential format.
 Unreleased private codec/envelope is now aic-record2/aic-sea2 with explicit
 phase/caller/async/logprob presence scalars. Old layout is rejected, not migrated
 or decoded as the new format. Projection/policy versions advance; key.bundle
-(aic-key1), credential JSON, namespace and public90-byte handle framing do not.
+(aic-key1), credential JSON, namespace and public 90-byte handle framing do not.
 
 ### Item/part requiredness and replay transform
 
@@ -163,7 +163,7 @@ server-process restarts. That execution proves nothing about unknown installed
 builds or live/private provider behavior. Window marker is exactly:
 `[Earlier conversation context was omitted to fit within the context window. The conversation continues below.]`.
 Strict binding intentionally rejects changed protected prefixes after windowing,
-policy/model/session edits even below TTL/caps; see ADR0005 for /new vs attended
+policy/model/session edits even below TTL/caps; see ADR 0005 for /new vs attended
 global-key recovery and stable rollback with SAME login/NEW conversation.
 
 ## Behavioral public references and evidence boundary
@@ -174,7 +174,7 @@ global-key recovery and stable rollback with SAME login/NEW conversation.
   retention is distinct from mandatory tool-output continuation.
 
 No none/effort setting, private Codex extension, native/private-model success,
-October30 root cause, installed-client execution, universal all-turn support or
+October 30 root cause, installed-client execution, universal all-turn support or
 secure-erasure claim follows from this research. Synthetic fixtures are original
 facts-only test data. Enabled provider/parser/runtime/CLI validation belongs to
 `dist/reasoning-full-integration-validation-v3/`, not the CODE-HOLD534422/fb9 candidates

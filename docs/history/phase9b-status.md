@@ -1,6 +1,6 @@
 # Phase 9b — offline shipping resource / lifecycle review checkpoint
 
-> **Bundled catalog correction (2026-10-17):** [authorized policy](bundled-catalog-policy.md)
+> **Bundled catalog correction (2026-10-17):** [authorized policy](../catalog-policy.md)
 > removes 15 automatic metadata GETs (one per fresh catalog/process lifetime),
 > not generation work: full suite still requires 446 generations, peak four,
 > unchanged barriers/budgets and real 60s/300s defaults. Expected automatic

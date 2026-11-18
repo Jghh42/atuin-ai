@@ -47,16 +47,16 @@ selection, permissions, and execution of local file/shell/history tools.
 ## Go development candidate: opaque protected tool IDs
 
 The reverse-engineered reference facts below remain historical. The Go candidate
-adds [ADR0005 private continuation](../reasoning-continuation.md) without changing
+adds [ADR 0005 private continuation](../reasoning-continuation.md) without changing
 any JSON field/event/framing. For new protected executable exchanges, `tool_call.id`
-and subsequent `tool_use.id` / `tool_result.tool_use_id` are exact opaque90-byte
+and subsequent `tool_use.id` / `tool_result.tool_use_id` are exact opaque 90-byte
 `aic1_...` strings, NOT backend CallIDs or paths. Retain them unchanged, together
 with the complete issued batch and each actual result. Legacy unprotected IDs
 remain byte-for-byte backend IDs. Session UUIDs remain client conversation IDs,
 never provider response/session identifiers. No new endpoint, authentication,
 client option, fallback, retry or server tool execution is introduced. Protected
 history/policy/window loss fails generically before POST; finite retention and
-attended recovery differ from the stateless reference as documented in ADR0005.
+attended recovery differ from the stateless reference as documented in ADR 0005.
 
 ## Client configuration
 
@@ -182,7 +182,7 @@ account/provider/reauthentication-bound, fresh for 15 minutes, and may survive
 only transient failures up to one hour since successful validation. Missing
 login, empty eligibility or failed initial discovery returns JSON 503, not a
 placeholder catalog. Production login wiring remains Phase 7. See
-[Phase 3a status](../plans/phase3a-status.md).
+[Phase 3a status](../history/phase3a-status.md).
 
 Source: [server model response](https://github.com/atuinsh/atuin-ai-core/blob/565877e97ed3ff4840481b8d47e12eb2f9854039/src/atuin_ai_core/http/controller.gleam#L63-L100) and [client model types](https://github.com/atuinsh/atuin/blob/4ca8b77c8a526b8c294eb864a2b74c95c685c983/crates/atuin-ai/src/models.rs#L15-L51).
 

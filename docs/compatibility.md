@@ -4,7 +4,7 @@ The pinned [source manifest](provenance/upstream-sources.json) and existing
 [protocol specification](specs/atuin-ai-server-api.md) define the initial
 client/server/core research baseline. These are exact source commits, not a
 promise of support for a released Atuin version or all historical clients.
-The implementation plan's narrower v1 choices govern the new design: IPv4
+This project's narrower v1 choices govern the design: IPv4
 loopback only, a required local client Bearer token, no server tools, one upstream generation
 per Atuin request, full-history replay and rejection of mixed suggestion/tool
 batches. Reference-server options described in the specification are not
@@ -141,13 +141,13 @@ contains independently written synthetic before/after-user-turn regressions,
 including raw numeric spellings and ordinary paired local calls. This is not
 live proof or real-CLI validation; the live eligible-catalog gate remains NOT PASSED.
 
-## Private reasoning continuation candidate (ADR0005)
+## Private reasoning continuation candidate (ADR 0005)
 
 [The finite development contract](reasoning-continuation.md) supersedes the
 Phase4 ID=no-hidden-state exception ONLY for new protected executable exchanges.
 Legacy IDs/numbers, suggestion-as-text, one generation, full K/result order and
 unchanged public framing remain. Supported reasoning is private, never ordinary
-text/log output. A prepared transaction authenticates every retained90-byte
+text/log output. A prepared transaction authenticates every retained 90-byte
 `aic1_...` handle, restores the original full output once and maps actual result
 order to original backend CallIDs. Raw Stream/Open/Project reject marked history.
 Protected arguments recursively require canonical decimal signed64/unsigned64
@@ -155,8 +155,8 @@ integers; the pinned Rust fixture verifies both extremes without float rounding.
 
 Strict stable-policy/full-prefix binding intentionally rejects model/session/
 capability/environment/history/window changes before POST; a new user message is
-not a reset. The pinned200000 **serialized UTF8-byte** window (one frozen first
-turn+whole-turn tail) can invalidate a prefix earlier than24h/2MiB. Use a NEW chat
+not a reset. The pinned 200000 **serialized UTF8-byte** window (one frozen first
+turn+whole-turn tail) can invalidate a prefix earlier than 24h/2MiB. Use a NEW chat
 for that loss, not suffix matching or forced fallback. `/new` cannot repair a
 corrupt global key: use attended new-binary logout/login only with consent.
 Credential JSON/config remain stable-readable, but rollback needs a NEW
@@ -173,13 +173,13 @@ live native acceptance, universal windows or an earlier real-machine root cause.
 Before importing, follow the [third-party process](provenance/README.md).
 Before claiming model support, complete the selected-backend
 [live validation](authentication.md). The isolated Codex proof covers only the
-model/transcript documented in [its report](proofs/codex-phase0.md), not real
+model/transcript documented in [its report](history/proofs/codex-phase0.md), not real
 Atuin CLI compatibility or independent SIWC.
 No live data or credential artifacts may become compatibility fixtures.
 
 ## Bundled catalog compatibility correction (2026-10-17)
 
-The [authorized policy](plans/bundled-catalog-policy.md) replaces historical remote
+The [authorized policy](catalog-policy.md) replaces historical remote
 availability gating: valid application credentials expose exactly Sol (first/
 default) and Luna (second/selectable). Luna live proof remains pending; known
 membership is not entitlement. No normal metadata GET occurs. Explicit diagnosis
@@ -196,7 +196,7 @@ recipe changes or manifest relabeling is required by these test changes.
 
 ## Phase 8 actual pinned CLI / original-source oracle
 
-[Phase 8 status and exact commands](plans/phase8-status.md) distinguish local
+[Phase 8 status and exact commands](history/phase8-status.md) distinguish local
 synthetic passes from production/live/release gates. The unmodified pinned
 Atuin now runs under stdlib PTY automation against the composed native Go
 application with fake OAuth/Responses and the credential-gated bundled catalog. Initial review was NOT CLEARED:
@@ -231,7 +231,7 @@ external gates when artifact manifests are absent. `make compatibility` fails
 without them; a default skip or a green Go-only CI is NOT an external-gate pass.
 The required-capability PR/push/manual workflow (NOT pull_request_target) has
 run once for delivery `6d023fe`: hosted namespace/build/client steps passed,
-but differential setup and its aggregate failed ([receipt](plans/phase8-ci-receipt.md)).
+but differential setup and its aggregate failed ([receipt](history/phase8-ci-receipt.md)).
 The reviewed Docker fix at `57bec1b` then passed ALL compatibility jobs and its
 aggregate; separate Go Checks failed the offline watchdog fixture. Overall remains
 RED pending the fixture correction and ALL-workflow green. The compatibility

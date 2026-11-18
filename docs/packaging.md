@@ -2,7 +2,7 @@
 
 **v0.1.0 is planned, not published at this preparation checkpoint.** The user
 authorized an initial experimental release, subject to the [release handoff and
-remaining gates](plans/release-v0.1.0.md). Historical development receipts remain
+remaining gates](history/release-v0.1.0.md). Historical development receipts remain
 unchanged. The separately authorized offline resource-harness correction adds
 explicit release selection after independent verification; review and full
 acceptance on the eventual release bytes remain mandatory.
@@ -23,14 +23,14 @@ The [bounded reasoning implementation](reasoning-continuation.md) requires NEW
 fresh development packages at two absolute output paths, not relabeled foundation
 or stable assets. Existing installer/public v0.1.0 assets are not modified.
 Source identity includes the full nonignored candidate; each producer still uses
-two fresh source paths/caches and both minimum targets. Independent consumer36
-unit tests plus32 rehashed mutations run before AND after the unchanged full
+two fresh source paths/caches and both minimum targets. Independent consumer 36
+unit tests plus 32 rehashed mutations run before AND after the unchanged full
 resource gate. Separate reasoning CLI/restart/storage stress and packaged init
 no-TTY/private-controlling-PTY explicit-login-decline gates are additional.
 
-Actual Go1.27.3 target-selected stdlib/vendor/Unicode legal bytes are measured
+Actual Go 1.27.3 target-selected stdlib/vendor/Unicode legal bytes are measured
 before considering strict-pin changes; encryption imports do not justify guessed
-notice growth. The current selected-source notice bundle remains335056 bytes,
+notice growth. The current selected-source notice bundle remains 335056 bytes,
 with unchanged reviewed hash/vendor grants/Unicode tables: no legal pin or
 installer budget increase is needed. Final manifests/receipts identify exact
 source/binaries; cross-compiled Darwin remains compilation evidence only, not a
@@ -152,7 +152,7 @@ Tests require real curl >=8.4 and OpenSSL, in addition to Python. They use only
 private synthetic HOME/rc/netrc/ephemeral CA and forced loopback HTTPS endpoints:
 real trust failure despite `insecure` rc, positive HTTPS redirects, rejected HTTP
 redirects, positive chunked bodies and unknown-length overflows at ALL THREE
-limits (curl exit63 and observed scratch size <= cap). A no-`-q` negative witness
+limits (curl exit 63 and observed scratch size <= cap). A no-`-q` negative witness
 proves the synthetic rc would actually bypass trust/send auth/write output.
 No operator HOME/rc/netrc, public release, account or provider is accessed. The
 original 27 stub tests did NOT establish these real-client properties; their
@@ -270,7 +270,7 @@ replace release assets/checksums in place. Corrections need a NEW version/tag.
 matching checksums before moving the channel, and never relabel a development
 snapshot as clean. A release/version pin is integrity policy, not cryptographic
 publisher authentication. The experimental release has [explicit bounded
-acceptance gates](plans/release-v0.1.0.md), including full resource acceptance on
+acceptance gates](history/release-v0.1.0.md), including full resource acceptance on
 the actual release package. `make resource` remains DEVELOPMENT-only;
 `make resource-release` explicitly requires independently verified CLEAN TAGGED
 artifacts, with the same isolation, workload and cleanup gates. Broader
@@ -279,7 +279,7 @@ production lifecycle/both-model claims remain outside this initial release.
 ## Native macOS ARM64 handoff — historical development checklist
 
 The user subsequently confirmed native LaunchAgent/init and Atuin use on e27;
-[evidence and limits](plans/release-v0.1.0.md#evidence-and-limitations). The retained
+[evidence and limits](history/release-v0.1.0.md#evidence-and-limitations). The retained
 checklist below is not a claim that native Mac execution is still wholly pending.
 Any fresh live/native attempt needs fresh explicit consent. Use ONLY an independently
 reviewed development artifact and its exact archive
@@ -290,7 +290,7 @@ validation; no Go SDK is required (optional `go version -m` only).
 1. In an owned scratch directory, `shasum -a 256 ARCHIVE` and compare the exact
    supplied digest; inspect `tar -tzf ARCHIVE`. Manually extract this verified,
    trusted archive, retain its legal texts, relocate/copy the binary and run
-   `./atuin-ai-server version` / `--version`. Expect darwin/arm64, Go1.27.3,
+   `./atuin-ai-server version` / `--version`. Expect darwin/arm64, Go 1.27.3,
    explicit development tag/revision/hash and honest dirty=true if applicable.
    Do not auto-bypass Gatekeeper. If macOS refuses execution, report only the
    safe outcome; no `xattr -d` or security-policy changes are prescribed.
@@ -317,7 +317,7 @@ validation; no Go SDK is required (optional `go version -m` only).
    0600 credential records/lock), never private file contents. Repeat relocated
    execution to catch source-path dependence.
 6. OPTIONAL, user-attended real login/catalog/text/tool continuation follows
-   the [separate production handoff](plans/phase7-attended-login-handoff.md),
+   the [separate production handoff](history/phase7-attended-login-handoff.md),
    only in the user's own terminal and private test HOME. Do NOT request,
    capture or send device codes, tokens, account IDs, provider bodies or store
    contents. Report safe pass/fail outcomes only; no probe-state import. No live

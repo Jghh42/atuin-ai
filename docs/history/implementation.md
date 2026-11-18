@@ -7,7 +7,7 @@
 > lifecycle/both-model claims are not implied. Older phase receipts/prohibitions
 > below describe their historical checkpoints, not a current publication ban.
 >
-> **Catalog policy:** [bundled native Sol/Luna](bundled-catalog-policy.md)
+> **Catalog policy:** [bundled native Sol/Luna](../catalog-policy.md)
 > supersedes historical remote availability/replay gating and TTL plans below.
 > Earlier phase steps/results remain historical, not retroactive proof.
 
@@ -247,7 +247,7 @@ therefore a correctness decision, not merely schedule reduction.
 
 ### Configuration and bundled model catalog target
 
-The user-approved [policy correction](bundled-catalog-policy.md) replaces the
+The user-approved [policy correction](../catalog-policy.md) replaces the
 historical Phase 3a availability gate, not its recorded results. The no-config
 workflow is application login, `serve`, then Atuin configured with
 `endpoint = "http://127.0.0.1:17391"` and `endpoint_protocol = "oss"`.
@@ -422,7 +422,7 @@ encrypted-state design before enabling it.
 **Exit:** native device login, completed Codex text, multi-request tool
 continuation, and refresh are demonstrated on an intended model with this
 application's own credentials. These gates passed in the isolated native Go
-probe on `gpt-6.1-sol`; see [redacted live evidence](../proofs/codex-phase0.md).
+probe on `gpt-6.1-sol`; see [redacted live evidence](proofs/codex-phase0.md).
 Production integration remains unimplemented. No success is inferred from
 installed Pi, and the independent SIWC denial is not counted as a pass.
 
