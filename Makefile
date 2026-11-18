@@ -5,25 +5,29 @@
 GO_TOOLCHAIN := $(shell awk '$$1 == "go" { print "go" $$2; exit }' go.mod)
 export GOTOOLCHAIN := $(GO_TOOLCHAIN)
 
+# Explicit roots keep ignored package output (dist/, which can hold extracted
+# source trees) out of tests, vet, lint and vulnerability scans.
+PACKAGES := ./cmd/... ./internal/... ./tests/...
+
 build: toolchain
 	go build -trimpath -o bin/atuin-ai-server ./cmd/atuin-ai-server
 
 test: toolchain
-	go test ./...
+	go test $(PACKAGES)
 
 race: toolchain
-	go test -race ./...
+	go test -race $(PACKAGES)
 
 vet: toolchain
-	go vet ./...
+	go vet $(PACKAGES)
 
 lint: toolchain
-	go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
+	go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 $(PACKAGES)
 	# Staticcheck 2026.2 retired SA5011 upstream; retain nil-dereference analysis.
-	go run golang.org/x/tools/go/analysis/passes/nilness/cmd/nilness@v0.52.0 ./...
+	go run golang.org/x/tools/go/analysis/passes/nilness/cmd/nilness@v0.52.0 $(PACKAGES)
 
 vuln: toolchain
-	go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
+	go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 $(PACKAGES)
 
 fuzz: toolchain
 	go test ./internal/atuin -run='^$$' -fuzz=FuzzDecode -fuzztime=5s -parallel=2
@@ -34,7 +38,7 @@ fuzz: toolchain
 check: toolchain fmt-check test race vet lint vuln fuzz packaging-test resource-test reasoning-harness-test
 
 fmt: toolchain
-	go fmt ./cmd/... ./internal/... ./tests/...
+	go fmt $(PACKAGES)
 
 fmt-check: toolchain
 	test -z "$$(gofmt -l cmd internal tests)"

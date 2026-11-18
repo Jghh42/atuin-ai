@@ -153,7 +153,7 @@ class Fixture:
         if h.get('authorization') != 'Bearer '+self.fake['token'] or h.get('chatgpt-account-id') != self.fake['account']:
             raise ContractError('fixture credential binding')
         if line == 'GET '+MODELS+' HTTP/1.1':
-            if body or h.get('accept') != 'application/json' or h.get('user-agent') != 'atuin-ai/phase3a':
+            if body or h.get('accept') != 'application/json' or h.get('user-agent') != 'atuin-ai-server':
                 raise ContractError('fixture catalog contract')
             return None
         if line != 'POST '+RESPONSES+' HTTP/1.1' or h.get('content-type') != 'application/json' or h.get('accept') != 'text/event-stream' or h.get('originator') != 'atuin-ai' or h.get('openai-beta') != 'responses=experimental':

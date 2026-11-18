@@ -4,6 +4,7 @@ package setup
 
 import (
 	"context"
+	"os"
 	"strconv"
 	"strings"
 	"unicode"
@@ -19,10 +20,21 @@ const (
 	stateForeign
 )
 
+// systemctl is /usr/bin/systemctl on most distributions; NixOS exposes it only
+// through the system profile. Fixed candidates only: PATH is never consulted.
+var systemctl = func() string {
+	for _, path := range []string{"/usr/bin/systemctl", "/bin/systemctl", "/run/current-system/sw/bin/systemctl"} {
+		if st, e := os.Stat(path); e == nil && st.Mode().IsRegular() {
+			return path
+		}
+	}
+	return "/usr/bin/systemctl"
+}()
+
 func (s *UserService) command(ctx context.Context, verb string) (CommandResult, error) {
 	c := Command{Env: s.env}
 	if s.opts.OS == "linux" {
-		c.Path = "/usr/bin/systemctl"
+		c.Path = systemctl
 		c.Args = []string{"--user", verb}
 		if verb == "inspect" {
 			c.Args = []string{"--user", "show", "--property=" + systemdProperties, "--no-pager", "atuin-ai-server.service"}

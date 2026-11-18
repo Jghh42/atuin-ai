@@ -110,7 +110,7 @@ func (c OAuthClient) post(ctx context.Context, path, contentType, body string) (
 	}
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", "atuin-ai/native-codex")
+	req.Header.Set("User-Agent", "atuin-ai-server")
 	transport := c.Transport
 	if transport == nil {
 		return 0, nil, ErrOAuth

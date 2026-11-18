@@ -232,7 +232,7 @@ class TLSWire(unittest.TestCase):
         sock.sendall(('GET '+MODELS+' HTTP/1.1\r\nHost: '+host+
                       '\r\nAuthorization: Bearer wire-synthetic-token'
                       '\r\nChatGPT-Account-Id: wire-synthetic-account'
-                      '\r\nUser-Agent: atuin-ai/phase3a\r\nAccept: application/json\r\n').encode()+extra+b'\r\n')
+                      '\r\nUser-Agent: atuin-ai-server\r\nAccept: application/json\r\n').encode()+extra+b'\r\n')
 
     def test_actual_positive_native_catalog_wire(self):
         def action(fixture):
